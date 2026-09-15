@@ -3,6 +3,8 @@ import React, { useCallback, useEffect, useState } from "react";
 import "./AtelixRouter.scss";
 
 const AUTH_STORAGE_KEY = "atelix-demo-auth";
+const DEMO_USERNAME = "admin";
+const DEMO_PASSWORD = "123456";
 
 type BoardAppComponent = React.ComponentType;
 
@@ -81,8 +83,19 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => (
 );
 
 const LoginPage = ({ onLogin }: { onLogin: () => void }) => {
+  const [error, setError] = useState("");
+
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const username = String(formData.get("username") || "");
+    const password = String(formData.get("password") || "");
+
+    if (username !== DEMO_USERNAME || password !== DEMO_PASSWORD) {
+      setError("Incorrect username or password.");
+      return;
+    }
+
     try {
       window.localStorage.setItem(AUTH_STORAGE_KEY, "signed-in");
     } catch {
@@ -100,17 +113,17 @@ const LoginPage = ({ onLogin }: { onLogin: () => void }) => {
         <div className="atelix-eyebrow">WELCOME BACK</div>
         <h1 id="login-title">Sign in to your workspace.</h1>
         <p className="atelix-auth-note">
-          Demo access is local for now. Connect your identity provider when the
-          product foundation is ready.
+          Demo access is local for now. Use the temporary credentials below
+          until a real identity provider is connected.
         </p>
         <form onSubmit={submit}>
-          <label htmlFor="email">Email address</label>
+          <label htmlFor="username">Username</label>
           <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            placeholder="you@company.com"
+            id="username"
+            name="username"
+            type="text"
+            autoComplete="username"
+            placeholder="admin"
             required
           />
           <label htmlFor="password">Password</label>
@@ -119,9 +132,14 @@ const LoginPage = ({ onLogin }: { onLogin: () => void }) => {
             name="password"
             type="password"
             autoComplete="current-password"
-            placeholder="••••••••"
+            placeholder="123456"
             required
           />
+          {error && (
+            <p className="atelix-auth-error" role="alert">
+              {error}
+            </p>
+          )}
           <button className="atelix-button atelix-button-primary" type="submit">
             Continue to workspace
           </button>
