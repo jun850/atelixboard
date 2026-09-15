@@ -27,59 +27,95 @@
       color: var(--color-logo-icon);
     }
 
-    .ExcalidrawLogo-text {
+    &.has-text .ExcalidrawLogo-text {
+      display: none;
+    }
+
+    &.has-text::after {
+      content: "Atelix";
+      margin-left: 0.75rem;
+      color: var(--color-logo-text);
+      font-family: var(--font-family);
+      font-size: var(--logo-text--normal);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+
+    &.has-text .ExcalidrawLogo-text {
       margin-left: 0.75rem;
       width: auto;
       color: var(--color-logo-text);
     }
 
     &.is-mobile {
+      &::after {
+        margin-left: 0.5rem;
+        font-size: var(--logo-text--mobile);
+      }
+
       .ExcalidrawLogo-icon {
         height: var(--logo-icon--mobile);
       }
 
-      .ExcalidrawLogo-text {
+      &.has-text .ExcalidrawLogo-text {
         height: var(--logo-text--mobile);
         margin-left: 0.5rem;
       }
     }
 
     &.is-xs {
+      &::after {
+        font-size: var(--logo-text--xs);
+      }
+
       .ExcalidrawLogo-icon {
         height: var(--logo-icon--xs);
       }
 
-      .ExcalidrawLogo-text {
+      &.has-text .ExcalidrawLogo-text {
         height: var(--logo-text--xs);
       }
     }
 
     &.is-small {
+      &::after {
+        font-size: var(--logo-text--small);
+      }
+
       .ExcalidrawLogo-icon {
         height: var(--logo-icon--small);
       }
 
-      .ExcalidrawLogo-text {
+      &.has-text .ExcalidrawLogo-text {
         height: var(--logo-text--small);
       }
     }
 
     &.is-normal {
+      &::after {
+        font-size: var(--logo-text--normal);
+      }
+
       .ExcalidrawLogo-icon {
         height: var(--logo-icon--normal);
       }
 
-      .ExcalidrawLogo-text {
+      &.has-text .ExcalidrawLogo-text {
         height: var(--logo-text--normal);
       }
     }
 
     &.is-large {
+      &::after {
+        font-size: var(--logo-text--large);
+      }
+
       .ExcalidrawLogo-icon {
         height: var(--logo-icon--large);
       }
 
-      .ExcalidrawLogo-text {
+      &.has-text .ExcalidrawLogo-text {
         height: var(--logo-text--large);
       }
     }
