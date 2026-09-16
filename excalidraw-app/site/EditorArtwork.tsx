@@ -162,6 +162,15 @@ const scene = convertToExcalidrawElements(
 );
 const EditorScene = ({ ownerDocument }: { ownerDocument: Document }) => {
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
+  const restoreFrame = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (restoreFrame.current !== null) {
+        ownerDocument.defaultView?.cancelAnimationFrame(restoreFrame.current);
+      }
+    },
+    [ownerDocument],
+  );
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeThread, setActiveThread] = useState(0);
   const [removedComments, setRemovedComments] = useState<number[]>([]);
@@ -228,13 +237,20 @@ const EditorScene = ({ ownerDocument }: { ownerDocument: Document }) => {
               appState.openPopup !== "elementStroke" ||
               !appState.selectedElementIds["landing-selection"]
             ) {
-              apiRef.current?.updateScene({
-                appState: {
-                  openPopup: "elementStroke",
-                  selectedElementIds: { "landing-selection": true },
-                },
-                captureUpdate: CaptureUpdateAction.NEVER,
-              });
+              if (restoreFrame.current !== null) {
+                return;
+              }
+              restoreFrame.current =
+                ownerDocument.defaultView?.requestAnimationFrame(() => {
+                  restoreFrame.current = null;
+                  apiRef.current?.updateScene({
+                    appState: {
+                      openPopup: "elementStroke",
+                      selectedElementIds: { "landing-selection": true },
+                    },
+                    captureUpdate: CaptureUpdateAction.NEVER,
+                  });
+                }) ?? null;
             }
           }}
           initialData={{
@@ -242,6 +258,7 @@ const EditorScene = ({ ownerDocument }: { ownerDocument: Document }) => {
             appState: {
               viewBackgroundColor: "#ffffff",
               selectedElementIds: { "landing-selection": true },
+              openPopup: "elementStroke",
               currentItemStrokeColor: "#228be6",
               currentItemBackgroundColor: "#dbe7fa",
               currentItemFillStyle: "hachure",

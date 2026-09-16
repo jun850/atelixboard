@@ -443,6 +443,11 @@
   --color-primary-light-darker: #d8e5ff;
   --color-selection: #3474e9;
 }
+.editor-art-real [data-radix-popper-content-wrapper] {
+  // Fixed-position popovers can disappear in a scaled, non-interactive iframe.
+  // This preview has a fixed canvas, so anchor its popovers to that canvas.
+  position: absolute !important;
+}
 .editor-art-scene-title {
   position: absolute;
   top: 24px;
