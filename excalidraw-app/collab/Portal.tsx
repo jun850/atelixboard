@@ -20,11 +20,11 @@ import type {
   SyncableExcalidrawElement,
 } from "../data";
 import type { TCollabClass } from "./Collab";
-import type { Socket } from "socket.io-client";
+import type { CollaborationSocket } from "./CollaborationSocket";
 
 class Portal {
   collab: TCollabClass;
-  socket: Socket | null = null;
+  socket: CollaborationSocket | null = null;
   socketInitialized: boolean = false; // we don't want the socket to emit any updates until it is fully initialized
   roomId: string | null = null;
   roomKey: string | null = null;
@@ -34,7 +34,7 @@ class Portal {
     this.collab = collab;
   }
 
-  open(socket: Socket, id: string, key: string) {
+  open(socket: CollaborationSocket, id: string, key: string) {
     this.socket = socket;
     this.roomId = id;
     this.roomKey = key;

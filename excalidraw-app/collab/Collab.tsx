@@ -83,6 +83,14 @@ import {
   saveToFirebase,
 } from "../data/firebase";
 import {
+  isSavedToSupabase,
+  loadFilesFromSupabase,
+  loadSceneFromSupabase,
+  saveFilesToSupabase,
+  saveSceneToSupabase,
+} from "../data/supabaseCollab";
+import { isSupabaseConfigured, requireSupabase } from "../supabase/client";
+import {
   importUsernameFromLocalStorage,
   saveUsernameToLocalStorage,
 } from "../data/localStorage";
@@ -90,6 +98,7 @@ import { resetBrowserStateVersions } from "../data/tabSync";
 
 import { collabErrorIndicatorAtom } from "./CollabError";
 import Portal from "./Portal";
+import { SupabaseCollaborationSocket } from "./SupabaseCollaborationSocket";
 
 import type {
   SocketUpdateDataSource,
@@ -162,7 +171,9 @@ class Collab extends PureComponent<CollabProps, CollabState> {
           throw new AbortError();
         }
 
-        return loadFilesFromFirebase(`files/rooms/${roomId}`, roomKey, fileIds);
+        return isSupabaseConfigured
+          ? loadFilesFromSupabase(roomId, roomKey, fileIds)
+          : loadFilesFromFirebase(`files/rooms/${roomId}`, roomKey, fileIds);
       },
       saveFiles: async ({ addedFiles }) => {
         const { roomId, roomKey } = this.portal;
@@ -170,14 +181,17 @@ class Collab extends PureComponent<CollabProps, CollabState> {
           throw new AbortError();
         }
 
-        const { savedFiles, erroredFiles } = await saveFilesToFirebase({
-          prefix: `${FIREBASE_STORAGE_PREFIXES.collabFiles}/${roomId}`,
-          files: await encodeFilesForUpload({
-            files: addedFiles,
-            encryptionKey: roomKey,
-            maxBytes: FILE_UPLOAD_MAX_BYTES,
-          }),
+        const files = await encodeFilesForUpload({
+          files: addedFiles,
+          encryptionKey: roomKey,
+          maxBytes: FILE_UPLOAD_MAX_BYTES,
         });
+        const { savedFiles, erroredFiles } = isSupabaseConfigured
+          ? await saveFilesToSupabase({ roomId, files })
+          : await saveFilesToFirebase({
+              prefix: `${FIREBASE_STORAGE_PREFIXES.collabFiles}/${roomId}`,
+              files,
+            });
 
         return {
           savedFiles: savedFiles.reduce(
@@ -304,7 +318,9 @@ class Collab extends PureComponent<CollabProps, CollabState> {
     if (
       this.isCollaborating() &&
       (this.fileManager.shouldPreventUnload(syncableElements) ||
-        !isSavedToFirebase(this.portal, syncableElements))
+        !(isSupabaseConfigured
+          ? isSavedToSupabase(this.portal.socket, syncableElements)
+          : isSavedToFirebase(this.portal, syncableElements)))
     ) {
       // this won't run in time if user decides to leave the site, but
       //  the purpose is to run in immediately after user decides to stay
@@ -325,11 +341,19 @@ class Collab extends PureComponent<CollabProps, CollabState> {
   ) => {
     syncableElements = cloneJSON(syncableElements);
     try {
-      const storedElements = await saveToFirebase(
-        this.portal,
-        syncableElements,
-        this.excalidrawAPI.getAppState(),
-      );
+      const storedElements = isSupabaseConfigured
+        ? await saveSceneToSupabase(
+            this.portal.socket,
+            this.portal.roomId,
+            this.portal.roomKey,
+            syncableElements,
+            this.excalidrawAPI.getAppState(),
+          )
+        : await saveToFirebase(
+            this.portal,
+            syncableElements,
+            this.excalidrawAPI.getAppState(),
+          );
 
       this.resetErrorIndicator();
 
@@ -515,10 +539,6 @@ class Collab extends PureComponent<CollabProps, CollabState> {
     this.setIsCollaborating(true);
     LocalData.pauseSave("collaboration");
 
-    const { default: socketIOClient } = await import(
-      /* webpackChunkName: "socketIoClient" */ "socket.io-client"
-    );
-
     const fallbackInitializationHandler = () => {
       this.initializeRoom({
         roomLinkData: existingRoomLinkData,
@@ -530,13 +550,29 @@ class Collab extends PureComponent<CollabProps, CollabState> {
     this.fallbackInitializationHandler = fallbackInitializationHandler;
 
     try {
-      this.portal.socket = this.portal.open(
-        socketIOClient(import.meta.env.VITE_APP_WS_SERVER_URL, {
-          transports: ["websocket", "polling"],
-        }),
-        roomId,
-        roomKey,
-      );
+      if (isSupabaseConfigured) {
+        const {
+          data: { user },
+          error,
+        } = await requireSupabase().auth.getUser();
+        if (error || !user) {
+          throw error || new Error("Sign in before joining a live board.");
+        }
+        const socket = new SupabaseCollaborationSocket(roomId, user);
+        this.portal.socket = this.portal.open(socket, roomId, roomKey);
+        await socket.connect();
+      } else {
+        const { default: socketIOClient } = await import(
+          /* webpackChunkName: "socketIoClient" */ "socket.io-client"
+        );
+        this.portal.socket = this.portal.open(
+          socketIOClient(import.meta.env.VITE_APP_WS_SERVER_URL, {
+            transports: ["websocket", "polling"],
+          }),
+          roomId,
+          roomKey,
+        );
+      }
 
       this.portal.socket.once("connect_error", fallbackInitializationHandler);
     } catch (error: any) {
@@ -731,11 +767,17 @@ class Collab extends PureComponent<CollabProps, CollabState> {
       this.excalidrawAPI.resetScene();
 
       try {
-        const elements = await loadFromFirebase(
-          roomLinkData.roomId,
-          roomLinkData.roomKey,
-          this.portal.socket,
-        );
+        const elements = isSupabaseConfigured
+          ? await loadSceneFromSupabase(
+              roomLinkData.roomId,
+              roomLinkData.roomKey,
+              this.portal.socket,
+            )
+          : await loadFromFirebase(
+              roomLinkData.roomId,
+              roomLinkData.roomKey,
+              this.portal.socket,
+            );
         if (elements) {
           this.setLastBroadcastedOrReceivedSceneVersion(
             getSceneVersion(elements),
