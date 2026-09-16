@@ -71,8 +71,8 @@
   width: 12px;
   height: 14px;
   border: 1.5px solid #26364d;
-  border-left-width: 4px;
   border-radius: 2px;
+  background: linear-gradient(90deg, #26364d 0 3px, transparent 3px);
   content: "";
 }
 .board-feature-header__tools {
