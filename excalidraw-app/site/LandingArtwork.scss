@@ -7,18 +7,17 @@
   isolation: isolate;
 }
 .board-artwork--hero {
-  --landing-artwork-scale: clamp(0.72, calc((100vw - 1000px) / 1200), 1);
   position: absolute;
   top: 72px;
   left: 0;
-  width: 790px;
+  width: min(790px, 100%);
   height: 550px;
   overflow: hidden;
   border: 1px solid #c9d6e9;
   border-radius: 20px 0 0 20px;
   box-shadow: 0 30px 80px rgb(47 108 229 / 16%);
   transform: translate3d(var(--landing-artwork-x), var(--landing-artwork-y), 0)
-    rotate(var(--landing-artwork-rotation)) scale(var(--landing-artwork-scale));
+    rotate(var(--landing-artwork-rotation));
   transform-origin: 20% 30%;
 }
 .board-artwork--feature {
