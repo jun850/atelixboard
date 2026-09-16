@@ -98,7 +98,6 @@ export const BoardArtwork = ({ variant }: { variant: "hero" | "feature" }) => {
   const [commentsOpen, setCommentsOpen] = useState(true);
   const [selected, setSelected] = useState(2);
   const [color, setColor] = useState("#3e63dd");
-  const [playing, setPlaying] = useState(true);
   const [inView, setInView] = useState(false);
   useEffect(() => {
     const node = rootRef.current;
@@ -127,7 +126,7 @@ export const BoardArtwork = ({ variant }: { variant: "hero" | "feature" }) => {
     <div
       ref={rootRef}
       className={`board-artwork board-artwork--${variant}`}
-      data-playing={playing && inView}
+      data-playing={inView}
       style={{ "--demo-accent": color } as React.CSSProperties}
       role="region"
       aria-label={`${
@@ -360,24 +359,6 @@ export const BoardArtwork = ({ variant }: { variant: "hero" | "feature" }) => {
           </aside>
         )}
       </div>
-      <footer className="board-demo-footer">
-        <span>Interactive preview</span>
-        <button
-          className="board-demo-motion"
-          type="button"
-          aria-pressed={!playing}
-          onClick={() => setPlaying(!playing)}
-        >
-          {playing ? "Pause motion" : "Play motion"}
-          <svg viewBox="0 0 16 16" aria-hidden="true">
-            {playing ? (
-              <path d="M5 3v10M11 3v10" />
-            ) : (
-              <path d="m5 3 7 5-7 5V3Z" />
-            )}
-          </svg>
-        </button>
-      </footer>
     </div>
   );
 };

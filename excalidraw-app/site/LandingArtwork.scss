@@ -232,7 +232,7 @@
   align-items: flex-start;
   pointer-events: none;
   color: #397fa8;
-  animation: board-demo-collaborate 9s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  animation: board-demo-collaborate 4s cubic-bezier(0.65, 0, 0.35, 1) 1 both;
   animation-play-state: paused;
 }
 .board-demo-cursor > svg {
@@ -326,33 +326,6 @@
   flex: none;
   width: 16px;
   height: 16px;
-}
-.board-demo-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 49px;
-  padding: 2px 18px;
-  border-top: 1px solid #e6eaf1;
-  background: #fff;
-  color: #667085;
-  font-size: 12px;
-}
-.board-demo-motion {
-  display: flex;
-  min-height: 44px;
-  align-items: center;
-  gap: 9px;
-  padding: 0 4px;
-  border: 0;
-  background: transparent;
-}
-.board-demo-motion svg {
-  width: 13px;
-  height: 13px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
 }
 .board-demo-diagram {
   padding: 24px 0 8px;
@@ -515,9 +488,6 @@
   .board-demo-cursor > span {
     font-size: 11px;
   }
-  .board-demo-footer {
-    padding-inline: 14px;
-  }
 }
 @media (hover: hover) {
   .board-demo-note:hover {
@@ -528,9 +498,6 @@
   .board-demo-comments-heading button:hover,
   .board-demo-palette button:hover {
     background: #edf1ff;
-  }
-  .board-demo-motion:hover {
-    color: #3e63dd;
   }
 }
 @keyframes board-demo-collaborate {
@@ -568,8 +535,5 @@
   }
   .board-demo-note:hover {
     transform: none;
-  }
-  .board-demo-motion {
-    display: none;
   }
 }

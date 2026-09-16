@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { isSupabaseConfigured, supabase } from "../supabase/client";
 
 import { BoardArtwork, LandingIcon } from "./LandingArtwork";
+import { EditorArtwork } from "./EditorArtwork";
 
 import "./AtelixRouter.scss";
 
@@ -94,7 +95,7 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
           collaboration
         </h2>
         <div className="atelix-product-stage">
-          <BoardArtwork variant="feature" />
+          <EditorArtwork />
         </div>
       </section>
 
