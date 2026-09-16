@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import { isSupabaseConfigured, supabase } from "../supabase/client";
 
@@ -37,80 +37,15 @@ const BoardyBrand = () => (
 );
 
 const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
-  const pageRef = useRef<HTMLElement>(null);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">(
     "monthly",
   );
-
-  useEffect(() => {
-    const page = pageRef.current;
-    const ownerDocument = page?.ownerDocument;
-    const ownerWindow = ownerDocument?.defaultView;
-    if (!page || !ownerDocument || !ownerWindow) {
-      return;
-    }
-
-    let frame = 0;
-    const updateArtwork = () => {
-      frame = 0;
-      const hero = page.querySelector<HTMLElement>(".atelix-hero");
-      if (!hero) {
-        return;
-      }
-      const bounds = hero.getBoundingClientRect();
-      const progress = Math.max(
-        0,
-        Math.min(1, -bounds.top / Math.max(bounds.height * 0.58, 1)),
-      );
-      page.style.setProperty("--landing-scroll-progress", String(progress));
-      page.style.setProperty("--landing-artwork-x", `${progress * -24}px`);
-      page.style.setProperty("--landing-artwork-y", `${progress * 42}px`);
-      page.style.setProperty(
-        "--landing-artwork-rotation",
-        `${progress * -0.35}deg`,
-      );
-    };
-    const onScroll = () => {
-      if (!frame) {
-        frame = ownerWindow.requestAnimationFrame(updateArtwork);
-      }
-    };
-
-    const sections = Array.from(
-      page.querySelectorAll<HTMLElement>("[data-landing-reveal]"),
-    );
-    sections.forEach((section) => {
-      section.dataset.landingVisible = "pending";
-    });
-    const observer = new ownerWindow.IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            (entry.target as HTMLElement).dataset.landingVisible = "true";
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { root: page, threshold: 0.14 },
-    );
-    sections.forEach((section) => observer.observe(section));
-    page.addEventListener("scroll", onScroll, { passive: true });
-    updateArtwork();
-
-    return () => {
-      page.removeEventListener("scroll", onScroll);
-      observer.disconnect();
-      if (frame) {
-        ownerWindow.cancelAnimationFrame(frame);
-      }
-    };
-  }, []);
 
   const primaryPath = signedIn ? "/app" : "/signup";
   const primaryLabel = signedIn ? "Open workspace" : "Sign up";
 
   return (
-    <main ref={pageRef} className="atelix-page atelix-landing-page">
+    <main className="atelix-page atelix-landing-page">
       <header className="atelix-site-header">
         <BoardyBrand />
         <nav className="atelix-site-nav" aria-label="Primary navigation">
@@ -153,7 +88,6 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
         className="atelix-product-section"
         id="product"
         aria-labelledby="product-title"
-        data-landing-reveal
       >
         <h2 id="product-title">
           A familiar whiteboard, reimagined for focused teamwork and live
@@ -168,7 +102,6 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
         className="atelix-benefits"
         id="solutions"
         aria-labelledby="benefits-title"
-        data-landing-reveal
       >
         <h2 id="benefits-title">
           Everything your team needs to find the signal.
@@ -220,7 +153,6 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
         className="atelix-pricing"
         id="pricing"
         aria-labelledby="pricing-title"
-        data-landing-reveal
       >
         <h2 id="pricing-title">Pick the plan that fits your flow.</h2>
         <p>
