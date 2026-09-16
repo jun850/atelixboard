@@ -133,7 +133,7 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       Sitemap({
-        hostname: "https://excalidraw.com",
+        hostname: "https://atelixboard.vercel.app",
         outDir: "build",
         changefreq: "monthly",
         // its static in public folder
@@ -226,10 +226,10 @@ export default defineConfig(({ mode }) => {
           maximumFileSizeToCacheInBytes: 3 * 1024 ** 2, // 3MB
         },
         manifest: {
-          short_name: "Atelix",
-          name: "Atelix",
+          short_name: "Boardy",
+          name: "Boardy by Atelix",
           description:
-            "Atelix is a whiteboard tool that lets you easily sketch diagrams that have a hand-drawn feel to them.",
+            "Boardy by Atelix is a collaborative whiteboard for sketching diagrams, mapping ideas, and working together live.",
           icons: [
             {
               src: "android-chrome-192x192.png",
@@ -253,9 +253,9 @@ export default defineConfig(({ mode }) => {
             },
           ],
           start_url: "/",
-          id: "atelix",
+          id: "boardy",
           display: "standalone",
-          theme_color: "#121212",
+          theme_color: "#1769e0",
           background_color: "#ffffff",
           file_handlers: [
             {

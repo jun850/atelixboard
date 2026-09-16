@@ -24,12 +24,20 @@ const authPath = (path: string) => {
   return `${path}?next=${encodeURIComponent(next)}`;
 };
 
+const BoardyBrand = () => (
+  <a className="boardy-brand" href="/" aria-label="Boardy by Atelix home">
+    <span className="boardy-brand__name">Boardy</span>
+    <span className="boardy-brand__byline">
+      <span>By Atelix</span>
+      <img src="/android-chrome-192x192.png" alt="" width="192" height="192" />
+    </span>
+  </a>
+);
+
 const LandingPage = ({ signedIn }: { signedIn: boolean }) => (
   <main className="atelix-page atelix-landing-page">
     <header className="atelix-site-header">
-      <a className="atelix-wordmark" href="/" aria-label="Atelix home">
-        Atelix
-      </a>
+      <BoardyBrand />
       <nav aria-label="Primary navigation">
         <a className="atelix-text-link" href={signedIn ? "/app" : "/login"}>
           {signedIn ? "Open workspace" : "Sign in"}
@@ -37,7 +45,7 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => (
       </nav>
     </header>
     <section className="atelix-hero" aria-labelledby="atelix-hero-title">
-      <div className="atelix-eyebrow">ATELIX WORKSPACE</div>
+      <div className="atelix-eyebrow">BOARDY WORKSPACE</div>
       <h1 id="atelix-hero-title">Think clearly. Build together.</h1>
       <p>
         A focused, hand-drawn canvas for mapping ideas, aligning teams, and
@@ -79,9 +87,7 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => (
         <p>Keep a durable visual record of the decisions your team makes.</p>
       </article>
     </section>
-    <footer className="atelix-site-footer">
-      A calm place for ambitious work.
-    </footer>
+    <footer className="atelix-site-footer">Boardy, by Atelix.</footer>
   </main>
 );
 
@@ -200,9 +206,7 @@ const AuthPage = ({ mode }: { mode: AuthMode }) => {
 
   return (
     <main className="atelix-page atelix-auth-page">
-      <a className="atelix-wordmark" href="/" aria-label="Atelix home">
-        Atelix
-      </a>
+      <BoardyBrand />
       <section className="atelix-auth-card" aria-labelledby="auth-title">
         <div className="atelix-eyebrow">{copy.eyebrow}</div>
         <h1 id="auth-title">{copy.title}</h1>
@@ -211,7 +215,7 @@ const AuthPage = ({ mode }: { mode: AuthMode }) => {
             ? "Enter the email address connected to your account."
             : mode === "reset"
             ? "Use at least six characters for your new password."
-            : "Your boards are protected by your Atelix account."}
+            : "Your boards are protected by your Boardy account."}
         </p>
         <form onSubmit={submit}>
           {!isPasswordOnly && (
@@ -353,7 +357,7 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
   ) {
     return (
       <main className="atelix-page atelix-loading-page" aria-live="polite">
-        Loading Atelix…
+        Loading Boardy…
       </main>
     );
   }
@@ -365,9 +369,7 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
     return (
       <div className="atelix-board-shell">
         <header className="atelix-board-header">
-          <a className="atelix-wordmark" href="/" aria-label="Atelix home">
-            Atelix
-          </a>
+          <BoardyBrand />
           <div className="atelix-board-account">
             <span title={session.user.email}>{session.user.email}</span>
             <button

@@ -25,7 +25,20 @@ export const AppWelcomeScreen: React.FC<{
       <WelcomeScreen.Hints.ToolbarHint />
       <WelcomeScreen.Hints.HelpHint />
       <WelcomeScreen.Center>
-        <WelcomeScreen.Center.Logo />
+        <WelcomeScreen.Center.Logo>
+          <span className="boardy-editor-brand">
+            <span className="boardy-editor-brand__name">Boardy</span>
+            <span className="boardy-editor-brand__byline">
+              By Atelix
+              <img
+                src="/android-chrome-192x192.png"
+                alt=""
+                width="192"
+                height="192"
+              />
+            </span>
+          </span>
+        </WelcomeScreen.Center.Logo>
         <WelcomeScreen.Center.Heading>
           {headingContent}
         </WelcomeScreen.Center.Heading>
