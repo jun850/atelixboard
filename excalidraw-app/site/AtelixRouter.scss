@@ -687,19 +687,35 @@
 @media (max-width: 720px) {
   .atelix-site-header {
     min-height: 66px;
-    padding: 0 20px;
+    padding: 0 16px;
   }
   .atelix-site-nav {
     display: none;
   }
   .atelix-site-actions {
-    gap: 12px;
+    gap: 8px;
   }
   .atelix-site-actions .atelix-text-link {
-    display: none;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .atelix-site-actions .atelix-button {
+    min-height: 44px;
+    padding-inline: 12px;
+  }
+  .boardy-brand {
+    gap: 6px;
+  }
+  .boardy-brand__name {
+    font-size: 21px;
+  }
+  .boardy-brand__byline {
+    gap: 4px;
+    padding-left: 6px;
   }
   .boardy-brand__byline img {
-    width: 56px;
+    width: 52px;
   }
   .atelix-hero {
     display: block;
@@ -763,6 +779,13 @@
   }
   .atelix-site-nav {
     gap: 18px;
+  }
+  .atelix-site-actions {
+    gap: 14px;
+  }
+  .atelix-site-actions .atelix-text-link,
+  .atelix-site-actions .atelix-button {
+    min-height: 44px;
   }
   .atelix-hero {
     grid-template-columns: minmax(360px, 0.82fr) minmax(430px, 1.18fr);

@@ -33,8 +33,8 @@ export const AppWelcomeScreen: React.FC<{
               <img
                 src="/atelix-horizontal.png"
                 alt=""
-                width="5776"
-                height="1082"
+                width="6900"
+                height="1500"
               />
             </span>
           </span>
