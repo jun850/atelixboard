@@ -38,6 +38,9 @@ const BoardyBrand = () => (
 
 const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
   const pageRef = useRef<HTMLElement>(null);
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">(
+    "monthly",
+  );
 
   useEffect(() => {
     const page = pageRef.current;
@@ -224,21 +227,43 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
           All the essentials for visual thinking, with powerful upgrades when
           your team needs more.
         </p>
-        <div className="atelix-billing-toggle" aria-label="Pricing cadence">
-          <span>Monthly</span>
-          <span>
+        <div
+          className="atelix-billing-toggle"
+          aria-label="Pricing cadence"
+          role="tablist"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={billingCycle === "monthly"}
+            className={billingCycle === "monthly" ? "is-active" : ""}
+            onClick={() => setBillingCycle("monthly")}
+          >
+            Monthly
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={billingCycle === "annual"}
+            className={billingCycle === "annual" ? "is-active" : ""}
+            onClick={() => setBillingCycle("annual")}
+          >
             Annual <small>Save up to 44%</small>
-          </span>
+          </button>
         </div>
         <div className="atelix-pricing-grid">
           <article className="atelix-plan atelix-plan--standard">
             <h3>Standard</h3>
             <p>Everything you need to create and collaborate.</p>
             <div className="atelix-plan__price">
-              <strong>$3</strong>
-              <span>/ month</span>
+              <strong>{billingCycle === "monthly" ? "$3" : "$20"}</strong>
+              <span>{billingCycle === "monthly" ? "/ month" : "/ year"}</span>
             </div>
-            <small>or $20 billed annually</small>
+            <small>
+              {billingCycle === "monthly"
+                ? "or $20 billed annually"
+                : "billed annually"}
+            </small>
             <a
               className="atelix-button atelix-button-secondary"
               href={primaryPath}
@@ -258,10 +283,14 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
             <h3>Pro</h3>
             <p>Premium tools for ambitious teams and polished delivery.</p>
             <div className="atelix-plan__price">
-              <strong>$6</strong>
-              <span>/ month</span>
+              <strong>{billingCycle === "monthly" ? "$6" : "$50"}</strong>
+              <span>{billingCycle === "monthly" ? "/ month" : "/ year"}</span>
             </div>
-            <small>or $50 billed annually</small>
+            <small>
+              {billingCycle === "monthly"
+                ? "or $50 billed annually"
+                : "billed annually"}
+            </small>
             <a className="atelix-button" href={primaryPath}>
               Sign up for Pro
             </a>

@@ -348,11 +348,24 @@
 .atelix-billing-toggle span {
   padding: 9px 14px;
 }
-.atelix-billing-toggle span:first-child {
+.atelix-billing-toggle button {
+  padding: 9px 14px;
+  border: 0;
+  border-radius: 9px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+.atelix-billing-toggle button.is-active {
   border-radius: 9px;
   color: var(--atelix-ink);
   background: #fff;
   box-shadow: 0 4px 12px rgb(17 24 39 / 8%);
+}
+.atelix-billing-toggle button:focus-visible {
+  outline: 3px solid rgb(47 108 229 / 35%);
+  outline-offset: 2px;
 }
 .atelix-billing-toggle small {
   margin-left: 6px;
