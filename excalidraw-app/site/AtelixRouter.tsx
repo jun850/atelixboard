@@ -31,7 +31,7 @@ const BoardyBrand = () => (
     <span className="boardy-brand__name">Boardy</span>
     <span className="boardy-brand__byline">
       <span>By</span>
-      <img src="/atelix-horizontal.png" alt="" width="5776" height="1082" />
+      <img src="/atelix-horizontal.png" alt="" width="6900" height="1500" />
     </span>
   </a>
 );
