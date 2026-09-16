@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import { isSupabaseConfigured, supabase } from "../supabase/client";
+
+import { BoardArtwork, LandingIcon } from "./LandingArtwork";
 
 import "./AtelixRouter.scss";
 
@@ -29,72 +31,266 @@ const BoardyBrand = () => (
     <span className="boardy-brand__name">Boardy</span>
     <span className="boardy-brand__byline">
       <span>By</span>
-      <img
-        src="/atelix-horizontal.png"
-        alt=""
-        width="5776"
-        height="1082"
-      />
+      <img src="/atelix-horizontal.png" alt="" width="5776" height="1082" />
     </span>
   </a>
 );
 
-const LandingPage = ({ signedIn }: { signedIn: boolean }) => (
-  <main className="atelix-page atelix-landing-page">
-    <header className="atelix-site-header">
-      <BoardyBrand />
-      <nav aria-label="Primary navigation">
-        <a className="atelix-text-link" href={signedIn ? "/app" : "/login"}>
-          {signedIn ? "Open workspace" : "Sign in"}
+const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
+  const pageRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const page = pageRef.current;
+    const ownerDocument = page?.ownerDocument;
+    const ownerWindow = ownerDocument?.defaultView;
+    if (!page || !ownerDocument || !ownerWindow) {
+      return;
+    }
+
+    let frame = 0;
+    const updateArtwork = () => {
+      frame = 0;
+      const hero = page.querySelector<HTMLElement>(".atelix-hero");
+      if (!hero) {
+        return;
+      }
+      const bounds = hero.getBoundingClientRect();
+      const progress = Math.max(
+        0,
+        Math.min(1, -bounds.top / Math.max(bounds.height * 0.58, 1)),
+      );
+      page.style.setProperty("--landing-scroll-progress", String(progress));
+      page.style.setProperty("--landing-artwork-x", `${progress * -24}px`);
+      page.style.setProperty("--landing-artwork-y", `${progress * 42}px`);
+      page.style.setProperty(
+        "--landing-artwork-rotation",
+        `${progress * -0.35}deg`,
+      );
+    };
+    const onScroll = () => {
+      if (!frame) {
+        frame = ownerWindow.requestAnimationFrame(updateArtwork);
+      }
+    };
+
+    const sections = Array.from(
+      page.querySelectorAll<HTMLElement>("[data-landing-reveal]"),
+    );
+    sections.forEach((section) => {
+      section.dataset.landingVisible = "pending";
+    });
+    const observer = new ownerWindow.IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            (entry.target as HTMLElement).dataset.landingVisible = "true";
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { root: page, threshold: 0.14 },
+    );
+    sections.forEach((section) => observer.observe(section));
+    page.addEventListener("scroll", onScroll, { passive: true });
+    updateArtwork();
+
+    return () => {
+      page.removeEventListener("scroll", onScroll);
+      observer.disconnect();
+      if (frame) {
+        ownerWindow.cancelAnimationFrame(frame);
+      }
+    };
+  }, []);
+
+  const primaryPath = signedIn ? "/app" : "/signup";
+  const primaryLabel = signedIn ? "Open workspace" : "Sign up";
+
+  return (
+    <main ref={pageRef} className="atelix-page atelix-landing-page">
+      <header className="atelix-site-header">
+        <BoardyBrand />
+        <nav className="atelix-site-nav" aria-label="Primary navigation">
+          <a href="#product">Product</a>
+          <a href="#solutions">Solutions</a>
+          <a href="#resources">Resources</a>
+          <a href="#pricing">Pricing</a>
+        </nav>
+        <div className="atelix-site-actions">
+          <a className="atelix-text-link" href={signedIn ? "/app" : "/login"}>
+            {signedIn ? "Workspace" : "Login"}
+          </a>
+          <a className="atelix-button atelix-button-primary" href={primaryPath}>
+            {primaryLabel}
+          </a>
+        </div>
+      </header>
+
+      <section className="atelix-hero" aria-labelledby="atelix-hero-title">
+        <div className="atelix-hero__copy">
+          <p className="atelix-hero__promise">
+            <span /> The canvas for teams that think together
+          </p>
+          <h1 id="atelix-hero-title">Turn big ideas into clear next steps.</h1>
+          <p className="atelix-hero__description">
+            Boardy is the fast, flexible workspace for brainstorming, mapping,
+            and making decisions—together, in real time.
+          </p>
+          <a className="atelix-button atelix-button-primary" href={primaryPath}>
+            {primaryLabel}
+            <LandingIcon name="arrow" />
+          </a>
+        </div>
+        <div className="atelix-hero__art" aria-label="Boardy workspace preview">
+          <BoardArtwork variant="hero" />
+        </div>
+      </section>
+
+      <section
+        className="atelix-product-section"
+        id="product"
+        aria-labelledby="product-title"
+        data-landing-reveal
+      >
+        <h2 id="product-title">
+          A familiar whiteboard, reimagined for focused teamwork and live
+          collaboration
+        </h2>
+        <div className="atelix-product-stage">
+          <BoardArtwork variant="feature" />
+        </div>
+      </section>
+
+      <section
+        className="atelix-benefits"
+        id="solutions"
+        aria-labelledby="benefits-title"
+        data-landing-reveal
+      >
+        <h2 id="benefits-title">
+          Everything your team needs to find the signal.
+        </h2>
+        <div className="atelix-benefit-grid">
+          <article>
+            <span className="atelix-benefit-icon">
+              <LandingIcon name="collaborate" />
+            </span>
+            <h3>Live collaboration</h3>
+            <p>
+              See cursors, comments, and ideas arrive in real time—without
+              losing your own train of thought.
+            </p>
+            <a href="#product">
+              Learn more <LandingIcon name="arrow" />
+            </a>
+          </article>
+          <article>
+            <span className="atelix-benefit-icon">
+              <LandingIcon name="organize" />
+            </span>
+            <h3>Ideas, organized</h3>
+            <p>
+              Turn clusters of notes into themes and action items with one
+              beautifully simple workflow.
+            </p>
+            <a href="#product">
+              Learn more <LandingIcon name="arrow" />
+            </a>
+          </article>
+          <article id="resources">
+            <span className="atelix-benefit-icon">
+              <LandingIcon name="chat" />
+            </span>
+            <h3>Feedback in context</h3>
+            <p>
+              Keep decisions next to the work with mentions, threads, and
+              lightweight reactions.
+            </p>
+            <a href="#product">
+              Learn more <LandingIcon name="arrow" />
+            </a>
+          </article>
+        </div>
+      </section>
+
+      <section
+        className="atelix-pricing"
+        id="pricing"
+        aria-labelledby="pricing-title"
+        data-landing-reveal
+      >
+        <h2 id="pricing-title">Pick the plan that fits your flow.</h2>
+        <p>
+          All the essentials for visual thinking, with powerful upgrades when
+          your team needs more.
+        </p>
+        <div className="atelix-billing-toggle" aria-label="Pricing cadence">
+          <span>Monthly</span>
+          <span>
+            Annual <small>Save up to 44%</small>
+          </span>
+        </div>
+        <div className="atelix-pricing-grid">
+          <article className="atelix-plan atelix-plan--standard">
+            <h3>Standard</h3>
+            <p>Everything you need to create and collaborate.</p>
+            <div className="atelix-plan__price">
+              <strong>$3</strong>
+              <span>/ month</span>
+            </div>
+            <small>or $20 billed annually</small>
+            <a
+              className="atelix-button atelix-button-secondary"
+              href={primaryPath}
+            >
+              Sign up for Standard
+            </a>
+            <h4>Includes</h4>
+            <ul>
+              <li>Unlimited boards for focused work</li>
+              <li>Real-time collaboration</li>
+              <li>Comments and sharing</li>
+              <li>Secure Boardy workspace</li>
+            </ul>
+          </article>
+          <article className="atelix-plan atelix-plan--pro">
+            <span className="atelix-plan__badge">Most popular</span>
+            <h3>Pro</h3>
+            <p>Premium tools for ambitious teams and polished delivery.</p>
+            <div className="atelix-plan__price">
+              <strong>$6</strong>
+              <span>/ month</span>
+            </div>
+            <small>or $50 billed annually</small>
+            <a className="atelix-button" href={primaryPath}>
+              Sign up for Pro
+            </a>
+            <h4>Everything in Standard, plus</h4>
+            <ul>
+              <li>Advanced team workflows</li>
+              <li>Priority collaboration tools</li>
+              <li>Expanded workspace controls</li>
+              <li>Early access to new features</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <footer className="atelix-site-footer" data-landing-reveal>
+        <div>
+          <h2>Your next breakthrough starts on Boardy.</h2>
+          <p>
+            Bring your team, your half-formed ideas, and the work worth figuring
+            out together.
+          </p>
+        </div>
+        <a className="atelix-button" href={primaryPath}>
+          {primaryLabel} <LandingIcon name="arrow" />
         </a>
-      </nav>
-    </header>
-    <section className="atelix-hero" aria-labelledby="atelix-hero-title">
-      <div className="atelix-eyebrow">BOARDY WORKSPACE</div>
-      <h1 id="atelix-hero-title">Think clearly. Build together.</h1>
-      <p>
-        A focused, hand-drawn canvas for mapping ideas, aligning teams, and
-        turning early thinking into a shared plan.
-      </p>
-      <div className="atelix-hero-actions">
-        <a
-          className="atelix-button atelix-button-primary"
-          href={signedIn ? "/app" : "/signup"}
-        >
-          {signedIn ? "Open workspace" : "Get started"}
-        </a>
-        <a
-          className="atelix-button atelix-button-secondary"
-          href="#how-it-works"
-        >
-          See how it works
-        </a>
-      </div>
-    </section>
-    <section
-      className="atelix-proof-grid"
-      id="how-it-works"
-      aria-label="Workspace benefits"
-    >
-      <article>
-        <span>01</span>
-        <h2>Start with clarity</h2>
-        <p>Put the first idea on a canvas without setting up a project.</p>
-      </article>
-      <article>
-        <span>02</span>
-        <h2>Shape the thinking</h2>
-        <p>Use a flexible board that keeps the conversation visible.</p>
-      </article>
-      <article>
-        <span>03</span>
-        <h2>Move forward</h2>
-        <p>Keep a durable visual record of the decisions your team makes.</p>
-      </article>
-    </section>
-    <footer className="atelix-site-footer">Boardy, by Atelix.</footer>
-  </main>
-);
+      </footer>
+    </main>
+  );
+};
 
 const authCopy: Record<
   AuthMode,

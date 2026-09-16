@@ -1,11 +1,11 @@
 :root {
-  --atelix-ink: #102a43;
-  --atelix-muted: #52667a;
-  --atelix-blue: #1769e0;
-  --atelix-blue-dark: #0d47a1;
-  --atelix-blue-soft: #eaf2ff;
-  --atelix-line: #d9e4f2;
-  --atelix-surface: #f7faff;
+  --atelix-ink: #111827;
+  --atelix-muted: #667085;
+  --atelix-blue: #2f6ce5;
+  --atelix-blue-dark: #183269;
+  --atelix-blue-soft: #edf3ff;
+  --atelix-line: #dfe6f1;
+  --atelix-surface: #f7f9fd;
 }
 
 .atelix-page {
@@ -14,8 +14,7 @@
   min-height: 0;
   overflow: auto;
   color: var(--atelix-ink);
-  background: radial-gradient(circle at 85% 10%, #dbeaff 0, transparent 28%),
-    var(--atelix-surface);
+  background: var(--atelix-surface);
   font-family: Assistant, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
 }
@@ -28,7 +27,13 @@
 }
 
 .atelix-site-header {
-  padding: 28px clamp(24px, 6vw, 88px);
+  position: relative;
+  z-index: 20;
+  min-height: 76px;
+  padding: 0 max(32px, calc((100vw - 1280px) / 2));
+  border-bottom: 1px solid rgb(223 230 241 / 72%);
+  background: rgb(255 255 255 / 92%);
+  backdrop-filter: blur(16px);
 }
 .boardy-brand {
   display: inline-flex;
@@ -74,45 +79,124 @@
 .atelix-text-link:hover,
 .atelix-text-link:focus-visible {
   text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.atelix-site-nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(22px, 3vw, 42px);
+}
+.atelix-site-nav a {
+  color: #384357;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.atelix-site-nav a:hover,
+.atelix-site-nav a:focus-visible {
+  color: var(--atelix-blue);
+}
+.atelix-site-actions {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+.atelix-site-actions .atelix-button {
+  min-height: 40px;
+  padding-inline: 18px;
+}
+
+.atelix-landing-page {
+  --landing-scroll-progress: 0;
+  --landing-artwork-x: 0px;
+  --landing-artwork-y: 0px;
+  --landing-artwork-rotation: 0deg;
+  color: var(--atelix-ink);
+  background: #fff;
+  scroll-behavior: smooth;
+  scrollbar-color: #b8c6dc #f5f7fb;
+  scrollbar-width: thin;
+}
+.atelix-landing-page::selection {
+  color: #fff;
+  background: var(--atelix-blue);
 }
 .atelix-hero {
-  max-width: 840px;
-  padding: clamp(72px, 12vh, 148px) clamp(24px, 12vw, 180px) 96px;
+  position: relative;
+  display: grid;
+  min-height: min(720px, calc(100vh - 76px));
+  grid-template-columns: minmax(410px, 0.9fr) minmax(520px, 1.1fr);
+  align-items: center;
+  overflow: clip;
+  padding-left: max(32px, calc((100vw - 1280px) / 2));
+  background: radial-gradient(circle at 79% 28%, #fff 0 14%, transparent 42%),
+    linear-gradient(180deg, #fff 0%, #f2f7ff 100%);
 }
-.atelix-eyebrow {
-  color: var(--atelix-blue);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
+.atelix-hero__copy {
+  position: relative;
+  z-index: 5;
+  max-width: 610px;
+  padding: 88px 54px 104px 0;
+}
+.atelix-hero__promise {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 25px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  color: #315fb9;
+  background: #e8efff;
+  font-size: 13px;
+  font-weight: 700;
+}
+.atelix-hero__promise span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--atelix-blue);
+  box-shadow: 0 0 0 4px rgb(47 108 229 / 10%);
 }
 .atelix-hero h1 {
-  max-width: 760px;
-  margin: 16px 0 24px;
-  font-size: clamp(48px, 8vw, 92px);
-  line-height: 0.98;
-  letter-spacing: -0.065em;
-}
-.atelix-hero p {
-  max-width: 600px;
+  max-width: 620px;
   margin: 0;
-  color: var(--atelix-muted);
-  font-size: clamp(18px, 2vw, 24px);
-  line-height: 1.45;
+  font-size: clamp(54px, 5.15vw, 82px);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
 }
-.atelix-hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 36px;
+.atelix-hero__description {
+  max-width: 590px;
+  margin: 27px 0 32px;
+  color: var(--atelix-muted);
+  font-size: clamp(18px, 1.5vw, 22px);
+  line-height: 1.5;
+}
+.atelix-hero__copy > .atelix-button svg,
+.atelix-site-footer .atelix-button svg,
+.atelix-benefit-grid a svg {
+  width: 19px;
+  height: 19px;
+  margin-left: 10px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+.atelix-hero__art {
+  position: relative;
+  align-self: stretch;
+  min-width: 0;
 }
 .atelix-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: 48px;
-  padding: 0 20px;
+  padding: 0 22px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: 9px;
   font: inherit;
   font-weight: 800;
   text-decoration: none;
@@ -121,7 +205,7 @@
 .atelix-button-primary {
   color: #fff;
   background: var(--atelix-blue);
-  box-shadow: 0 10px 24px rgb(23 105 224 / 20%);
+  box-shadow: 0 12px 28px rgb(47 108 229 / 22%);
 }
 .atelix-button-primary:hover,
 .atelix-button-primary:focus-visible {
@@ -132,41 +216,282 @@
   background: #fff;
   border-color: var(--atelix-line);
 }
+.atelix-button {
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 180ms ease, box-shadow 180ms ease;
+}
+.atelix-button:hover {
+  transform: translateY(-2px);
+}
 .atelix-button:focus-visible,
 .atelix-board-logout:focus-visible,
 .atelix-auth-card input:focus-visible {
   outline: 3px solid #8dbbff;
   outline-offset: 3px;
 }
-.atelix-proof-grid {
+
+.atelix-product-section,
+.atelix-benefits,
+.atelix-pricing {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 104px 32px 0;
+}
+.atelix-product-section h2,
+.atelix-benefits > h2 {
+  max-width: 780px;
+  margin: 0 0 46px;
+  font-size: clamp(34px, 4vw, 54px);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+.atelix-product-stage {
+  position: relative;
+  height: min(690px, 60vw);
+  min-height: 520px;
+  overflow: hidden;
+  border: 1px solid #cfdaea;
+  border-radius: 20px;
+  background: #fbfcff;
+  box-shadow: 0 30px 70px rgb(24 50 105 / 10%);
+}
+
+.atelix-benefits {
+  padding-top: 96px;
+}
+.atelix-benefit-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  margin: 0 clamp(24px, 6vw, 88px);
   border: 1px solid var(--atelix-line);
-  background: var(--atelix-line);
+  border-radius: 16px;
+  overflow: hidden;
 }
-.atelix-proof-grid article {
-  padding: 28px;
-  background: rgb(255 255 255 / 80%);
+.atelix-benefit-grid article {
+  min-height: 280px;
+  padding: 40px 32px 34px;
+  background: #fff;
 }
-.atelix-proof-grid span {
+.atelix-benefit-grid article + article {
+  border-left: 1px solid var(--atelix-line);
+}
+.atelix-benefit-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 12px;
   color: var(--atelix-blue);
-  font-size: 13px;
-  font-weight: 800;
+  background: var(--atelix-blue-soft);
 }
-.atelix-proof-grid h2 {
-  margin: 34px 0 8px;
-  font-size: 20px;
+.atelix-benefit-icon svg {
+  width: 25px;
+  height: 25px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
 }
-.atelix-proof-grid p {
+.atelix-benefit-grid h3 {
+  margin: 28px 0 12px;
+  font-size: 22px;
+}
+.atelix-benefit-grid p {
+  min-height: 72px;
+  margin: 0 0 20px;
+  color: var(--atelix-muted);
+  line-height: 1.55;
+}
+.atelix-benefit-grid a {
+  display: inline-flex;
+  align-items: center;
+  color: var(--atelix-blue);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.atelix-benefit-grid a svg {
+  width: 14px;
+  height: 14px;
+  margin-left: 6px;
+}
+
+.atelix-pricing {
+  max-width: none;
+  margin-top: 112px;
+  padding: 96px max(32px, calc((100vw - 1120px) / 2)) 112px;
+  text-align: center;
+  background: #f4f7fd;
+}
+.atelix-pricing > h2 {
   margin: 0;
-  color: var(--atelix-muted);
-  line-height: 1.5;
+  font-size: clamp(38px, 4vw, 56px);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
 }
-.atelix-site-footer {
-  padding: 34px clamp(24px, 6vw, 88px);
+.atelix-pricing > p {
+  margin: 18px auto 30px;
   color: var(--atelix-muted);
+  font-size: 18px;
+}
+.atelix-billing-toggle {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 12px;
+  background: #e5eaf3;
+  color: #697386;
+  font-size: 13px;
+  font-weight: 700;
+}
+.atelix-billing-toggle span {
+  padding: 9px 14px;
+}
+.atelix-billing-toggle span:first-child {
+  border-radius: 9px;
+  color: var(--atelix-ink);
+  background: #fff;
+  box-shadow: 0 4px 12px rgb(17 24 39 / 8%);
+}
+.atelix-billing-toggle small {
+  margin-left: 6px;
+  color: var(--atelix-blue);
+}
+.atelix-pricing-grid {
+  display: grid;
+  max-width: 1040px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+  margin: 42px auto 0;
+  text-align: left;
+}
+.atelix-plan {
+  position: relative;
+  min-height: 510px;
+  padding: 38px;
+  border-radius: 16px;
+}
+.atelix-plan--standard {
+  border: 1px solid #cfd9e8;
+  background: #fff;
+}
+.atelix-plan--pro {
+  color: #fff;
+  background: var(--atelix-blue-dark);
+  box-shadow: 0 26px 60px rgb(24 50 105 / 22%);
+}
+.atelix-plan h3 {
+  margin: 0;
+  font-size: 26px;
+}
+.atelix-plan > p {
+  min-height: 42px;
+  margin: 8px 0 22px;
+  color: inherit;
+  opacity: 0.72;
+}
+.atelix-plan__price {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+}
+.atelix-plan__price strong {
+  font-size: 56px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+.atelix-plan__price span {
+  padding-bottom: 7px;
+}
+.atelix-plan > small {
+  display: block;
+  min-height: 48px;
+  padding-top: 10px;
+  color: inherit;
+  opacity: 0.72;
+}
+.atelix-plan > .atelix-button {
+  width: 100%;
+  margin: 12px 0 26px;
+}
+.atelix-plan--pro > .atelix-button {
+  color: var(--atelix-blue-dark);
+  background: #fff;
+}
+.atelix-plan h4 {
+  margin: 0 0 13px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+.atelix-plan ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.atelix-plan li::before {
+  display: inline-block;
+  width: 8px;
+  height: 4px;
+  margin: 0 12px 3px 2px;
+  border-bottom: 2px solid var(--atelix-blue);
+  border-left: 2px solid var(--atelix-blue);
+  content: "";
+  transform: rotate(-45deg);
+}
+.atelix-plan--pro li::before {
+  border-color: #8fb3ff;
+}
+.atelix-plan__badge {
+  position: absolute;
+  top: 32px;
+  right: 32px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: var(--atelix-blue);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.atelix-site-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 48px;
+  padding: 70px max(32px, calc((100vw - 1120px) / 2));
+  color: #fff;
+  background: #183269;
+}
+.atelix-site-footer h2 {
+  margin: 0;
+  font-size: clamp(30px, 3.3vw, 48px);
+  letter-spacing: -0.035em;
+}
+.atelix-site-footer p {
+  max-width: 640px;
+  margin: 12px 0 0;
+  color: #c9d7f3;
+  font-size: 17px;
+}
+.atelix-site-footer .atelix-button {
+  flex: none;
+  color: var(--atelix-blue-dark);
+  background: #fff;
+}
+
+[data-landing-visible="pending"] {
+  opacity: 0.001;
+  transform: translateY(28px);
+  transition: opacity 620ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-landing-visible="true"] {
+  opacity: 1;
+  transform: translateY(0);
 }
 .atelix-auth-page {
   display: grid;
@@ -344,16 +669,107 @@
 }
 
 @media (max-width: 720px) {
+  .atelix-site-header {
+    min-height: 66px;
+    padding: 0 20px;
+  }
+  .atelix-site-nav {
+    display: none;
+  }
+  .atelix-site-actions {
+    gap: 12px;
+  }
+  .atelix-site-actions .atelix-text-link {
+    display: none;
+  }
   .boardy-brand__byline img {
     width: 56px;
   }
   .atelix-hero {
-    padding-top: 64px;
+    display: block;
+    min-height: 930px;
+    padding: 0 20px;
   }
-  .atelix-proof-grid {
+  .atelix-hero__copy {
+    padding: 70px 0 48px;
+  }
+  .atelix-hero h1 {
+    font-size: clamp(48px, 14vw, 68px);
+  }
+  .atelix-hero__description {
+    font-size: 18px;
+  }
+  .atelix-hero__art {
+    height: 360px;
+  }
+  .atelix-product-section,
+  .atelix-benefits {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+  .atelix-product-stage {
+    height: 390px;
+    min-height: 0;
+    border-radius: 14px;
+  }
+  .atelix-benefit-grid,
+  .atelix-pricing-grid {
     grid-template-columns: 1fr;
+  }
+  .atelix-benefit-grid article + article {
+    border-top: 1px solid var(--atelix-line);
+    border-left: 0;
+  }
+  .atelix-pricing {
+    margin-top: 80px;
+    padding: 76px 20px 80px;
+  }
+  .atelix-billing-toggle small {
+    display: none;
+  }
+  .atelix-plan {
+    min-height: auto;
+    padding: 30px 24px;
+  }
+  .atelix-site-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 58px 20px;
   }
   .atelix-auth-card {
     padding: 28px 22px;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 1080px) {
+  .atelix-site-header {
+    padding-inline: 28px;
+  }
+  .atelix-site-nav {
+    gap: 18px;
+  }
+  .atelix-hero {
+    grid-template-columns: minmax(360px, 0.82fr) minmax(430px, 1.18fr);
+    padding-left: 32px;
+  }
+  .atelix-hero h1 {
+    font-size: 58px;
+  }
+  .atelix-hero__copy {
+    padding-right: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atelix-landing-page {
+    scroll-behavior: auto;
+  }
+  .atelix-button,
+  [data-landing-visible] {
+    transition-duration: 1ms;
+  }
+  [data-landing-visible="pending"] {
+    opacity: 1;
+    transform: none;
   }
 }
