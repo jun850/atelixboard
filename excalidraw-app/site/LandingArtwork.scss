@@ -65,7 +65,16 @@
   place-items: center;
   border: 1px solid #d9e3f0;
   border-radius: 9px;
-  font-size: 17px;
+}
+.board-feature-header__button svg,
+.board-feature-header__tools svg,
+.board-feature-header__right svg,
+.board-feature-options svg,
+.board-feature-thread__head svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
 }
 .board-feature-header__button--panel::before {
   width: 12px;
@@ -89,11 +98,7 @@
   place-items: center;
 }
 .board-feature-header__tools svg {
-  width: 16px;
-  height: 16px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.7;
+  stroke-width: 1.5;
 }
 .board-feature-header__tools .is-active,
 .board-feature-header__right .is-active {
