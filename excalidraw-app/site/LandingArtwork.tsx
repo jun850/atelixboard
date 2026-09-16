@@ -19,7 +19,6 @@ import {
   share,
   StrokeStyleDashedIcon,
   StrokeStyleDottedIcon,
-  StrokeStyleSolidIcon,
   StrokeWidthBaseIcon,
   StrokeWidthBoldIcon,
   StrokeWidthExtraBoldIcon,
@@ -211,64 +210,30 @@ const FeatureWorkspace = () => (
       <div className="board-feature-header__left">
         <span className="board-feature-header__button board-feature-header__button--panel" />
         <span className="board-feature-header__button board-feature-header__button--menu">
-          <HamburgerMenuIcon />
+          {HamburgerMenuIcon}
         </span>
         <strong>Boardy scene</strong>
       </div>
       <div className="board-feature-header__tools" aria-hidden="true">
-        <span>
-          <LockedIcon />
-        </span>
-        <span className="is-active">
-          <SelectionIcon />
-        </span>
-        <span>
-          <RectangleIcon />
-        </span>
-        <span>
-          <DiamondIcon />
-        </span>
-        <span>
-          <EllipseIcon />
-        </span>
-        <span>
-          <ArrowIcon />
-        </span>
-        <span>
-          <LineIcon />
-        </span>
-        <span>
-          <FreedrawIcon />
-        </span>
-        <span>
-          <TextIcon />
-        </span>
-        <span>
-          <ImageIcon />
-        </span>
-        <span>
-          <EraserIcon />
-        </span>
+        <span>{LockedIcon}</span>
+        <span className="is-active">{SelectionIcon}</span>
+        <span>{RectangleIcon}</span>
+        <span>{DiamondIcon}</span>
+        <span>{EllipseIcon}</span>
+        <span>{ArrowIcon}</span>
+        <span>{LineIcon}</span>
+        <span>{FreedrawIcon}</span>
+        <span>{TextIcon}</span>
+        <span>{ImageIcon}</span>
+        <span>{EraserIcon}</span>
       </div>
       <div className="board-feature-header__right">
-        <span>
-          <LibraryIcon />
-        </span>
-        <span>
-          <RectangleIcon />
-        </span>
-        <span>
-          <DiamondIcon />
-        </span>
-        <span className="is-active">
-          <EllipseIcon />
-        </span>
-        <span>
-          <EraserIcon />
-        </span>
-        <span>
-          <CloseIcon />
-        </span>
+        <span>{LibraryIcon}</span>
+        <span>{RectangleIcon}</span>
+        <span>{DiamondIcon}</span>
+        <span className="is-active">{EllipseIcon}</span>
+        <span>{EraserIcon}</span>
+        <span>{CloseIcon}</span>
       </div>
     </header>
     <div className="board-feature-canvas">
@@ -291,39 +256,21 @@ const FeatureWorkspace = () => (
         </div>
         <strong>Fill</strong>
         <div className="board-feature-options">
-          <i>
-            <FillSolidIcon />
-          </i>
-          <i className="is-active">
-            <FillHachureIcon />
-          </i>
-          <i>
-            <RectangleIcon />
-          </i>
+          <i>{FillSolidIcon}</i>
+          <i className="is-active">{FillHachureIcon}</i>
+          <i>{RectangleIcon}</i>
         </div>
         <strong>Stroke width</strong>
         <div className="board-feature-options">
-          <i>
-            <StrokeWidthBaseIcon />
-          </i>
-          <i className="is-active">
-            <StrokeWidthBoldIcon />
-          </i>
-          <i>
-            <StrokeWidthExtraBoldIcon />
-          </i>
+          <i>{StrokeWidthBaseIcon}</i>
+          <i className="is-active">{StrokeWidthBoldIcon}</i>
+          <i>{StrokeWidthExtraBoldIcon}</i>
         </div>
         <strong>Stroke style</strong>
         <div className="board-feature-options">
-          <i>
-            <StrokeStyleSolidIcon />
-          </i>
-          <i>
-            <StrokeStyleDottedIcon />
-          </i>
-          <i>
-            <StrokeStyleDashedIcon />
-          </i>
+          <i>{LineIcon}</i>
+          <i>{StrokeStyleDottedIcon}</i>
+          <i>{StrokeStyleDashedIcon}</i>
         </div>
         <strong>Opacity</strong>
         <div className="board-feature-slider">
@@ -331,13 +278,9 @@ const FeatureWorkspace = () => (
         </div>
         <strong className="board-feature-properties__actions">Actions</strong>
         <div className="board-feature-options">
-          <i>
-            <LibraryIcon />
-          </i>
-          <i>
-            <EraserIcon />
-          </i>
-          <i>{React.createElement(share)}</i>
+          <i>{LibraryIcon}</i>
+          <i>{EraserIcon}</i>
+          <i>{share}</i>
         </div>
       </aside>
       <aside className="board-feature-colors">
@@ -374,7 +317,7 @@ const FeatureWorkspace = () => (
         <div className="board-feature-thread__head">
           <span>‹　›</span>
           <span>
-            {React.createElement(share)} <EraserIcon /> <CloseIcon />
+            {share} {EraserIcon} {CloseIcon}
           </span>
         </div>
         <div className="board-feature-thread__entry">
