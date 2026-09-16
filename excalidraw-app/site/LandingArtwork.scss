@@ -7,6 +7,7 @@
   isolation: isolate;
 }
 .board-artwork--hero {
+  --landing-artwork-scale: clamp(0.78, calc((100vw - 680px) / 820), 1);
   position: absolute;
   top: 72px;
   left: 0;
@@ -17,7 +18,7 @@
   border-radius: 20px 0 0 20px;
   box-shadow: 0 30px 80px rgb(47 108 229 / 16%);
   transform: translate3d(var(--landing-artwork-x), var(--landing-artwork-y), 0)
-    rotate(var(--landing-artwork-rotation));
+    rotate(var(--landing-artwork-rotation)) scale(var(--landing-artwork-scale));
   transform-origin: 20% 30%;
 }
 .board-artwork--feature {
