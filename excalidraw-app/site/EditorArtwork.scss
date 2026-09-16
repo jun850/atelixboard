@@ -7,6 +7,10 @@
   border-radius: 20px;
   background: #fff;
 }
+.editor-art-shell .editor-art-frame {
+  // Let page scrolling pass through without reaching canvas zoom or tools.
+  pointer-events: none;
+}
 .editor-art-scene {
   position: absolute;
   inset: 0 auto auto 0;

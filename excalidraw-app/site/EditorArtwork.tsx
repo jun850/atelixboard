@@ -101,9 +101,17 @@ export const EditorArtwork = () => {
     return () => observer.disconnect();
   }, []);
   return (
-    <div className="editor-art-shell" ref={shellRef}>
+    <div
+      className="editor-art-shell"
+      ref={shellRef}
+      role="img"
+      aria-label="Boardy editor preview. Log in to create and edit boards."
+      onContextMenu={(event) => event.preventDefault()}
+    >
       <iframe
-        title="Interactive Boardy editor"
+        title="Boardy editor preview"
+        tabIndex={-1}
+        aria-hidden="true"
         className="editor-art-frame"
         style={{ transform: `scale(${scale})` }}
         onLoad={(event) => {
@@ -119,6 +127,9 @@ export const EditorArtwork = () => {
             "margin:0; width:1750px; height:1034px; overflow:hidden;";
           doc.body.style.cssText =
             "margin:0; width:1750px; height:1034px; overflow:hidden;";
+          // Keep the real editor's appearance without exposing an editable
+          // workspace. Inert also blocks keyboard focus inside this document.
+          doc.body.setAttribute("inert", "");
           setFrameDocument(doc);
         }}
       />
@@ -208,6 +219,8 @@ const EditorScene = ({ ownerDocument }: { ownerDocument: Document }) => {
           handleKeyboardGlobally={false}
           detectScroll={true}
           theme="light"
+          viewModeEnabled={false}
+          zenModeEnabled={false}
           initialData={{
             elements: scene,
             appState: {
