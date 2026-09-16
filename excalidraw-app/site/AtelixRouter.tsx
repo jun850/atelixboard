@@ -28,8 +28,8 @@ const BoardyBrand = () => (
   <a className="boardy-brand" href="/" aria-label="Boardy by Atelix home">
     <span className="boardy-brand__name">Boardy</span>
     <span className="boardy-brand__byline">
-      <span>By Atelix</span>
-      <img src="/android-chrome-192x192.png" alt="" width="192" height="192" />
+      <span>By</span>
+      <img src="/atelix-vertical.svg" alt="" width="1220" height="800" />
     </span>
   </a>
 );

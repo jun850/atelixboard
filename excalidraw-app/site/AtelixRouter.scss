@@ -58,7 +58,7 @@
 }
 .boardy-brand__byline img {
   display: block;
-  width: 18px;
+  width: 64px;
   height: auto;
 }
 .boardy-brand:focus-visible {
@@ -274,7 +274,7 @@
   font-size: 9px;
 }
 .atelix-board-header .boardy-brand__byline img {
-  width: 15px;
+  width: 48px;
 }
 .atelix-board-account {
   display: flex;
@@ -339,13 +339,13 @@
 }
 .boardy-editor-brand__byline img {
   display: block;
-  width: 22px;
+  width: 92px;
   height: auto;
 }
 
 @media (max-width: 720px) {
   .boardy-brand__byline img {
-    width: 16px;
+    width: 56px;
   }
   .atelix-hero {
     padding-top: 64px;

@@ -29,12 +29,12 @@ export const AppWelcomeScreen: React.FC<{
           <span className="boardy-editor-brand">
             <span className="boardy-editor-brand__name">Boardy</span>
             <span className="boardy-editor-brand__byline">
-              By Atelix
+              By
               <img
-                src="/android-chrome-192x192.png"
+                src="/atelix-vertical.svg"
                 alt=""
-                width="192"
-                height="192"
+                width="1220"
+                height="800"
               />
             </span>
           </span>
