@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import {
   Excalidraw,
   convertToExcalidrawElements,
@@ -87,13 +86,15 @@ const Glyph = ({ kind }: { kind: string }) => (
 export const EditorArtwork = () => {
   const shellRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
-  const [frameDocument, setFrameDocument] = useState<Document | null>(null);
+  const [ownerDocument, setOwnerDocument] = useState<Document | null>(null);
   useEffect(() => {
     const node = shellRef.current;
-    const ownerWindow = node?.ownerDocument.defaultView;
+    const ownerDocument = node?.ownerDocument;
+    const ownerWindow = ownerDocument?.defaultView;
     if (!node || !ownerWindow) {
       return;
     }
+    setOwnerDocument(ownerDocument);
     const resize = () => setScale(node.clientWidth / 1750);
     resize();
     const observer = new ownerWindow.ResizeObserver(resize);
@@ -108,37 +109,13 @@ export const EditorArtwork = () => {
       aria-label="Boardy editor preview. Log in to create and edit boards."
       onContextMenu={(event) => event.preventDefault()}
     >
-      <iframe
-        title="Boardy editor preview"
-        tabIndex={-1}
-        aria-hidden="true"
+      <div
         className="editor-art-frame"
-        srcDoc="<!doctype html><html><head></head><body></body></html>"
         style={{ transform: `scale(${scale})` }}
-        onLoad={(event) => {
-          const frame = event.currentTarget;
-          const doc = frame.contentDocument;
-          if (!doc) {
-            return;
-          }
-          frame.ownerDocument
-            .querySelectorAll('style, link[rel="stylesheet"]')
-            .forEach((style) => doc.head.appendChild(style.cloneNode(true)));
-          doc.documentElement.style.cssText =
-            "margin:0; width:1750px; height:1034px; overflow:hidden;";
-          doc.body.style.cssText =
-            "margin:0; width:1750px; height:1034px; overflow:hidden;";
-          // Keep the real editor's appearance without exposing an editable
-          // workspace. Inert also blocks keyboard focus inside this document.
-          doc.body.setAttribute("inert", "");
-          setFrameDocument(doc);
-        }}
-      />
-      {frameDocument &&
-        createPortal(
-          <EditorScene ownerDocument={frameDocument} />,
-          frameDocument.body,
-        )}
+        inert={true}
+      >
+        {ownerDocument && <EditorScene ownerDocument={ownerDocument} />}
+      </div>
     </div>
   );
 };
