@@ -818,6 +818,173 @@
   font-size: 9px;
   line-height: 35px;
 }
+
+/* At compact widths the editor preview becomes a focused canvas, rather than
+ * a cropped desktop application. The side rails are supporting detail on
+ * desktop, not information a visitor needs to parse in a small illustration. */
+@media (max-width: 1080px) {
+  .board-feature-properties,
+  .board-feature-colors,
+  .board-feature-activity,
+  .board-feature-zoom,
+  .board-feature-header__right {
+    display: none;
+  }
+
+  .board-feature-selection {
+    top: 24%;
+    left: 17%;
+    width: 51%;
+    height: 54%;
+  }
+
+  .board-feature-person.is-alex {
+    top: 67%;
+    left: 11%;
+  }
+
+  .board-feature-person.is-maya {
+    top: 18%;
+    left: 20%;
+  }
+
+  .board-feature-person.is-jules {
+    top: 39%;
+    left: 56%;
+  }
+
+  .board-feature-cursor {
+    top: 48%;
+    left: 49%;
+  }
+
+  .board-feature-thread {
+    top: 43%;
+    left: 52%;
+    width: 34%;
+  }
+}
+
+@media (max-width: 720px) {
+  .board-artwork--hero {
+    top: 0;
+    width: 100%;
+    height: 330px;
+    border-radius: 16px;
+  }
+
+  .board-artwork--hero .board-art-comments {
+    display: none;
+  }
+
+  .board-artwork--hero .board-art-toolbar {
+    top: 58px;
+  }
+
+  .board-artwork--hero .board-art-workarea {
+    box-sizing: border-box;
+    top: 108px;
+    left: 24px;
+    width: calc(100% - 48px);
+    height: 198px;
+    padding: 20px;
+  }
+
+  .board-artwork--hero .board-art-workarea h3 {
+    margin-bottom: 13px;
+    font-size: 16px;
+  }
+
+  .board-artwork--hero .board-art-stickies {
+    gap: 10px;
+  }
+
+  .board-artwork--hero .board-art-stickies span {
+    min-height: 43px;
+    padding: 9px 7px;
+    font-size: 8px;
+  }
+
+  .board-feature-tip,
+  .board-feature-header__right {
+    display: none;
+  }
+
+  .board-feature-thread {
+    top: 43%;
+    right: 8%;
+    left: auto;
+    display: block;
+    width: 54%;
+  }
+
+  .board-feature-header__left {
+    gap: 7px;
+    padding-left: 10px;
+    font-size: 10px;
+  }
+
+  .board-feature-header__button {
+    width: 27px;
+    height: 27px;
+  }
+
+  .board-feature-header__tools {
+    right: 9px;
+    left: auto;
+    gap: 5px;
+    height: 32px;
+    padding: 0 7px;
+    transform: none;
+  }
+
+  .board-feature-header__tools > span {
+    width: 20px;
+    height: 20px;
+  }
+
+  .board-feature-header__tools > span:nth-child(1),
+  .board-feature-header__tools > span:nth-child(n + 6) {
+    display: none;
+  }
+
+  .board-feature-header__tools svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .board-feature-selection {
+    top: 25%;
+    left: 12%;
+    width: 76%;
+    height: 58%;
+  }
+
+  .board-feature-person {
+    transform: scale(0.85);
+  }
+
+  .board-feature-person.is-alex {
+    top: 72%;
+    left: 7%;
+  }
+
+  .board-feature-person.is-maya {
+    top: 17%;
+    left: 15%;
+  }
+
+  .board-feature-person.is-jules {
+    top: 40%;
+    left: 70%;
+  }
+
+  .board-feature-cursor {
+    top: 57%;
+    left: 64%;
+    transform: scale(0.8);
+  }
+}
 @keyframes board-thread-settle {
   0%,
   78%,
