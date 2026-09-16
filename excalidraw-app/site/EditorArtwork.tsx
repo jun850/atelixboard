@@ -254,6 +254,9 @@ const EditorScene = ({ ownerDocument }: { ownerDocument: Document }) => {
             })
           }
           UIOptions={{
+            // This is a fixed desktop composition scaled as a single piece of
+            // artwork; don't let the host phone/tablet viewport reflow the UI.
+            getFormFactor: () => "desktop",
             canvasActions: {
               loadScene: false,
               saveToActiveFile: false,
