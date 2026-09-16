@@ -205,7 +205,6 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
             </a>
             <h4>Includes</h4>
             <ul>
-              <li>Unlimited boards for focused work</li>
               <li>Real-time collaboration</li>
               <li>Comments and sharing</li>
               <li>Secure Boardy workspace</li>
@@ -229,6 +228,7 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
             </a>
             <h4>Everything in Standard, plus</h4>
             <ul>
+              <li>Unlimited boards for focused work</li>
               <li>Advanced team workflows</li>
               <li>Priority collaboration tools</li>
               <li>Expanded workspace controls</li>
