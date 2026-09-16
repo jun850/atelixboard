@@ -638,13 +638,15 @@
 }
 
 .board-feature-colors__grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 7px;
   margin-bottom: 13px;
 }
 
 .board-feature-colors__grid i {
-  width: 21px;
-  height: 21px;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
   border-radius: 4px;
 }
 
