@@ -7,7 +7,7 @@
   isolation: isolate;
 }
 .board-artwork--hero {
-  --landing-artwork-scale: clamp(0.78, calc((100vw - 680px) / 820), 1);
+  --landing-artwork-scale: clamp(0.78, calc((100vw - 720px) / 830), 1);
   position: absolute;
   top: 72px;
   left: 0;
