@@ -465,6 +465,341 @@
   border-radius: 0 12px 0 0;
   background: #f7f9fc;
 }
+
+/* The product stage is a direct reconstruction of the Pen canvas (1296 × 650).
+ * Keep it in its native proportions instead of stretching the editor into the
+ * landing stage: that was what made the toolbar and comments rail drift apart. */
+.board-artwork--feature {
+  display: grid;
+  place-items: center;
+  background: #fcfdfe;
+}
+
+.board-feature-workspace {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  max-height: 100%;
+  aspect-ratio: 1296 / 650;
+  overflow: hidden;
+  color: #334155;
+  background: #fcfdfe;
+  font-family: Assistant, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+.board-feature-workspace *,
+.board-feature-workspace *::before,
+.board-feature-workspace *::after {
+  box-sizing: border-box;
+}
+
+.board-feature-header {
+  position: relative;
+  height: 8.923%;
+  border-color: #e2e8f0;
+}
+
+.board-feature-header__left {
+  min-width: 0;
+  gap: 11px;
+  padding-left: 14px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.board-feature-header__right {
+  gap: 8px;
+  padding-right: 14px;
+}
+
+.board-feature-header__button {
+  width: 31px;
+  height: 31px;
+  border-radius: 7px;
+  border-color: #dce6f3;
+}
+
+.board-feature-header__tools {
+  position: absolute;
+  left: 50%;
+  gap: 8px;
+  height: 40px;
+  padding: 0 10px;
+  border-color: #e2e8f0;
+  border-radius: 9px;
+  box-shadow: 0 4px 10px rgb(15 23 42 / 7%);
+  transform: translateX(-50%);
+}
+
+.board-feature-header__tools > span {
+  width: 25px;
+  height: 25px;
+  border-radius: 5px;
+}
+
+.board-feature-header__button svg,
+.board-feature-header__tools svg,
+.board-feature-header__right svg,
+.board-feature-options svg,
+.board-feature-thread__head svg {
+  width: 14px;
+  height: 14px;
+}
+
+.board-feature-canvas {
+  height: 91.077%;
+  background: #fcfdfe;
+}
+
+.board-feature-properties {
+  top: 14px;
+  bottom: auto;
+  left: 10px;
+  width: 145px;
+  height: 518px;
+  padding: 13px;
+  border-color: #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 22px rgb(29 78 216 / 6%);
+}
+
+.board-feature-properties strong,
+.board-feature-colors strong {
+  margin-bottom: 8px;
+  color: #334155;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.board-feature-swatches {
+  gap: 6px;
+  margin-bottom: 13px;
+}
+
+.board-feature-swatches i {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+.board-feature-options {
+  gap: 8px;
+  margin-bottom: 13px;
+}
+
+.board-feature-options i {
+  width: 34px;
+  height: 34px;
+  border-color: #dce6f3;
+  border-radius: 7px;
+}
+
+.board-feature-slider {
+  margin: 18px 0 17px;
+}
+
+.board-feature-colors {
+  top: 30px;
+  left: 165px;
+  width: 145px;
+  padding: 14px;
+  border-color: #e2e8f0;
+  border-radius: 9px;
+  box-shadow: 0 12px 28px rgb(29 78 216 / 10%);
+}
+
+.board-feature-colors__recent {
+  gap: 8px;
+  margin: 11px 0 14px;
+}
+
+.board-feature-colors__recent i {
+  width: 28px;
+  height: 28px;
+}
+
+.board-feature-colors__grid {
+  gap: 7px;
+  margin-bottom: 13px;
+}
+
+.board-feature-colors__grid i {
+  width: 21px;
+  height: 21px;
+  border-radius: 4px;
+}
+
+.board-feature-colors input {
+  margin-top: 5px;
+  padding: 8px;
+  border-color: #dce6f3;
+  border-radius: 6px;
+}
+
+.board-feature-tip {
+  top: 3px;
+  left: 400px;
+  color: #64748b;
+  font-size: 9px;
+}
+
+.board-feature-selection {
+  top: 134px;
+  left: 404px;
+  width: 330px;
+  height: 258px;
+  border-width: 2px;
+  background: linear-gradient(
+    136deg,
+    transparent 48%,
+    #e8f1ff 49%,
+    transparent 51%
+  );
+}
+
+.board-feature-person.is-alex {
+  top: 314px;
+  left: 337px;
+}
+
+.board-feature-person.is-maya {
+  top: 72px;
+  left: 420px;
+}
+
+.board-feature-person.is-jules {
+  top: 187px;
+  left: 598px;
+}
+
+.board-feature-cursor {
+  top: 211px;
+  left: 565px;
+}
+
+.board-feature-thread {
+  top: 197px;
+  left: 630px;
+  width: 252px;
+  border-color: #e2e8f0;
+  border-radius: 11px;
+  box-shadow: 0 16px 32px rgb(29 78 216 / 12%);
+}
+
+.board-feature-thread__head {
+  height: 43px;
+  padding: 0 12px;
+  align-items: center;
+  border-color: #e2e8f0;
+  font-size: 13px;
+}
+
+.board-feature-thread__entry {
+  gap: 5px;
+  padding: 9px 12px;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.board-feature-thread__entry .board-art-dot {
+  width: 14px;
+  height: 14px;
+  margin-top: 0;
+}
+
+.board-feature-thread__entry p {
+  color: #475569;
+  font-size: 8px;
+  line-height: 11px;
+}
+
+.board-feature-thread__entry small {
+  margin-left: 3px;
+}
+
+.board-feature-thread__reply {
+  height: 43px;
+  gap: 6px;
+  margin-top: 0;
+  padding: 4px 9px;
+  border: 0;
+  font-size: 8px;
+}
+
+.board-feature-thread__reply .board-art-dot {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+}
+
+.board-feature-activity {
+  width: 236px;
+  min-width: 0;
+  border-color: #e2e8f0;
+}
+
+.board-feature-search {
+  height: 29px;
+  margin: 9px 10px;
+  padding: 0 11px;
+  border-radius: 8px;
+  color: #64748b;
+  background: #f1f5f9;
+  font-size: 10px;
+  line-height: 29px;
+}
+
+.board-feature-filter {
+  height: 37px;
+  padding: 0 11px;
+  border: 0;
+  color: #334155;
+  font-size: 9px;
+}
+
+.board-feature-activity__item {
+  gap: 9px;
+  min-height: 0;
+  height: 112px;
+  padding: 12px 11px;
+  border-color: #e2e8f0;
+}
+
+.board-feature-activity__avatar {
+  width: 20px;
+  height: 20px;
+}
+
+.board-feature-activity__item p {
+  color: #64748b;
+  font-size: 9px;
+  line-height: 13px;
+}
+
+.board-feature-activity__item strong,
+.board-feature-activity__item small {
+  color: #334155;
+  font-size: 9px;
+}
+
+.board-feature-activity__item em {
+  margin-top: 9px;
+  color: #64748b;
+}
+
+.board-feature-zoom {
+  bottom: 15px;
+  left: 10px;
+  height: 35px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  background: #f1f5f9;
+  font-size: 9px;
+  line-height: 35px;
+}
 @keyframes board-thread-settle {
   0%,
   78%,
