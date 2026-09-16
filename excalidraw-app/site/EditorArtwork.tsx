@@ -113,6 +113,7 @@ export const EditorArtwork = () => {
         tabIndex={-1}
         aria-hidden="true"
         className="editor-art-frame"
+        srcDoc="<!doctype html><html><head></head><body></body></html>"
         style={{ transform: `scale(${scale})` }}
         onLoad={(event) => {
           const frame = event.currentTarget;
