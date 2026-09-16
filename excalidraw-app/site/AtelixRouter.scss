@@ -114,6 +114,7 @@
   --landing-artwork-rotation: 0deg;
   color: var(--atelix-ink);
   background: #fff;
+  overflow-x: hidden;
   scroll-behavior: smooth;
   scrollbar-color: #b8c6dc #f5f7fb;
   scrollbar-width: thin;
@@ -128,7 +129,7 @@
   min-height: min(720px, calc(100vh - 76px));
   grid-template-columns: minmax(410px, 0.9fr) minmax(520px, 1.1fr);
   align-items: center;
-  overflow: clip;
+  overflow: hidden;
   padding-left: max(32px, calc((100vw - 1280px) / 2));
   background: radial-gradient(circle at 79% 28%, #fff 0 14%, transparent 42%),
     linear-gradient(180deg, #fff 0%, #f2f7ff 100%);
@@ -188,6 +189,7 @@
   position: relative;
   align-self: stretch;
   min-width: 0;
+  overflow: hidden;
 }
 .atelix-button {
   display: inline-flex;
