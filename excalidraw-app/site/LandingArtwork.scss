@@ -515,6 +515,22 @@
   padding-right: 14px;
 }
 
+.board-feature-header__right > span {
+  display: grid;
+  width: 31px;
+  height: 31px;
+  place-items: center;
+  border: 1px solid #dce6f3;
+  border-radius: 7px;
+  color: #334155;
+}
+
+.board-feature-header__right > span.is-active {
+  border-color: #2563eb;
+  color: #fff;
+  background: #2563eb;
+}
+
 .board-feature-header__button {
   width: 31px;
   height: 31px;

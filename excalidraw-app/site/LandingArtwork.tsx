@@ -14,9 +14,12 @@ import {
   LibraryIcon,
   LineIcon,
   LockedIcon,
+  messageCircleIcon,
+  presentationIcon,
   RectangleIcon,
   SelectionIcon,
   share,
+  sidebarRightIcon,
   StrokeStyleDashedIcon,
   StrokeStyleDottedIcon,
   StrokeWidthBaseIcon,
@@ -228,11 +231,11 @@ const FeatureWorkspace = () => (
         <span>{EraserIcon}</span>
       </div>
       <div className="board-feature-header__right">
+        <span>{share}</span>
+        <span>{sidebarRightIcon}</span>
         <span>{LibraryIcon}</span>
-        <span>{RectangleIcon}</span>
-        <span>{DiamondIcon}</span>
-        <span className="is-active">{EllipseIcon}</span>
-        <span>{EraserIcon}</span>
+        <span className="is-active">{messageCircleIcon}</span>
+        <span>{presentationIcon}</span>
         <span>{CloseIcon}</span>
       </div>
     </header>
