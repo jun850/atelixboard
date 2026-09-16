@@ -179,105 +179,231 @@ const StickyBoard = () => (
   </div>
 );
 
-const ShapeBoard = () => (
-  <div className="board-art-shape-area">
-    <div className="board-art-selected-shape" />
-    <div className="board-art-diagonal" />
-    <Collaborator className="is-alex" label="A" />
-    <Collaborator className="is-jules" label="J" />
-    <Pointer className="is-tony" label="Tony" />
-    <div className="board-art-thread">
-      <div className="board-art-thread__actions">
-        ‹ &nbsp; › <span>○ &nbsp; ↗ &nbsp; ×</span>
+const FeatureWorkspace = () => (
+  <div className="board-feature-workspace">
+    <header className="board-feature-header">
+      <div className="board-feature-header__left">
+        <span className="board-feature-header__button board-feature-header__button--panel" />
+        <span className="board-feature-header__button board-feature-header__button--menu">
+          ☰
+        </span>
+        <strong>Boardy scene</strong>
       </div>
-      <p>
-        <span className="board-art-dot is-blue" />
-        <strong>Butterbean</strong>
-        <small>a day ago</small>
-      </p>
-      <p>
-        Boardy’s hand-drawn charm gives ideas an organic, welcoming quality.
-      </p>
-      <p>
-        <span className="board-art-dot is-sky" />
-        <strong>Tony</strong>
-        <small>30 min ago</small>
-      </p>
-      <p>The blue palette feels focused, clear, and instantly recognizable.</p>
-      <div className="board-art-thread__reply">Reply, @mention someone…</div>
+      <div className="board-feature-header__tools" aria-hidden="true">
+        <span>♙</span>
+        <span className="is-active">
+          <LandingIcon name="pointer" />
+        </span>
+        <span>□</span>
+        <span>◇</span>
+        <span>○</span>
+        <span>→</span>
+        <span>−</span>
+        <span>╱</span>
+        <span>T</span>
+        <span>▧</span>
+        <span>◇</span>
+        <span>♙</span>
+      </div>
+      <div className="board-feature-header__right">
+        <span>⌯</span>
+        <span>▣</span>
+        <span>▱</span>
+        <span className="is-active">◯</span>
+        <span>▱</span>
+        <span>×</span>
+      </div>
+    </header>
+    <div className="board-feature-canvas">
+      <aside className="board-feature-properties">
+        <strong>Stroke</strong>
+        <div className="board-feature-swatches">
+          <i />
+          <i />
+          <i />
+          <i />
+          <i />
+        </div>
+        <strong>Background</strong>
+        <div className="board-feature-swatches is-background">
+          <i />
+          <i />
+          <i />
+          <i className="is-selected" />
+          <i />
+        </div>
+        <strong>Fill</strong>
+        <div className="board-feature-options">
+          <i>◌</i>
+          <i className="is-active">▦</i>
+          <i>□</i>
+        </div>
+        <strong>Stroke width</strong>
+        <div className="board-feature-options">
+          <i>—</i>
+          <i className="is-active">━</i>
+          <i>━</i>
+        </div>
+        <strong>Stroke style</strong>
+        <div className="board-feature-options">
+          <i>—</i>
+          <i>···</i>
+          <i>---</i>
+        </div>
+        <strong>Opacity</strong>
+        <div className="board-feature-slider">
+          <i />
+        </div>
+        <strong className="board-feature-properties__actions">Actions</strong>
+        <div className="board-feature-options">
+          <i>▱</i>
+          <i>♜</i>
+          <i>⌁</i>
+        </div>
+      </aside>
+      <aside className="board-feature-colors">
+        <strong>Most used custom colors</strong>
+        <div className="board-feature-colors__recent">
+          <i />
+          <i />
+        </div>
+        <strong>Colors</strong>
+        <div className="board-feature-colors__grid">
+          {Array.from({ length: 20 }, (_, index) => (
+            <i key={index} />
+          ))}
+        </div>
+        <label>
+          HEX code
+          <input value="# 2563EB" readOnly />
+        </label>
+      </aside>
+      <div className="board-feature-tip">
+        To move canvas, hold mouse wheel or spacebar while dragging
+      </div>
+      <div className="board-feature-selection">
+        <i className="is-top" />
+        <i className="is-left" />
+        <i className="is-right" />
+        <i className="is-bottom" />
+      </div>
+      <Collaborator className="board-feature-person is-alex" label="A" />
+      <Collaborator className="board-feature-person is-maya" label="M" />
+      <Collaborator className="board-feature-person is-jules" label="J" />
+      <Pointer className="board-feature-cursor" label="" />
+      <div className="board-feature-thread">
+        <div className="board-feature-thread__head">
+          <span>‹　›</span>
+          <span>◉　⌁　♜　×</span>
+        </div>
+        <div className="board-feature-thread__entry">
+          <span className="board-art-dot is-blue" />
+          <p>
+            <strong>Butterbean</strong>
+            <small>· a day ago</small>
+            <br />
+            Boardy’s hand-drawn charm gives ideas an organic, welcoming quality.
+          </p>
+        </div>
+        <div className="board-feature-thread__entry">
+          <span className="board-art-dot is-sky" />
+          <p>
+            <strong>Tony</strong>
+            <small>· 30 min ago</small>
+            <br />
+            The blue palette feels focused, clear, and true to Boardy’s
+            identity.
+          </p>
+        </div>
+        <div className="board-feature-thread__entry">
+          <span className="board-art-dot is-amber" />
+          <p>
+            <strong>Smokin</strong>
+            <small>· 5 min ago</small>
+            <br />
+            Boardy keeps the story visible while everyone moves the work
+            forward.
+          </p>
+        </div>
+        <div className="board-feature-thread__reply">
+          <span className="board-art-dot is-amber" />
+          Reply, @mention someone… <b>↑</b>
+        </div>
+      </div>
+      <aside className="board-feature-activity">
+        <div className="board-feature-search">⌕　Quick search</div>
+        <div className="board-feature-filter">
+          ☷ <span>✓ Mark all as read</span>
+        </div>
+        {[
+          [
+            "TheChief",
+            "Boardy’s hand-drawn feeling enhances visual storytelling and guides the group through a cohesive experience.",
+          ],
+          [
+            "milos",
+            "Boardy’s playful details invite people to interact and foster deeper connection.",
+          ],
+          [
+            "dwelle",
+            "The blue palette is focused, clear, and instantly recognizable.",
+          ],
+          [
+            "Smokin",
+            "The interface feels professional, warm, and easy to understand.",
+          ],
+        ].map(([name, message], index) => (
+          <div className="board-feature-activity__item" key={name}>
+            <span className={`board-feature-activity__avatar is-${index}`} />
+            <p>
+              <strong>{name}</strong>
+              <small>· a moment ago</small>
+              <br />
+              {message}
+              <em>3 replies</em>
+            </p>
+          </div>
+        ))}
+      </aside>
+      <div className="board-feature-zoom">
+        +　 <b>100%</b>　−
+      </div>
     </div>
   </div>
 );
 
-const ColorPanel = () => (
-  <aside className="board-art-palette">
-    <strong>Stroke</strong>
-    <div className="board-art-swatches is-row">
-      <i className="is-ink" />
-      <i className="is-red" />
-      <i className="is-green" />
-      <i className="is-blue" />
-      <i className="is-orange" />
-    </div>
-    <strong>Background</strong>
-    <div className="board-art-swatches is-row is-pale">
-      <i />
-      <i />
-      <i />
-      <i className="is-selected" />
-      <i />
-    </div>
-    <strong>Fill</strong>
-    <div className="board-art-segmented">
-      <i />
-      <i className="is-active" />
-      <i />
-    </div>
-    <strong>Stroke width</strong>
-    <div className="board-art-segmented">
-      <i />
-      <i className="is-active" />
-      <i />
-    </div>
-    <strong>Opacity</strong>
-    <div className="board-art-opacity">
-      <i />
-    </div>
-  </aside>
-);
+export const BoardArtwork = ({ variant }: { variant: "hero" | "feature" }) => {
+  if (variant === "feature") {
+    return (
+      <div className="board-artwork board-artwork--feature" aria-hidden="true">
+        <FeatureWorkspace />
+      </div>
+    );
+  }
 
-export const BoardArtwork = ({ variant }: { variant: "hero" | "feature" }) => (
-  <div className={`board-artwork board-artwork--${variant}`} aria-hidden="true">
-    <div className="board-artwork__chrome">
-      <div className="board-artwork__title">
-        <span className="board-artwork__appmark">
-          <LandingIcon name="organize" />
-        </span>
-        <strong>
-          {variant === "hero" ? "Launch planning" : "Boardy scene"}
-        </strong>
+  return (
+    <div className="board-artwork board-artwork--hero" aria-hidden="true">
+      <div className="board-artwork__chrome">
+        <div className="board-artwork__title">
+          <span className="board-artwork__appmark">
+            <LandingIcon name="organize" />
+          </span>
+          <strong>
+            {variant === "hero" ? "Launch planning" : "Boardy scene"}
+          </strong>
+        </div>
+        <div className="board-artwork__people">
+          <Collaborator className="is-maya" label="M" />
+          <Collaborator className="is-alex" label="A" />
+          <Collaborator className="is-jules" label="J" />
+          <span className="board-art-share">
+            <LandingIcon name="share" /> Share
+          </span>
+        </div>
       </div>
-      <div className="board-artwork__people">
-        <Collaborator className="is-maya" label="M" />
-        <Collaborator className="is-alex" label="A" />
-        <Collaborator className="is-jules" label="J" />
-        <span className="board-art-share">
-          <LandingIcon name="share" /> Share
-        </span>
-      </div>
+      <Toolbar />
+      <StickyBoard />
+      <CommentsPanel />
     </div>
-    <Toolbar />
-    {variant === "hero" ? (
-      <>
-        <StickyBoard />
-        <CommentsPanel />
-      </>
-    ) : (
-      <>
-        <ColorPanel />
-        <ShapeBoard />
-        <CommentsPanel />
-      </>
-    )}
-  </div>
-);
+  );
+};
