@@ -31,10 +31,10 @@ export const AppWelcomeScreen: React.FC<{
             <span className="boardy-editor-brand__byline">
               By
               <img
-                src="/atelix-vertical.svg"
+                src="/atelix-horizontal.png"
                 alt=""
-                width="1220"
-                height="800"
+                width="5776"
+                height="1082"
               />
             </span>
           </span>
