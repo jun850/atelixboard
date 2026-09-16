@@ -221,6 +221,22 @@ const EditorScene = ({ ownerDocument }: { ownerDocument: Document }) => {
           theme="light"
           viewModeEnabled={false}
           zenModeEnabled={false}
+          onChange={(_, appState) => {
+            // Document-level outside-click handlers can dismiss the palette
+            // even when the preview itself is inert. Keep its artwork state.
+            if (
+              appState.openPopup !== "elementStroke" ||
+              !appState.selectedElementIds["landing-selection"]
+            ) {
+              apiRef.current?.updateScene({
+                appState: {
+                  openPopup: "elementStroke",
+                  selectedElementIds: { "landing-selection": true },
+                },
+                captureUpdate: CaptureUpdateAction.NEVER,
+              });
+            }
+          }}
           initialData={{
             elements: scene,
             appState: {
