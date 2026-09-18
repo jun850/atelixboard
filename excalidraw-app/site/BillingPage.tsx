@@ -41,6 +41,15 @@ const formatPeriod = (pkg: Package) => {
 
 const getOfferText = (pkg: Package) => {
   const product = pkg.webBillingProduct;
+  if (product.identifier === REVENUECAT_PRODUCT_IDS.annual) {
+    return "Best value · billed yearly";
+  }
+  if (
+    product.identifier === REVENUECAT_PRODUCT_IDS.monthly ||
+    product.identifier === REVENUECAT_PRODUCT_IDS.monthlyLegacy
+  ) {
+    return "Flexible monthly billing";
+  }
   const trial = product.freeTrialPhase;
   if (trial?.period) {
     return `Includes a ${trial.period.number} ${trial.period.unit} free trial`;
@@ -52,35 +61,61 @@ const getOfferText = (pkg: Package) => {
   return product.description || formatPeriod(pkg);
 };
 
-const PRO_BENEFITS = [
-  "Unlimited boards & folders",
-  "Cloud sync and version history",
-  "Roles and access controls",
-  "View-only links and embeds",
-  "Team workspace management",
-  "Templates and libraries",
-  "Extended AI tools",
-  "Bring your own LLM subscription",
-];
+const getPlanTitle = (pkg: Package) =>
+  pkg.webBillingProduct.identifier === REVENUECAT_PRODUCT_IDS.annual
+    ? "Pro Annual"
+    : "Pro Monthly";
 
 const PRO_BENEFIT_GROUPS = [
   {
     title: "Create without limits",
-    benefits: [PRO_BENEFITS[0], PRO_BENEFITS[1]],
+    icon: "create",
+    benefits: [
+      "Full editor and infinite board",
+      "Unlimited scenes and folders",
+      "PNG, SVG and file export",
+      "Libraries and templates",
+    ],
   },
   {
     title: "Collaborate clearly",
-    benefits: [PRO_BENEFITS[4], PRO_BENEFITS[3]],
+    icon: "collaborate",
+    benefits: [
+      "Unlimited collaborators",
+      "Team workspaces and comments",
+      "Presentations and sharing",
+      "Edit and view permissions",
+    ],
   },
   {
     title: "Use your own stack",
-    benefits: [PRO_BENEFITS[6], PRO_BENEFITS[7]],
+    icon: "stack",
+    benefits: ["Extended AI tools", "Bring your own LLM subscription"],
   },
   {
     title: "Share with control",
-    benefits: [PRO_BENEFITS[2], PRO_BENEFITS[5]],
+    icon: "share",
+    benefits: ["Secure cloud storage", "Access management"],
   },
 ];
+
+const PaywallBenefitIcon = ({ icon }: { icon: string }) => (
+  <span className="boardy-paywall__benefit-icon" aria-hidden="true">
+    <svg viewBox="0 0 20 20" focusable="false">
+      <path
+        d={
+          icon === "collaborate"
+            ? "M6.5 8.2a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4Zm7-1.1a1.8 1.8 0 1 0 0-3.6 1.8 1.8 0 0 0 0 3.6ZM2.8 15.8c.3-2.4 1.6-3.7 3.7-3.7s3.4 1.3 3.7 3.7M11.5 12.7c.5-.9 1.2-1.4 2.2-1.4 1.7 0 2.7 1 3 2.9"
+            : icon === "stack"
+            ? "M5.2 4.8h9.6M3.5 8.5h13M5.2 12.2h9.6M7.4 15.2h5.2"
+            : icon === "share"
+            ? "M10 2.8 16 5v4.4c0 3.7-2.3 6.3-6 7.8-3.7-1.5-6-4.1-6-7.8V5l6-2.2Zm-2.4 7 1.5 1.5 3.3-3.3"
+            : "M4 5.2h7.8L15.8 9v5.8H4V5.2Zm7.8 0V9h4M7 12l2.8-2.8L12 11.4"
+        }
+      />
+    </svg>
+  </span>
+);
 
 const getProPackages = (availablePackages: Package[]) => {
   const annual = availablePackages.find(
@@ -120,7 +155,7 @@ const ProductOption = ({
     >
       <span className="boardy-paywall-product__radio" aria-hidden="true" />
       <span className="boardy-paywall-product__copy">
-        <strong>{product.title}</strong>
+        <strong>{getPlanTitle(pkg)}</strong>
         <small>{getOfferText(pkg)}</small>
       </span>
       <span className="boardy-paywall-product__price">
@@ -220,7 +255,10 @@ export const BillingPage = ({
       <header className="boardy-paywall__topbar">
         <a className="boardy-paywall__brand" href="/" aria-label="Boardy home">
           <span>Boardy</span>
-          <small>BY ATELIX</small>
+          <span className="boardy-paywall__brand-mark">
+            <span>By</span>
+            <img src="/atelix-horizontal.png" alt="Atelix" />
+          </span>
         </a>
       </header>
 
@@ -236,6 +274,7 @@ export const BillingPage = ({
           <div className="boardy-paywall__benefit-grid">
             {PRO_BENEFIT_GROUPS.map((group) => (
               <article key={group.title}>
+                <PaywallBenefitIcon icon={group.icon} />
                 <h3>{group.title}</h3>
                 <ul>
                   {group.benefits.map((benefit) => (
@@ -311,7 +350,7 @@ export const BillingPage = ({
                 <div className="boardy-paywall__summary" aria-live="polite">
                   <span>
                     <small>Selected plan</small>
-                    <strong>{selectedPackage.webBillingProduct.title}</strong>
+                    <strong>{getPlanTitle(selectedPackage)}</strong>
                   </span>
                   <span>
                     <small>{formatPeriod(selectedPackage)}</small>

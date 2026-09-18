@@ -1219,6 +1219,190 @@
   }
 }
 
+/* Final narrow-screen pass: keep both RevenueCat surfaces inside the viewport. */
+@media (max-width: 720px) {
+  .atelix-landing-page,
+  .boardy-paywall {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .atelix-pricing {
+    margin-top: 56px;
+    padding: 64px 16px 72px;
+  }
+  .atelix-pricing > h2 {
+    max-width: 100%;
+    font-size: clamp(36px, 11vw, 52px);
+    line-height: 1;
+    overflow-wrap: anywhere;
+  }
+  .atelix-pricing > p {
+    margin: 16px auto 24px;
+    font-size: 16px;
+    line-height: 1.45;
+  }
+  .atelix-billing-toggle {
+    max-width: 100%;
+  }
+  .atelix-billing-toggle button {
+    min-height: 44px;
+    padding: 9px 12px;
+  }
+  .atelix-pricing-grid {
+    width: 100%;
+    max-width: none;
+    margin-top: 28px;
+  }
+  .atelix-plan--single {
+    min-height: auto;
+    padding: 28px 22px 32px;
+  }
+  .atelix-plan--single .atelix-plan__badge {
+    top: 24px;
+    right: 22px;
+  }
+  .atelix-plan--single h3 {
+    padding-right: 120px;
+  }
+  .atelix-plan--single .atelix-plan__price {
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    margin-top: 24px;
+  }
+  .atelix-plan--single .atelix-plan__price strong {
+    max-width: 100%;
+    font-size: clamp(34px, 10.5vw, 48px);
+    overflow-wrap: anywhere;
+  }
+  .atelix-plan--single .atelix-plan__price span {
+    padding-bottom: 4px;
+  }
+  .atelix-plan--single > small {
+    min-height: 0;
+    margin-top: 8px;
+  }
+  .atelix-plan--single .atelix-plan__benefits {
+    gap: 12px;
+  }
+
+  .boardy-paywall__topbar {
+    min-height: 68px;
+    padding: 0 20px;
+  }
+  .boardy-paywall__layout {
+    display: grid;
+    width: 100%;
+    box-sizing: border-box;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+    padding: 28px 16px 36px;
+  }
+  .boardy-paywall__story {
+    min-width: 0;
+    padding: 0;
+  }
+  .boardy-paywall__story h1 {
+    max-width: 100%;
+    font-size: clamp(38px, 12vw, 56px);
+    overflow-wrap: anywhere;
+  }
+  .boardy-paywall__lede {
+    max-width: 100%;
+    margin: 18px 0 22px;
+    font-size: 16px;
+  }
+  .boardy-paywall__benefit-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .boardy-paywall__benefit-grid article {
+    min-height: 0;
+    padding: 16px;
+  }
+  .boardy-paywall__panel {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    padding: 26px 18px 30px;
+  }
+  .boardy-paywall__panel-heading h2 {
+    font-size: 30px;
+  }
+  .boardy-paywall-product {
+    grid-template-columns: 20px minmax(0, 1fr);
+    min-width: 0;
+    min-height: 82px;
+  }
+  .boardy-paywall-product__copy,
+  .boardy-paywall-product__price {
+    min-width: 0;
+  }
+  .boardy-paywall-product__copy strong,
+  .boardy-paywall-product__copy small {
+    overflow-wrap: anywhere;
+  }
+  .boardy-paywall-product__price {
+    grid-column: 2;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    text-align: left;
+  }
+  .boardy-paywall-product__price strong {
+    white-space: nowrap;
+  }
+  .boardy-paywall__summary {
+    gap: 12px;
+  }
+  .boardy-paywall__summary strong {
+    overflow-wrap: anywhere;
+  }
+  .boardy-paywall__primary-action {
+    min-height: 54px;
+    width: 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  .atelix-plan--single h3 {
+    padding-right: 0;
+  }
+  .atelix-plan--single .atelix-plan__badge {
+    position: static;
+    display: inline-flex;
+    margin-bottom: 16px;
+  }
+  .boardy-paywall__summary {
+    display: grid;
+  }
+  .boardy-paywall__summary > span:last-child {
+    text-align: left;
+  }
+}
+
+/* The checkout is intentionally taller than a short viewport. Keep the page
+   itself scrollable instead of allowing the app shell to clip its lower CTA. */
+.boardy-paywall {
+  height: 100vh;
+  min-height: 100vh;
+  max-height: none;
+  flex: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.boardy-paywall__layout {
+  flex: none;
+}
+
+@supports (height: 100svh) {
+  .boardy-paywall {
+    height: 100svh;
+    min-height: 100svh;
+  }
+}
+
 /* Pen-aligned pricing surfaces: centered light canvas, editorial hierarchy,
    and RevenueCat-powered plan selection. */
 .atelix-pricing {
@@ -1275,6 +1459,23 @@
   font-size: 9px;
   letter-spacing: 0.16em;
 }
+.boardy-paywall__brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 9px;
+  border-left: 1px solid #dfe6f1;
+  color: #667085;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.boardy-paywall__brand-mark img {
+  display: block;
+  width: 55px;
+  height: auto;
+}
 .boardy-paywall__layout {
   grid-template-columns: minmax(0, 1.25fr) minmax(460px, 0.75fr);
   align-items: start;
@@ -1315,6 +1516,25 @@
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 8px 22px rgb(24 50 105 / 3%);
+}
+.boardy-paywall__benefit-icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 12px;
+  place-items: center;
+  border-radius: 8px;
+  color: #3f6fe5;
+  background: #edf3ff;
+}
+.boardy-paywall__benefit-icon svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.35;
 }
 .boardy-paywall__benefit-grid h3 {
   margin: 0 0 14px;
@@ -1631,6 +1851,141 @@
   }
   .atelix-product-stage {
     height: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .atelix-landing-page,
+  .boardy-paywall {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .atelix-pricing {
+    margin-top: 56px;
+    padding: 64px 16px 72px;
+  }
+  .atelix-pricing > h2 {
+    max-width: 100%;
+    font-size: clamp(36px, 11vw, 52px);
+    line-height: 1;
+    overflow-wrap: anywhere;
+  }
+  .atelix-pricing > p {
+    margin: 16px auto 24px;
+    font-size: 16px;
+    line-height: 1.45;
+  }
+  .atelix-billing-toggle button {
+    min-height: 44px;
+    padding: 9px 12px;
+  }
+  .atelix-pricing-grid {
+    width: 100%;
+    max-width: none;
+    margin-top: 28px;
+  }
+  .atelix-plan--single {
+    min-height: auto;
+    padding: 28px 22px 32px;
+  }
+  .atelix-plan--single .atelix-plan__badge {
+    top: 24px;
+    right: 22px;
+  }
+  .atelix-plan--single h3 {
+    padding-right: 120px;
+  }
+  .atelix-plan--single .atelix-plan__price {
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    margin-top: 24px;
+  }
+  .atelix-plan--single .atelix-plan__price strong {
+    max-width: 100%;
+    font-size: clamp(34px, 10.5vw, 48px);
+    overflow-wrap: anywhere;
+  }
+  .atelix-plan--single > small {
+    min-height: 0;
+    margin-top: 8px;
+  }
+  .boardy-paywall__topbar {
+    min-height: 68px;
+    padding: 0 20px;
+  }
+  .boardy-paywall__layout {
+    display: grid;
+    width: 100%;
+    box-sizing: border-box;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+    padding: 28px 16px 36px;
+  }
+  .boardy-paywall__story {
+    min-width: 0;
+    padding: 0;
+  }
+  .boardy-paywall__story h1 {
+    max-width: 100%;
+    font-size: clamp(38px, 12vw, 56px);
+    overflow-wrap: anywhere;
+  }
+  .boardy-paywall__lede {
+    max-width: 100%;
+    margin: 18px 0 22px;
+    font-size: 16px;
+  }
+  .boardy-paywall__benefit-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .boardy-paywall__benefit-grid article {
+    min-height: 0;
+    padding: 16px;
+  }
+  .boardy-paywall__panel {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    padding: 26px 18px 30px;
+  }
+  .boardy-paywall-product {
+    grid-template-columns: 20px minmax(0, 1fr);
+    min-width: 0;
+    min-height: 82px;
+  }
+  .boardy-paywall-product__copy,
+  .boardy-paywall-product__price {
+    min-width: 0;
+  }
+  .boardy-paywall-product__copy strong,
+  .boardy-paywall-product__copy small {
+    overflow-wrap: anywhere;
+  }
+  .boardy-paywall-product__price {
+    grid-column: 2;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    text-align: left;
+  }
+  .boardy-paywall-product__price strong {
+    white-space: nowrap;
+  }
+  .boardy-paywall__primary-action {
+    width: 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  .atelix-plan--single h3 {
+    padding-right: 0;
+  }
+  .atelix-plan--single .atelix-plan__badge {
+    position: static;
+    display: inline-flex;
+    margin-bottom: 16px;
   }
 }
 
