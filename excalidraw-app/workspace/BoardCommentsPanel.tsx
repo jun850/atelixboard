@@ -61,7 +61,9 @@ const Thread = ({
   const [mentionIds, setMentionIds] = useState<string[]>([]);
   const submitReply = async (event: FormEvent) => {
     event.preventDefault();
-    if (!reply.trim()) return;
+    if (!reply.trim()) {
+      return;
+    }
     await replyToThread(thread.id, reply, mentionIds);
     setReply("");
     setMentionIds([]);
@@ -191,7 +193,9 @@ export const BoardCommentsPanel = ({
   useEffect(() => void refresh(), [refresh]);
   useEffect(() => {
     const ownerWindow = rootRef.current?.ownerDocument.defaultView;
-    if (!ownerWindow) return;
+    if (!ownerWindow) {
+      return;
+    }
     const listener = () => void refresh();
     ownerWindow.addEventListener(COMMENTS_CHANGED_EVENT, listener);
     return () =>
@@ -210,17 +214,23 @@ export const BoardCommentsPanel = ({
     [data, query, showResolved],
   );
   const addGeneral = async () => {
-    if (!message.trim()) return;
+    if (!message.trim()) {
+      return;
+    }
     await createComment(sceneId, message, "general", {}, mentionIds);
     setMessage("");
     setMentionIds([]);
     const ownerWindow = rootRef.current?.ownerDocument.defaultView;
-    if (ownerWindow) emitChanged(ownerWindow);
+    if (ownerWindow) {
+      emitChanged(ownerWindow);
+    }
     await refresh();
   };
   const startPlacement = (anchorKind: "point" | "region") => {
     const ownerWindow = rootRef.current?.ownerDocument.defaultView;
-    if (!ownerWindow || !message.trim()) return;
+    if (!ownerWindow || !message.trim()) {
+      return;
+    }
     ownerWindow.dispatchEvent(
       new CustomEvent(COMMENT_PLACEMENT_EVENT, {
         detail: {
@@ -286,10 +296,15 @@ export const BoardCommentsPanel = ({
           >
             Pin to canvas
           </button>
+          <button
+            type="button"
+            onClick={() => startPlacement("region")}
+            disabled={!message.trim()}
+          >
+            Mark area
+          </button>
         </div>
-        <small>
-          Choose “Pin to canvas,” then click where the feedback belongs.
-        </small>
+        <small>Place a pin with one click, or drag to mark an area.</small>
       </div>
       <div className="boardy-comments-tools">
         <input

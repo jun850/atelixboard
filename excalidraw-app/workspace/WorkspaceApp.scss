@@ -778,7 +778,7 @@ a:focus-visible {
 }
 .boardy-comment-pins {
   position: fixed;
-  inset: 0;
+  inset: 58px 0 0;
   z-index: 40;
   pointer-events: none;
 }
@@ -801,6 +801,17 @@ a:focus-visible {
   font-weight: 750;
   pointer-events: auto;
   cursor: pointer;
+}
+.boardy-comment-region {
+  position: fixed;
+  border: 2px solid rgba(91, 85, 217, 0.75);
+  border-radius: 8px;
+  background: rgba(91, 85, 217, 0.08);
+  pointer-events: none;
+}
+.boardy-comment-region.is-draft {
+  border-style: dashed;
+  background: rgba(91, 85, 217, 0.13);
 }
 .boardy-skip-link {
   position: fixed;

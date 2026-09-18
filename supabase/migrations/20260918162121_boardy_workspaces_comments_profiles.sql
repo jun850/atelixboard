@@ -322,6 +322,22 @@ returns jsonb language sql stable security invoker set search_path = public, pg_
   where private.can_read_scene(target_scene_id, (select auth.uid()))
 $$;
 
+create or replace function public.boardy_filter_scene_mentions(
+  target_scene_id uuid,
+  target_user_ids uuid[]
+)
+returns uuid[]
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select coalesce(array_agg(candidate), '{}'::uuid[])
+  from unnest(target_user_ids) candidate
+  where private.can_read_scene(target_scene_id, candidate)
+    and private.can_read_scene(target_scene_id, (select auth.uid()))
+$$;
+
 revoke all on function private.workspace_role(uuid, uuid) from public, anon, authenticated;
 revoke all on function private.is_workspace_admin(uuid, uuid) from public, anon, authenticated;
 revoke all on function private.collection_role(uuid, uuid) from public, anon, authenticated;
@@ -332,8 +348,11 @@ grant execute on function private.is_workspace_admin(uuid, uuid) to authenticate
 grant execute on function private.collection_role(uuid, uuid) to authenticated, service_role;
 grant execute on function private.scene_effective_role(uuid, uuid) to authenticated, service_role;
 grant execute on function private.can_comment_scene(uuid, uuid) to authenticated, service_role;
+grant usage on schema private to authenticated, service_role;
 revoke all on function public.boardy_scene_capabilities(uuid) from public, anon;
 grant execute on function public.boardy_scene_capabilities(uuid) to authenticated;
+revoke all on function public.boardy_filter_scene_mentions(uuid, uuid[]) from public, anon;
+grant execute on function public.boardy_filter_scene_mentions(uuid, uuid[]) to authenticated;
 
 alter table public.boardy_profiles enable row level security;
 alter table public.boardy_workspaces enable row level security;

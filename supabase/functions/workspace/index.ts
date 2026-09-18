@@ -1,6 +1,8 @@
 import { authenticate, response } from "../_shared/agentic.ts";
-import type { SupabaseClient } from "npm:@supabase/supabase-js@2.116.0";
+
 import { cloudErrorResponse, requireUuid } from "../_shared/cloud.ts";
+
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.116.0";
 
 type AdminClient = SupabaseClient;
 
@@ -186,6 +188,34 @@ const sceneRole = async (
   };
 };
 
+const validatedMentionIds = async (
+  client: Awaited<ReturnType<typeof authenticate>>["client"],
+  sceneId: string,
+  input: unknown,
+  actorId: string,
+) => {
+  const requested = Array.isArray(input)
+    ? [...new Set(input.map(String))]
+        .filter((id) => id !== actorId)
+        .slice(0, 20)
+    : [];
+  if (!requested.length) {
+    return [];
+  }
+  const { data, error } = await client.rpc("boardy_filter_scene_mentions", {
+    target_scene_id: sceneId,
+    target_user_ids: requested,
+  });
+  if (error) {
+    throw error;
+  }
+  const allowed = Array.isArray(data) ? data.map(String) : [];
+  if (allowed.length !== requested.length) {
+    throw new Error("forbidden");
+  }
+  return allowed;
+};
+
 const dashboard = async (
   admin: AdminClient,
   client: Awaited<ReturnType<typeof authenticate>>["client"],
@@ -286,7 +316,9 @@ Deno.serve(async (request) => {
       const { data, error } = await client.rpc("boardy_redeem_invitation", {
         p_token_hash: tokenHash,
       });
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       return response(request, 200, data);
     }
 
@@ -297,7 +329,9 @@ Deno.serve(async (request) => {
         .eq("user_id", user.id)
         .eq("status", "active")
         .limit(1);
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       return response(request, 200, {
         hasWorkspaceAccess: Boolean(data?.length),
         workspaceId: data?.[0]?.workspace_id || null,
@@ -323,7 +357,9 @@ Deno.serve(async (request) => {
 
     if (parts[0] === "profile" && method === "PATCH") {
       const displayName = String(body.displayName || "").trim();
-      if (!displayName || displayName.length > 120) throw new Error("limit");
+      if (!displayName || displayName.length > 120) {
+        throw new Error("limit");
+      }
       const patch: Record<string, unknown> = {
         display_name: displayName,
         email: user.email,
@@ -336,7 +372,9 @@ Deno.serve(async (request) => {
         .from("boardy_profiles")
         .update(patch)
         .eq("user_id", user.id);
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       return response(request, 200, { ok: true });
     }
 
@@ -346,7 +384,9 @@ Deno.serve(async (request) => {
         "staff",
       ]);
       const name = String(body.name || "").trim();
-      if (!name || name.length > 120) throw new Error("limit");
+      if (!name || name.length > 120) {
+        throw new Error("limit");
+      }
       const { data, error } = await admin
         .from("boardy_collections")
         .insert({
@@ -361,7 +401,9 @@ Deno.serve(async (request) => {
         })
         .select("*")
         .single();
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       return response(request, 201, { collection: data });
     }
 
@@ -390,7 +432,9 @@ Deno.serve(async (request) => {
       const patch: Record<string, unknown> = {
         updated_at: new Date().toISOString(),
       };
-      if (typeof body.name === "string") patch.name = body.name.trim();
+      if (typeof body.name === "string") {
+        patch.name = body.name.trim();
+      }
       if (["private", "workspace", "selected"].includes(body.visibility)) {
         patch.visibility = body.visibility;
       }
@@ -406,7 +450,9 @@ Deno.serve(async (request) => {
         .from("boardy_collections")
         .update(patch)
         .eq("id", collectionId);
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       return response(request, 200, { ok: true });
     }
 
@@ -428,11 +474,15 @@ Deno.serve(async (request) => {
           throw new Error("forbidden");
         }
         const title = body.title.trim();
-        if (!title || title.length > 160) throw new Error("limit");
+        if (!title || title.length > 160) {
+          throw new Error("limit");
+        }
         patch.title = title;
       }
       if (body.collectionId) {
-        if (!capabilities.can_manage) throw new Error("forbidden");
+        if (!capabilities.can_manage) {
+          throw new Error("forbidden");
+        }
         const targetCollectionId = requireUuid(body.collectionId);
         const { data: targetCollection, error: targetError } = await client
           .from("boardy_collections")
@@ -441,15 +491,18 @@ Deno.serve(async (request) => {
           .eq("workspace_id", workspaceId)
           .eq("status", "active")
           .maybeSingle();
-        if (targetError || !targetCollection)
+        if (targetError || !targetCollection) {
           throw targetError || new Error("forbidden");
+        }
         patch.collection_id = targetCollectionId;
       }
       const { error } = await admin
         .from("scenes")
         .update(patch)
         .eq("id", sceneId);
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       return response(request, 200, { ok: true });
     }
 
@@ -459,22 +512,27 @@ Deno.serve(async (request) => {
       if (
         targetUserId === user.id &&
         (body.action === "remove" || body.role !== "admin")
-      )
+      ) {
         throw new Error("forbidden");
+      }
       if (body.action === "remove") {
         const { error } = await admin
           .from("boardy_workspace_members")
           .update({ status: "removed", removed_at: new Date().toISOString() })
           .eq("workspace_id", workspaceId)
           .eq("user_id", targetUserId);
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
       } else if (["admin", "staff", "external"].includes(body.role)) {
         const { error } = await admin
           .from("boardy_workspace_members")
           .update({ role: body.role })
           .eq("workspace_id", workspaceId)
           .eq("user_id", targetUserId);
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
       } else {
         throw new Error("forbidden");
       }
@@ -484,7 +542,9 @@ Deno.serve(async (request) => {
     if (parts[0] === "invitations" && parts.length === 1 && method === "POST") {
       if (body.sceneId) {
         const capabilities = await sceneRole(client, requireUuid(body.sceneId));
-        if (!capabilities.can_manage) throw new Error("forbidden");
+        if (!capabilities.can_manage) {
+          throw new Error("forbidden");
+        }
       } else if (body.collectionId) {
         const membershipRole = await requireWorkspaceRole(
           admin,
@@ -501,8 +561,9 @@ Deno.serve(async (request) => {
         if (
           !collection ||
           (membershipRole !== "admin" && collection.owner_id !== user.id)
-        )
+        ) {
           throw new Error("forbidden");
+        }
       } else {
         await requireWorkspaceRole(admin, workspaceId, user.id, ["admin"]);
       }
@@ -535,7 +596,9 @@ Deno.serve(async (request) => {
         })
         .select("id,expires_at,max_uses")
         .single();
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       return response(request, 201, { invitation: data, token });
     }
 
@@ -549,7 +612,9 @@ Deno.serve(async (request) => {
         .is("deleted_at", null)
         .order("last_activity_at", { ascending: false })
         .limit(200);
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       const threadIds = (threads || []).map((thread) => thread.id);
       const { data: messages, error: messageError } = threadIds.length
         ? await admin
@@ -558,7 +623,9 @@ Deno.serve(async (request) => {
             .in("thread_id", threadIds)
             .order("created_at")
         : { data: [], error: null };
-      if (messageError) throw messageError;
+      if (messageError) {
+        throw messageError;
+      }
       const messageIds = (messages || []).map((message) => message.id);
       const [{ data: reactions }, { data: mentions }] = messageIds.length
         ? await Promise.all([
@@ -623,9 +690,13 @@ Deno.serve(async (request) => {
     if (parts[0] === "comments" && parts.length === 2 && method === "POST") {
       const sceneId = requireUuid(parts[1]);
       const capabilities = await sceneRole(client, sceneId);
-      if (!capabilities.can_comment) throw new Error("forbidden");
+      if (!capabilities.can_comment) {
+        throw new Error("forbidden");
+      }
       const bodyText = String(body.message || "").trim();
-      if (!bodyText || bodyText.length > 10000) throw new Error("limit");
+      if (!bodyText || bodyText.length > 10000) {
+        throw new Error("limit");
+      }
       const anchorKind = ["point", "region", "element", "general"].includes(
         body.anchorKind,
       )
@@ -641,7 +712,9 @@ Deno.serve(async (request) => {
         })
         .select("*")
         .single();
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       const { data: message, error: messageError } = await admin
         .from("boardy_comment_messages")
         .insert({
@@ -652,32 +725,31 @@ Deno.serve(async (request) => {
         })
         .select("*")
         .single();
-      if (messageError) throw messageError;
-      const mentionIds = Array.isArray(body.mentionUserIds)
-        ? [...new Set(body.mentionUserIds.map(String))]
-            .filter((id) => id !== user.id)
-            .slice(0, 20)
-        : [];
+      if (messageError) {
+        throw messageError;
+      }
+      const mentionIds = await validatedMentionIds(
+        client,
+        sceneId,
+        body.mentionUserIds,
+        user.id,
+      );
       if (mentionIds.length) {
-        await admin
-          .from("boardy_comment_mentions")
-          .insert(
-            mentionIds.map((mentionedUserId) => ({
-              message_id: message.id,
-              user_id: mentionedUserId,
-            })),
-          );
-        await admin
-          .from("boardy_notifications")
-          .insert(
-            mentionIds.map((mentionedUserId) => ({
-              user_id: mentionedUserId,
-              scene_id: sceneId,
-              thread_id: thread.id,
-              actor_id: user.id,
-              kind: "mention",
-            })),
-          );
+        await admin.from("boardy_comment_mentions").insert(
+          mentionIds.map((mentionedUserId) => ({
+            message_id: message.id,
+            user_id: mentionedUserId,
+          })),
+        );
+        await admin.from("boardy_notifications").insert(
+          mentionIds.map((mentionedUserId) => ({
+            user_id: mentionedUserId,
+            scene_id: sceneId,
+            thread_id: thread.id,
+            actor_id: user.id,
+            kind: "mention",
+          })),
+        );
       }
       return response(request, 201, { thread, message });
     }
@@ -694,11 +766,17 @@ Deno.serve(async (request) => {
         .select("scene_id")
         .eq("id", threadId)
         .single();
-      if (threadError || !thread) throw threadError || new Error("not_found");
+      if (threadError || !thread) {
+        throw threadError || new Error("not_found");
+      }
       const capabilities = await sceneRole(client, thread.scene_id);
-      if (!capabilities.can_comment) throw new Error("forbidden");
+      if (!capabilities.can_comment) {
+        throw new Error("forbidden");
+      }
       const messageText = String(body.message || "").trim();
-      if (!messageText || messageText.length > 10000) throw new Error("limit");
+      if (!messageText || messageText.length > 10000) {
+        throw new Error("limit");
+      }
       const { data: message, error } = await admin
         .from("boardy_comment_messages")
         .insert({
@@ -709,32 +787,31 @@ Deno.serve(async (request) => {
         })
         .select("*")
         .single();
-      if (error) throw error;
-      const mentionIds = Array.isArray(body.mentionUserIds)
-        ? [...new Set(body.mentionUserIds.map(String))]
-            .filter((id) => id !== user.id)
-            .slice(0, 20)
-        : [];
+      if (error) {
+        throw error;
+      }
+      const mentionIds = await validatedMentionIds(
+        client,
+        thread.scene_id,
+        body.mentionUserIds,
+        user.id,
+      );
       if (mentionIds.length) {
-        await admin
-          .from("boardy_comment_mentions")
-          .insert(
-            mentionIds.map((mentionedUserId) => ({
-              message_id: message.id,
-              user_id: mentionedUserId,
-            })),
-          );
-        await admin
-          .from("boardy_notifications")
-          .insert(
-            mentionIds.map((mentionedUserId) => ({
-              user_id: mentionedUserId,
-              scene_id: thread.scene_id,
-              thread_id: threadId,
-              actor_id: user.id,
-              kind: "mention",
-            })),
-          );
+        await admin.from("boardy_comment_mentions").insert(
+          mentionIds.map((mentionedUserId) => ({
+            message_id: message.id,
+            user_id: mentionedUserId,
+          })),
+        );
+        await admin.from("boardy_notifications").insert(
+          mentionIds.map((mentionedUserId) => ({
+            user_id: mentionedUserId,
+            scene_id: thread.scene_id,
+            thread_id: threadId,
+            actor_id: user.id,
+            kind: "mention",
+          })),
+        );
       }
       await admin
         .from("boardy_comment_threads")
@@ -758,26 +835,31 @@ Deno.serve(async (request) => {
         .select("scene_id,created_by,version")
         .eq("id", threadId)
         .single();
-      if (error || !thread) throw error || new Error("not_found");
+      if (error || !thread) {
+        throw error || new Error("not_found");
+      }
       const capabilities = await sceneRole(client, thread.scene_id);
       const patch: Record<string, unknown> = {
         updated_at: new Date().toISOString(),
         version: thread.version + 1,
       };
       if (body.action === "resolve" || body.action === "reopen") {
-        if (!capabilities.can_edit && thread.created_by !== user.id)
+        if (!capabilities.can_edit && thread.created_by !== user.id) {
           throw new Error("forbidden");
+        }
         patch.resolved_at =
           body.action === "resolve" ? new Date().toISOString() : null;
         patch.resolved_by = body.action === "resolve" ? user.id : null;
       } else if (body.action === "move") {
-        if (!capabilities.can_manage && thread.created_by !== user.id)
+        if (!capabilities.can_manage && thread.created_by !== user.id) {
           throw new Error("forbidden");
+        }
         patch.anchor_kind = body.anchorKind;
         patch.anchor = body.anchor;
       } else if (body.action === "delete") {
-        if (!capabilities.can_manage && thread.created_by !== user.id)
+        if (!capabilities.can_manage && thread.created_by !== user.id) {
           throw new Error("forbidden");
+        }
         patch.deleted_at = new Date().toISOString();
         patch.deleted_by = user.id;
       } else {
@@ -788,7 +870,9 @@ Deno.serve(async (request) => {
         .update(patch)
         .eq("id", threadId)
         .eq("version", body.version || thread.version);
-      if (updateError) throw updateError;
+      if (updateError) {
+        throw updateError;
+      }
       return response(request, 200, { ok: true, version: thread.version + 1 });
     }
 
@@ -801,18 +885,24 @@ Deno.serve(async (request) => {
     ) {
       const messageId = requireUuid(parts[2]);
       const emoji = String(body.emoji || "").trim();
-      if (!emoji || emoji.length > 32) throw new Error("limit");
+      if (!emoji || emoji.length > 32) {
+        throw new Error("limit");
+      }
       const { data: message, error } = await admin
         .from("boardy_comment_messages")
         .select("thread_id,boardy_comment_threads!inner(scene_id)")
         .eq("id", messageId)
         .single();
-      if (error || !message) throw error || new Error("not_found");
+      if (error || !message) {
+        throw error || new Error("not_found");
+      }
       const sceneId = (
         message.boardy_comment_threads as unknown as { scene_id: string }
       ).scene_id;
       const capabilities = await sceneRole(client, sceneId);
-      if (!capabilities.can_comment) throw new Error("forbidden");
+      if (!capabilities.can_comment) {
+        throw new Error("forbidden");
+      }
       const existing = await admin
         .from("boardy_comment_reactions")
         .select("emoji")
@@ -820,17 +910,18 @@ Deno.serve(async (request) => {
         .eq("user_id", user.id)
         .eq("emoji", emoji)
         .maybeSingle();
-      if (existing.data)
+      if (existing.data) {
         await admin
           .from("boardy_comment_reactions")
           .delete()
           .eq("message_id", messageId)
           .eq("user_id", user.id)
           .eq("emoji", emoji);
-      else
+      } else {
         await admin
           .from("boardy_comment_reactions")
           .insert({ message_id: messageId, user_id: user.id, emoji });
+      }
       return response(request, 200, { reacted: !existing.data });
     }
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { cloudApi, localApi } from "../agentic-board/client";
 import { supabase } from "../supabase/client";
@@ -6,8 +6,15 @@ import { supabase } from "../supabase/client";
 import { createCollection, loadWorkspace, workspaceApi } from "./api";
 import { BoardCommentsPanel } from "./BoardCommentsPanel";
 
+import "./WorkspaceApp.scss";
+
 import type { Session } from "@supabase/supabase-js";
-import type { ComponentType, FormEvent, ReactNode } from "react";
+import type {
+  ComponentType,
+  FormEvent,
+  MouseEventHandler,
+  ReactNode,
+} from "react";
 import type {
   BoardyProfile,
   WhiteboardSummary,
@@ -15,11 +22,12 @@ import type {
   WorkspaceDashboard,
 } from "./types";
 
-import "./WorkspaceApp.scss";
-
-const routeTo = (path: string) => {
-  window.history.pushState({}, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
+const routeTo = (ownerWindow: Window | null, path: string) => {
+  if (!ownerWindow) {
+    return;
+  }
+  ownerWindow.history.pushState({}, "", path);
+  ownerWindow.dispatchEvent(new PopStateEvent("popstate"));
 };
 
 const Icon = ({
@@ -148,11 +156,17 @@ const relativeTime = (value: string) => {
     1,
     Math.round((Date.now() - new Date(value).getTime()) / 1000),
   );
-  if (seconds < 60) return "just now";
+  if (seconds < 60) {
+    return "just now";
+  }
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) {
+    return `${hours}h ago`;
+  }
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
 };
@@ -166,7 +180,7 @@ const SidebarButton = ({
   active?: boolean;
   icon: Parameters<typeof Icon>[0]["name"];
   children: ReactNode;
-  onClick: () => void;
+  onClick: MouseEventHandler<HTMLButtonElement>;
 }) => (
   <button
     className={active ? "is-active" : undefined}
@@ -209,24 +223,52 @@ const WorkspaceSidebar = ({
       <SidebarButton
         active={!activeCollection && pathname === "/app"}
         icon="boards"
-        onClick={() => routeTo("/app")}
+        onClick={(event) =>
+          routeTo(event.currentTarget.ownerDocument.defaultView, "/app")
+        }
       >
         Whiteboards
       </SidebarButton>
-      <SidebarButton icon="shared" onClick={() => routeTo("/app?view=shared")}>
+      <SidebarButton
+        icon="shared"
+        onClick={(event) =>
+          routeTo(
+            event.currentTarget.ownerDocument.defaultView,
+            "/app?view=shared",
+          )
+        }
+      >
         Shared with me
       </SidebarButton>
-      <SidebarButton icon="trash" onClick={() => routeTo("/app/trash")}>
+      <SidebarButton
+        icon="trash"
+        onClick={(event) =>
+          routeTo(event.currentTarget.ownerDocument.defaultView, "/app/trash")
+        }
+      >
         Trash
       </SidebarButton>
       {data.membership.role === "admin" && (
         <>
-          <SidebarButton icon="members" onClick={() => routeTo("/app/members")}>
+          <SidebarButton
+            icon="members"
+            onClick={(event) =>
+              routeTo(
+                event.currentTarget.ownerDocument.defaultView,
+                "/app/members",
+              )
+            }
+          >
             Members
           </SidebarButton>
           <SidebarButton
             icon="settings"
-            onClick={() => routeTo("/app/settings")}
+            onClick={(event) =>
+              routeTo(
+                event.currentTarget.ownerDocument.defaultView,
+                "/app/settings",
+              )
+            }
           >
             Workspace settings
           </SidebarButton>
@@ -242,7 +284,12 @@ const WorkspaceSidebar = ({
           active={collection.id === activeCollection}
           icon="collection"
           key={collection.id}
-          onClick={() => routeTo(`/app/collections/${collection.id}`)}
+          onClick={(event) =>
+            routeTo(
+              event.currentTarget.ownerDocument.defaultView,
+              `/app/collections/${collection.id}`,
+            )
+          }
         >
           {collection.name}
         </SidebarButton>
@@ -251,7 +298,9 @@ const WorkspaceSidebar = ({
     <button
       className="boardy-profile-button"
       type="button"
-      onClick={() => routeTo("/app/profile")}
+      onClick={(event) =>
+        routeTo(event.currentTarget.ownerDocument.defaultView, "/app/profile")
+      }
     >
       <UserIdentity profile={data.profile} />
     </button>
@@ -282,8 +331,10 @@ const DashboardContent = ({
   );
   const defaultCollection = collection || data.collections[0];
 
-  const createBoard = async () => {
-    if (!defaultCollection) return;
+  const createBoard = async (ownerWindow: Window | null) => {
+    if (!defaultCollection) {
+      return;
+    }
     setCreating(true);
     try {
       const created = await cloudApi<{ sceneId: string }>(
@@ -294,11 +345,13 @@ const DashboardContent = ({
           title: "Untitled whiteboard",
           workspaceId: data.workspace.id,
           collectionId: defaultCollection.id,
-          requestId: `${crypto.randomUUID()}-${Date.now().toString(36)}`,
+          requestId: `${
+            ownerWindow?.crypto.randomUUID() || Date.now().toString(36)
+          }-${Date.now().toString(36)}`,
           document: { version: 1, elements: [], appState: null, files: {} },
         },
       );
-      routeTo(`/app/boards/${created.sceneId}`);
+      routeTo(ownerWindow, `/app/boards/${created.sceneId}`);
     } finally {
       setCreating(false);
     }
@@ -332,7 +385,9 @@ const DashboardContent = ({
             type="button"
             className="boardy-button is-primary"
             disabled={creating || !defaultCollection}
-            onClick={() => void createBoard()}
+            onClick={(event) =>
+              void createBoard(event.currentTarget.ownerDocument.defaultView)
+            }
           >
             <Icon name="plus" /> {creating ? "Creating…" : "Create whiteboard"}
           </button>
@@ -359,7 +414,12 @@ const DashboardContent = ({
             <article className="boardy-board-card" key={board.id}>
               <button
                 type="button"
-                onClick={() => routeTo(`/app/boards/${board.id}`)}
+                onClick={(event) =>
+                  routeTo(
+                    event.currentTarget.ownerDocument.defaultView,
+                    `/app/boards/${board.id}`,
+                  )
+                }
                 aria-label={`Open ${board.title}`}
               >
                 <WhiteboardPreview board={board} />
@@ -409,7 +469,9 @@ const DashboardContent = ({
             <button
               className="boardy-button is-primary"
               type="button"
-              onClick={() => void createBoard()}
+              onClick={(event) =>
+                void createBoard(event.currentTarget.ownerDocument.defaultView)
+              }
             >
               Create whiteboard
             </button>
@@ -667,7 +729,9 @@ const ProfileView = ({
               accept="image/jpeg,image/png,image/webp"
               onChange={async (event) => {
                 const file = event.target.files?.[0];
-                if (!file) return;
+                if (!file) {
+                  return;
+                }
                 const extension =
                   file.name.split(".").pop()?.toLowerCase() || "jpg";
                 const path = `${data.profile.userId}/avatar.${extension}`;
@@ -732,8 +796,9 @@ const BoardEditor = ({
         <button
           type="button"
           className="boardy-icon-text"
-          onClick={() =>
+          onClick={(event) =>
             routeTo(
+              event.currentTarget.ownerDocument.defaultView,
               board?.collection_id
                 ? `/app/collections/${board.collection_id}`
                 : "/app",
@@ -1036,14 +1101,16 @@ export const WorkspaceApp = ({
     pathname.match(/^\/app\/boards\/([0-9a-f-]{36})$/i)?.[1] || null;
   const collectionId =
     pathname.match(/^\/app\/collections\/([0-9a-f-]{36})$/i)?.[1] || null;
-  if (!data)
+  if (!data) {
     return (
       <main className="atelix-page atelix-loading-page" aria-live="polite">
         {error || "Preparing your workspace…"}
       </main>
     );
-  if (sceneId)
+  }
+  if (sceneId) {
     return <BoardEditor data={data} BoardApp={BoardApp} sceneId={sceneId} />;
+  }
   const content =
     pathname === "/app/members" ? (
       <MembersView data={data} refresh={refresh} />
@@ -1073,10 +1140,11 @@ export const WorkspaceApp = ({
           className="boardy-sign-out"
           onClick={async (event) => {
             const ownerWindow = event.currentTarget.ownerDocument.defaultView;
-            if (import.meta.env.DEV && ownerWindow && localDemo)
+            if (import.meta.env.DEV && ownerWindow && localDemo) {
               await localApi(ownerWindow, "session", "DELETE").catch(
                 () => undefined,
               );
+            }
             await supabase.auth.signOut();
             await onSignOut();
           }}

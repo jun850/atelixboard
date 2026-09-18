@@ -3,7 +3,7 @@
 Permissions combine a workspace role with the most specific collection or whiteboard grant. The strongest valid role wins. Workspace admins are custodians and can recover all workspace content.
 
 | Capability | Admin | Staff | External |
-|---|---:|---:|---:|
+| --- | --: | --: | --: |
 | Manage workspace settings and members | Yes | No | No |
 | Create workspace invitation links | Yes | No | No |
 | Create collections and whiteboards | Yes | Yes | No by default |
@@ -14,14 +14,14 @@ Permissions combine a workspace role with the most specific collection or whiteb
 
 Resource roles:
 
-| Capability | Owner | Editor | Commenter | Viewer |
-|---|---:|---:|---:|---:|
-| View board and comments | Yes | Yes | Yes | Yes |
-| Edit the canvas | Yes | Yes | No | No |
-| Create/reply/react to comments | Yes | Yes | Yes | No |
-| Resolve own thread | Yes | Yes | Yes | No |
-| Resolve any thread | Yes | Yes | No | No |
-| Rename/move/share/delete resource | Yes | No | No | No |
+| Capability                        | Owner | Editor | Commenter | Viewer |
+| --------------------------------- | ----: | -----: | --------: | -----: |
+| View board and comments           |   Yes |    Yes |       Yes |    Yes |
+| Edit the canvas                   |   Yes |    Yes |        No |     No |
+| Create/reply/react to comments    |   Yes |    Yes |       Yes |     No |
+| Resolve own thread                |   Yes |    Yes |       Yes |     No |
+| Resolve any thread                |   Yes |    Yes |        No |     No |
+| Rename/move/share/delete resource |   Yes |     No |        No |     No |
 
 Rules:
 

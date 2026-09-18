@@ -4,13 +4,14 @@ import {
 } from "@excalidraw/common";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
+
 import { createComment, loadComments } from "./api";
 import {
   COMMENT_PLACEMENT_EVENT,
   COMMENTS_CHANGED_EVENT,
 } from "./commentEvents";
 
-import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import type { CommentPlacementDetail } from "./commentEvents";
 import type { CommentThread } from "./types";
 
@@ -20,6 +21,13 @@ const sceneIdFromPath = (pathname: string) =>
 export const BoardCommentPins = ({ api }: { api: ExcalidrawImperativeAPI }) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const placement = useRef<CommentPlacementDetail | null>(null);
+  const dragStart = useRef<{ x: number; y: number } | null>(null);
+  const [draftRegion, setDraftRegion] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
   const [threads, setThreads] = useState<CommentThread[]>([]);
   const [revision, setRevision] = useState(0);
   const ownerWindow = rootRef.current?.ownerDocument.defaultView;
@@ -27,15 +35,21 @@ export const BoardCommentPins = ({ api }: { api: ExcalidrawImperativeAPI }) => {
     ? sceneIdFromPath(ownerWindow.location.pathname)
     : null;
   const refresh = useCallback(async () => {
-    if (!sceneId) return;
+    if (!sceneId) {
+      return;
+    }
     const result = await loadComments(sceneId).catch(() => null);
-    if (result) setThreads(result.threads);
+    if (result) {
+      setThreads(result.threads);
+    }
   }, [sceneId]);
 
   useEffect(() => void refresh(), [refresh]);
   useEffect(() => {
     const win = rootRef.current?.ownerDocument.defaultView;
-    if (!win || !sceneId) return;
+    if (!win || !sceneId) {
+      return;
+    }
     const place = (event: Event) => {
       placement.current = (event as CustomEvent<CommentPlacementDetail>).detail;
       rootRef.current?.classList.add("is-placing");
@@ -58,7 +72,9 @@ export const BoardCommentPins = ({ api }: { api: ExcalidrawImperativeAPI }) => {
     };
   }, [api, refresh, sceneId]);
 
-  if (!sceneId) return null;
+  if (!sceneId) {
+    return null;
+  }
   const appState = api.getAppState();
   return (
     <div
@@ -66,7 +82,9 @@ export const BoardCommentPins = ({ api }: { api: ExcalidrawImperativeAPI }) => {
       ref={rootRef}
       data-revision={revision}
       onPointerDown={async (event) => {
-        if (!placement.current || event.button !== 0) return;
+        if (!placement.current || event.button !== 0) {
+          return;
+        }
         event.preventDefault();
         event.stopPropagation();
         const anchor = viewportCoordsToSceneCoords(
@@ -74,6 +92,12 @@ export const BoardCommentPins = ({ api }: { api: ExcalidrawImperativeAPI }) => {
           api.getAppState(),
         );
         const pending = placement.current;
+        if (pending.anchorKind === "region") {
+          dragStart.current = anchor;
+          event.currentTarget.setPointerCapture(event.pointerId);
+          setDraftRegion({ x: anchor.x, y: anchor.y, width: 0, height: 0 });
+          return;
+        }
         placement.current = null;
         rootRef.current?.classList.remove("is-placing");
         await createComment(
@@ -88,7 +112,90 @@ export const BoardCommentPins = ({ api }: { api: ExcalidrawImperativeAPI }) => {
         );
         await refresh();
       }}
+      onPointerMove={(event) => {
+        if (!dragStart.current || placement.current?.anchorKind !== "region") {
+          return;
+        }
+        const current = viewportCoordsToSceneCoords(
+          { clientX: event.clientX, clientY: event.clientY },
+          api.getAppState(),
+        );
+        setDraftRegion({
+          x: Math.min(dragStart.current.x, current.x),
+          y: Math.min(dragStart.current.y, current.y),
+          width: Math.abs(current.x - dragStart.current.x),
+          height: Math.abs(current.y - dragStart.current.y),
+        });
+      }}
+      onPointerUp={async (event) => {
+        const pending = placement.current;
+        const region = draftRegion;
+        if (!pending || pending.anchorKind !== "region" || !region) {
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        placement.current = null;
+        dragStart.current = null;
+        setDraftRegion(null);
+        rootRef.current?.classList.remove("is-placing");
+        await createComment(
+          sceneId,
+          pending.message,
+          "region",
+          region,
+          pending.mentionUserIds,
+        );
+        rootRef.current?.ownerDocument.defaultView?.dispatchEvent(
+          new CustomEvent(COMMENTS_CHANGED_EVENT),
+        );
+        await refresh();
+      }}
     >
+      {draftRegion &&
+        (() => {
+          const start = sceneCoordsToViewportCoords(
+            { sceneX: draftRegion.x, sceneY: draftRegion.y },
+            appState,
+          );
+          return (
+            <span
+              className="boardy-comment-region is-draft"
+              style={{
+                left: start.x,
+                top: start.y,
+                width: draftRegion.width * appState.zoom.value,
+                height: draftRegion.height * appState.zoom.value,
+              }}
+            />
+          );
+        })()}
+      {threads
+        .filter(
+          (thread) =>
+            !thread.resolved_at &&
+            thread.anchor_kind === "region" &&
+            typeof thread.anchor.x === "number" &&
+            typeof thread.anchor.y === "number",
+        )
+        .map((thread) => {
+          const start = sceneCoordsToViewportCoords(
+            { sceneX: thread.anchor.x!, sceneY: thread.anchor.y! },
+            appState,
+          );
+          return (
+            <span
+              className="boardy-comment-region"
+              key={`region-${thread.id}`}
+              style={{
+                left: start.x,
+                top: start.y,
+                width: (thread.anchor.width || 0) * appState.zoom.value,
+                height: (thread.anchor.height || 0) * appState.zoom.value,
+              }}
+            />
+          );
+        })}
       {threads
         .filter(
           (thread) =>

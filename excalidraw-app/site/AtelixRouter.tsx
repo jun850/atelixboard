@@ -590,19 +590,25 @@ const InviteAcceptance = ({ token }: { token: string }) => {
       collectionId: string | null;
     }>("workspace", "invitations/redeem", "POST", { token })
       .then((result) => {
-        if (!current) return;
-        if (result.sceneId) navigate(`/app/boards/${result.sceneId}`);
-        else if (result.collectionId)
+        if (!current) {
+          return;
+        }
+        if (result.sceneId) {
+          navigate(`/app/boards/${result.sceneId}`);
+        } else if (result.collectionId) {
           navigate(`/app/collections/${result.collectionId}`);
-        else navigate("/app");
+        } else {
+          navigate("/app");
+        }
       })
       .catch((caught) => {
-        if (current)
+        if (current) {
           setError(
             caught instanceof Error
               ? caught.message
               : "This invitation is unavailable.",
           );
+        }
       });
     return () => {
       current = false;
@@ -675,7 +681,9 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
     let current = true;
     const verifyAccess = async () => {
       if (localDemo) {
-        if (current) setHasProAccess(true);
+        if (current) {
+          setHasProAccess(true);
+        }
         return;
       }
       try {
@@ -684,14 +692,20 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
           "access",
         );
         if (access.hasWorkspaceAccess) {
-          if (current) setHasProAccess(true);
+          if (current) {
+            setHasProAccess(true);
+          }
           return;
         }
         await syncRevenueCatUser(session.user.id, session.user.email);
         const entitled = await checkProEntitlement();
-        if (current) setHasProAccess(entitled);
+        if (current) {
+          setHasProAccess(entitled);
+        }
       } catch {
-        if (current) setHasProAccess(false);
+        if (current) {
+          setHasProAccess(false);
+        }
       }
     };
     void verifyAccess();
