@@ -1,4 +1,7 @@
-import { sceneCoordsToViewportCoords, viewportCoordsToSceneCoords } from "@excalidraw/common";
+import {
+  sceneCoordsToViewportCoords,
+  viewportCoordsToSceneCoords,
+} from "@excalidraw/common";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { createComment, loadComments } from "./api";
@@ -20,7 +23,9 @@ export const BoardCommentPins = ({ api }: { api: ExcalidrawImperativeAPI }) => {
   const [threads, setThreads] = useState<CommentThread[]>([]);
   const [revision, setRevision] = useState(0);
   const ownerWindow = rootRef.current?.ownerDocument.defaultView;
-  const sceneId = ownerWindow ? sceneIdFromPath(ownerWindow.location.pathname) : null;
+  const sceneId = ownerWindow
+    ? sceneIdFromPath(ownerWindow.location.pathname)
+    : null;
   const refresh = useCallback(async () => {
     if (!sceneId) return;
     const result = await loadComments(sceneId).catch(() => null);
@@ -39,8 +44,12 @@ export const BoardCommentPins = ({ api }: { api: ExcalidrawImperativeAPI }) => {
     const changed = () => void refresh();
     win.addEventListener(COMMENT_PLACEMENT_EVENT, place);
     win.addEventListener(COMMENTS_CHANGED_EVENT, changed);
-    const unsubscribeScroll = api.onScrollChange(() => setRevision((value) => value + 1));
-    const unsubscribeChange = api.onChange(() => setRevision((value) => value + 1));
+    const unsubscribeScroll = api.onScrollChange(() =>
+      setRevision((value) => value + 1),
+    );
+    const unsubscribeChange = api.onChange(() =>
+      setRevision((value) => value + 1),
+    );
     return () => {
       win.removeEventListener(COMMENT_PLACEMENT_EVENT, place);
       win.removeEventListener(COMMENTS_CHANGED_EVENT, changed);
@@ -67,15 +76,49 @@ export const BoardCommentPins = ({ api }: { api: ExcalidrawImperativeAPI }) => {
         const pending = placement.current;
         placement.current = null;
         rootRef.current?.classList.remove("is-placing");
-        await createComment(sceneId, pending.message, pending.anchorKind, anchor);
-        rootRef.current?.ownerDocument.defaultView?.dispatchEvent(new CustomEvent(COMMENTS_CHANGED_EVENT));
+        await createComment(
+          sceneId,
+          pending.message,
+          pending.anchorKind,
+          anchor,
+          pending.mentionUserIds,
+        );
+        rootRef.current?.ownerDocument.defaultView?.dispatchEvent(
+          new CustomEvent(COMMENTS_CHANGED_EVENT),
+        );
         await refresh();
       }}
     >
-      {threads.filter((thread) => !thread.resolved_at && thread.anchor_kind !== "general" && typeof thread.anchor.x === "number" && typeof thread.anchor.y === "number").map((thread) => {
-        const position = sceneCoordsToViewportCoords({ sceneX: thread.anchor.x!, sceneY: thread.anchor.y! }, appState);
-        return <button key={thread.id} type="button" className="boardy-comment-pin" style={{ left: position.x, top: position.y }} title={thread.messages[0]?.body || "Comment"} onClick={() => rootRef.current?.ownerDocument.getElementById(`comment-${thread.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })}>{thread.thread_number}</button>;
-      })}
+      {threads
+        .filter(
+          (thread) =>
+            !thread.resolved_at &&
+            thread.anchor_kind !== "general" &&
+            typeof thread.anchor.x === "number" &&
+            typeof thread.anchor.y === "number",
+        )
+        .map((thread) => {
+          const position = sceneCoordsToViewportCoords(
+            { sceneX: thread.anchor.x!, sceneY: thread.anchor.y! },
+            appState,
+          );
+          return (
+            <button
+              key={thread.id}
+              type="button"
+              className="boardy-comment-pin"
+              style={{ left: position.x, top: position.y }}
+              title={thread.messages[0]?.body || "Comment"}
+              onClick={() =>
+                rootRef.current?.ownerDocument
+                  .getElementById(`comment-${thread.id}`)
+                  ?.scrollIntoView({ behavior: "smooth", block: "center" })
+              }
+            >
+              {thread.thread_number}
+            </button>
+          );
+        })}
     </div>
   );
 };

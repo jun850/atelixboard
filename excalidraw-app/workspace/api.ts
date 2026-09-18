@@ -36,16 +36,23 @@ export const createComment = (
   message: string,
   anchorKind: "point" | "region" | "element" | "general",
   anchor: Record<string, unknown>,
+  mentionUserIds: string[] = [],
 ) =>
   workspaceApi(`comments/${sceneId}`, "POST", {
     message,
     anchorKind,
     anchor,
+    mentionUserIds,
   });
 
-export const replyToThread = (threadId: string, message: string) =>
+export const replyToThread = (
+  threadId: string,
+  message: string,
+  mentionUserIds: string[] = [],
+) =>
   workspaceApi(`comments/threads/${threadId}`, "POST", {
     message,
+    mentionUserIds,
   });
 
 export const updateThread = (

@@ -36,7 +36,9 @@ const addAvatarUrls = async (
 ) => {
   const paths = profiles
     .map((profile) => profile.avatar_path)
-    .filter((path): path is string => typeof path === "string" && path.length > 0);
+    .filter(
+      (path): path is string => typeof path === "string" && path.length > 0,
+    );
   if (!paths.length) {
     return profiles;
   }
@@ -91,7 +93,10 @@ const ensureAccount = async (
     return memberships[0].workspace_id as string;
   }
 
-  const base = `${slugify(metadataName || fallbackName)}-${user.id.slice(0, 8)}`;
+  const base = `${slugify(metadataName || fallbackName)}-${user.id.slice(
+    0,
+    8,
+  )}`;
   const { data: workspace, error: workspaceError } = await admin
     .from("boardy_workspaces")
     .upsert(
@@ -194,7 +199,11 @@ const dashboard = async (
   ]);
   const [workspaceResult, membersResult, collectionsResult, scenesResult] =
     await Promise.all([
-      admin.from("boardy_workspaces").select("*").eq("id", workspaceId).single(),
+      admin
+        .from("boardy_workspaces")
+        .select("*")
+        .eq("id", workspaceId)
+        .single(),
       admin
         .from("boardy_workspace_members")
         .select("workspace_id,user_id,role,status,joined_at")
@@ -267,7 +276,11 @@ Deno.serve(async (request) => {
       .filter(Boolean);
     const body = envelope.body || {};
 
-    if (parts[0] === "invitations" && parts[1] === "redeem" && method === "POST") {
+    if (
+      parts[0] === "invitations" &&
+      parts[1] === "redeem" &&
+      method === "POST"
+    ) {
       const token = String(body.token || "");
       const tokenHash = await sha256(token);
       const { data, error } = await client.rpc("boardy_redeem_invitation", {
@@ -297,7 +310,10 @@ Deno.serve(async (request) => {
       ? requireUuid(body.workspaceId)
       : defaultWorkspaceId;
 
-    if ((parts[0] === "bootstrap" || parts[0] === "dashboard") && method === "GET") {
+    if (
+      (parts[0] === "bootstrap" || parts[0] === "dashboard") &&
+      method === "GET"
+    ) {
       return response(
         request,
         200,
@@ -325,7 +341,10 @@ Deno.serve(async (request) => {
     }
 
     if (parts[0] === "collections" && parts.length === 1 && method === "POST") {
-      await requireWorkspaceRole(admin, workspaceId, user.id, ["admin", "staff"]);
+      await requireWorkspaceRole(admin, workspaceId, user.id, [
+        "admin",
+        "staff",
+      ]);
       const name = String(body.name || "").trim();
       if (!name || name.length > 120) throw new Error("limit");
       const { data, error } = await admin
@@ -334,7 +353,9 @@ Deno.serve(async (request) => {
           workspace_id: workspaceId,
           owner_id: user.id,
           name,
-          visibility: ["private", "workspace", "selected"].includes(body.visibility)
+          visibility: ["private", "workspace", "selected"].includes(
+            body.visibility,
+          )
             ? body.visibility
             : "private",
         })
@@ -344,7 +365,11 @@ Deno.serve(async (request) => {
       return response(request, 201, { collection: data });
     }
 
-    if (parts[0] === "collections" && parts.length === 2 && method === "PATCH") {
+    if (
+      parts[0] === "collections" &&
+      parts.length === 2 &&
+      method === "PATCH"
+    ) {
       const collectionId = requireUuid(parts[1]);
       const role = await requireWorkspaceRole(admin, workspaceId, user.id, [
         "admin",
@@ -356,10 +381,15 @@ Deno.serve(async (request) => {
         .eq("id", collectionId)
         .eq("workspace_id", workspaceId)
         .single();
-      if (!collection || (role !== "admin" && collection.owner_id !== user.id)) {
+      if (
+        !collection ||
+        (role !== "admin" && collection.owner_id !== user.id)
+      ) {
         throw new Error("forbidden");
       }
-      const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      const patch: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
       if (typeof body.name === "string") patch.name = body.name.trim();
       if (["private", "workspace", "selected"].includes(body.visibility)) {
         patch.visibility = body.visibility;
@@ -380,21 +410,45 @@ Deno.serve(async (request) => {
       return response(request, 200, { ok: true });
     }
 
-    if (parts[0] === "whiteboards" && parts.length === 2 && method === "PATCH") {
+    if (
+      parts[0] === "whiteboards" &&
+      parts.length === 2 &&
+      method === "PATCH"
+    ) {
       const sceneId = requireUuid(parts[1]);
       const capabilities = await sceneRole(client, sceneId);
-      const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      const patch: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
       if (typeof body.title === "string") {
-        if (!capabilities.can_manage && !(capabilities.can_edit && body.internal === true)) {
+        if (
+          !capabilities.can_manage &&
+          !(capabilities.can_edit && body.internal === true)
+        ) {
           throw new Error("forbidden");
         }
-        patch.title = body.title.trim();
+        const title = body.title.trim();
+        if (!title || title.length > 160) throw new Error("limit");
+        patch.title = title;
       }
       if (body.collectionId) {
         if (!capabilities.can_manage) throw new Error("forbidden");
-        patch.collection_id = requireUuid(body.collectionId);
+        const targetCollectionId = requireUuid(body.collectionId);
+        const { data: targetCollection, error: targetError } = await client
+          .from("boardy_collections")
+          .select("id,workspace_id")
+          .eq("id", targetCollectionId)
+          .eq("workspace_id", workspaceId)
+          .eq("status", "active")
+          .maybeSingle();
+        if (targetError || !targetCollection)
+          throw targetError || new Error("forbidden");
+        patch.collection_id = targetCollectionId;
       }
-      const { error } = await admin.from("scenes").update(patch).eq("id", sceneId);
+      const { error } = await admin
+        .from("scenes")
+        .update(patch)
+        .eq("id", sceneId);
       if (error) throw error;
       return response(request, 200, { ok: true });
     }
@@ -402,7 +456,11 @@ Deno.serve(async (request) => {
     if (parts[0] === "members" && parts.length === 2 && method === "PATCH") {
       await requireWorkspaceRole(admin, workspaceId, user.id, ["admin"]);
       const targetUserId = requireUuid(parts[1]);
-      if (targetUserId === user.id && body.action === "remove") throw new Error("forbidden");
+      if (
+        targetUserId === user.id &&
+        (body.action === "remove" || body.role !== "admin")
+      )
+        throw new Error("forbidden");
       if (body.action === "remove") {
         const { error } = await admin
           .from("boardy_workspace_members")
@@ -424,12 +482,39 @@ Deno.serve(async (request) => {
     }
 
     if (parts[0] === "invitations" && parts.length === 1 && method === "POST") {
-      await requireWorkspaceRole(admin, workspaceId, user.id, ["admin"]);
-      const token = `${crypto.randomUUID()}${crypto.randomUUID()}`.replaceAll("-", "");
+      if (body.sceneId) {
+        const capabilities = await sceneRole(client, requireUuid(body.sceneId));
+        if (!capabilities.can_manage) throw new Error("forbidden");
+      } else if (body.collectionId) {
+        const membershipRole = await requireWorkspaceRole(
+          admin,
+          workspaceId,
+          user.id,
+          ["admin", "staff"],
+        );
+        const { data: collection } = await admin
+          .from("boardy_collections")
+          .select("owner_id")
+          .eq("id", requireUuid(body.collectionId))
+          .eq("workspace_id", workspaceId)
+          .single();
+        if (
+          !collection ||
+          (membershipRole !== "admin" && collection.owner_id !== user.id)
+        )
+          throw new Error("forbidden");
+      } else {
+        await requireWorkspaceRole(admin, workspaceId, user.id, ["admin"]);
+      }
+      const token = `${crypto.randomUUID()}${crypto.randomUUID()}`.replaceAll(
+        "-",
+        "",
+      );
       const tokenHash = await sha256(token);
       const maxUses = Math.min(Math.max(Number(body.maxUses) || 1, 1), 1000);
       const expiresAt = new Date(
-        Date.now() + Math.min(Math.max(Number(body.expiresInDays) || 7, 1), 30) * 86400000,
+        Date.now() +
+          Math.min(Math.max(Number(body.expiresInDays) || 7, 1), 30) * 86400000,
       ).toISOString();
       const { data, error } = await admin
         .from("boardy_invitations")
@@ -477,14 +562,22 @@ Deno.serve(async (request) => {
       const messageIds = (messages || []).map((message) => message.id);
       const [{ data: reactions }, { data: mentions }] = messageIds.length
         ? await Promise.all([
-            admin.from("boardy_comment_reactions").select("message_id,user_id,emoji").in("message_id", messageIds),
-            admin.from("boardy_comment_mentions").select("message_id,user_id").in("message_id", messageIds),
+            admin
+              .from("boardy_comment_reactions")
+              .select("message_id,user_id,emoji")
+              .in("message_id", messageIds),
+            admin
+              .from("boardy_comment_mentions")
+              .select("message_id,user_id")
+              .in("message_id", messageIds),
           ])
         : [{ data: [] }, { data: [] }];
-      const profileIds = [...new Set([
-        ...(messages || []).map((message) => message.author_id),
-        ...(mentions || []).map((mention) => mention.user_id),
-      ])];
+      const profileIds = [
+        ...new Set([
+          ...(messages || []).map((message) => message.author_id),
+          ...(mentions || []).map((mention) => mention.user_id),
+        ]),
+      ];
       const { data: profileRows } = profileIds.length
         ? await admin
             .from("boardy_profiles")
@@ -504,15 +597,23 @@ Deno.serve(async (request) => {
             .map((message) => ({
               ...message,
               author: byUser[message.author_id],
-              mentions: (mentions || []).filter((item) => item.message_id === message.id).map((item) => byUser[item.user_id]).filter(Boolean),
+              mentions: (mentions || [])
+                .filter((item) => item.message_id === message.id)
+                .map((item) => byUser[item.user_id])
+                .filter(Boolean),
               reactions: Object.entries(
-                (reactions || []).filter((item) => item.message_id === message.id).reduce((all, item) => {
-                  const current = all[item.emoji] || { count: 0, reacted: false };
-                  current.count += 1;
-                  current.reacted ||= item.user_id === user.id;
-                  all[item.emoji] = current;
-                  return all;
-                }, {} as Record<string, { count: number; reacted: boolean }>),
+                (reactions || [])
+                  .filter((item) => item.message_id === message.id)
+                  .reduce((all, item) => {
+                    const current = all[item.emoji] || {
+                      count: 0,
+                      reacted: false,
+                    };
+                    current.count += 1;
+                    current.reacted ||= item.user_id === user.id;
+                    all[item.emoji] = current;
+                    return all;
+                  }, {} as Record<string, { count: number; reacted: boolean }>),
               ).map(([emoji, value]) => ({ emoji, ...value })),
             })),
         })),
@@ -525,7 +626,9 @@ Deno.serve(async (request) => {
       if (!capabilities.can_comment) throw new Error("forbidden");
       const bodyText = String(body.message || "").trim();
       if (!bodyText || bodyText.length > 10000) throw new Error("limit");
-      const anchorKind = ["point", "region", "element", "general"].includes(body.anchorKind)
+      const anchorKind = ["point", "region", "element", "general"].includes(
+        body.anchorKind,
+      )
         ? body.anchorKind
         : "general";
       const { data: thread, error } = await admin
@@ -551,16 +654,40 @@ Deno.serve(async (request) => {
         .single();
       if (messageError) throw messageError;
       const mentionIds = Array.isArray(body.mentionUserIds)
-        ? [...new Set(body.mentionUserIds.map(String))].filter((id) => id !== user.id).slice(0, 20)
+        ? [...new Set(body.mentionUserIds.map(String))]
+            .filter((id) => id !== user.id)
+            .slice(0, 20)
         : [];
       if (mentionIds.length) {
-        await admin.from("boardy_comment_mentions").insert(mentionIds.map((mentionedUserId) => ({ message_id: message.id, user_id: mentionedUserId })));
-        await admin.from("boardy_notifications").insert(mentionIds.map((mentionedUserId) => ({ user_id: mentionedUserId, scene_id: sceneId, thread_id: thread.id, actor_id: user.id, kind: "mention" })));
+        await admin
+          .from("boardy_comment_mentions")
+          .insert(
+            mentionIds.map((mentionedUserId) => ({
+              message_id: message.id,
+              user_id: mentionedUserId,
+            })),
+          );
+        await admin
+          .from("boardy_notifications")
+          .insert(
+            mentionIds.map((mentionedUserId) => ({
+              user_id: mentionedUserId,
+              scene_id: sceneId,
+              thread_id: thread.id,
+              actor_id: user.id,
+              kind: "mention",
+            })),
+          );
       }
       return response(request, 201, { thread, message });
     }
 
-    if (parts[0] === "comments" && parts[1] === "threads" && parts[2] && method === "POST") {
+    if (
+      parts[0] === "comments" &&
+      parts[1] === "threads" &&
+      parts[2] &&
+      method === "POST"
+    ) {
       const threadId = requireUuid(parts[2]);
       const { data: thread, error: threadError } = await admin
         .from("boardy_comment_threads")
@@ -584,20 +711,47 @@ Deno.serve(async (request) => {
         .single();
       if (error) throw error;
       const mentionIds = Array.isArray(body.mentionUserIds)
-        ? [...new Set(body.mentionUserIds.map(String))].filter((id) => id !== user.id).slice(0, 20)
+        ? [...new Set(body.mentionUserIds.map(String))]
+            .filter((id) => id !== user.id)
+            .slice(0, 20)
         : [];
       if (mentionIds.length) {
-        await admin.from("boardy_comment_mentions").insert(mentionIds.map((mentionedUserId) => ({ message_id: message.id, user_id: mentionedUserId })));
-        await admin.from("boardy_notifications").insert(mentionIds.map((mentionedUserId) => ({ user_id: mentionedUserId, scene_id: thread.scene_id, thread_id: threadId, actor_id: user.id, kind: "mention" })));
+        await admin
+          .from("boardy_comment_mentions")
+          .insert(
+            mentionIds.map((mentionedUserId) => ({
+              message_id: message.id,
+              user_id: mentionedUserId,
+            })),
+          );
+        await admin
+          .from("boardy_notifications")
+          .insert(
+            mentionIds.map((mentionedUserId) => ({
+              user_id: mentionedUserId,
+              scene_id: thread.scene_id,
+              thread_id: threadId,
+              actor_id: user.id,
+              kind: "mention",
+            })),
+          );
       }
       await admin
         .from("boardy_comment_threads")
-        .update({ last_activity_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .update({
+          last_activity_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", threadId);
       return response(request, 201, { message });
     }
 
-    if (parts[0] === "comments" && parts[1] === "threads" && parts[2] && method === "PATCH") {
+    if (
+      parts[0] === "comments" &&
+      parts[1] === "threads" &&
+      parts[2] &&
+      method === "PATCH"
+    ) {
       const threadId = requireUuid(parts[2]);
       const { data: thread, error } = await admin
         .from("boardy_comment_threads")
@@ -611,15 +765,19 @@ Deno.serve(async (request) => {
         version: thread.version + 1,
       };
       if (body.action === "resolve" || body.action === "reopen") {
-        if (!capabilities.can_edit && thread.created_by !== user.id) throw new Error("forbidden");
-        patch.resolved_at = body.action === "resolve" ? new Date().toISOString() : null;
+        if (!capabilities.can_edit && thread.created_by !== user.id)
+          throw new Error("forbidden");
+        patch.resolved_at =
+          body.action === "resolve" ? new Date().toISOString() : null;
         patch.resolved_by = body.action === "resolve" ? user.id : null;
       } else if (body.action === "move") {
-        if (!capabilities.can_manage && thread.created_by !== user.id) throw new Error("forbidden");
+        if (!capabilities.can_manage && thread.created_by !== user.id)
+          throw new Error("forbidden");
         patch.anchor_kind = body.anchorKind;
         patch.anchor = body.anchor;
       } else if (body.action === "delete") {
-        if (!capabilities.can_manage && thread.created_by !== user.id) throw new Error("forbidden");
+        if (!capabilities.can_manage && thread.created_by !== user.id)
+          throw new Error("forbidden");
         patch.deleted_at = new Date().toISOString();
         patch.deleted_by = user.id;
       } else {
@@ -634,18 +792,45 @@ Deno.serve(async (request) => {
       return response(request, 200, { ok: true, version: thread.version + 1 });
     }
 
-    if (parts[0] === "comments" && parts[1] === "messages" && parts[2] && parts[3] === "reactions" && method === "POST") {
+    if (
+      parts[0] === "comments" &&
+      parts[1] === "messages" &&
+      parts[2] &&
+      parts[3] === "reactions" &&
+      method === "POST"
+    ) {
       const messageId = requireUuid(parts[2]);
       const emoji = String(body.emoji || "").trim();
       if (!emoji || emoji.length > 32) throw new Error("limit");
-      const { data: message, error } = await admin.from("boardy_comment_messages").select("thread_id,boardy_comment_threads!inner(scene_id)").eq("id", messageId).single();
+      const { data: message, error } = await admin
+        .from("boardy_comment_messages")
+        .select("thread_id,boardy_comment_threads!inner(scene_id)")
+        .eq("id", messageId)
+        .single();
       if (error || !message) throw error || new Error("not_found");
-      const sceneId = (message.boardy_comment_threads as unknown as { scene_id: string }).scene_id;
+      const sceneId = (
+        message.boardy_comment_threads as unknown as { scene_id: string }
+      ).scene_id;
       const capabilities = await sceneRole(client, sceneId);
       if (!capabilities.can_comment) throw new Error("forbidden");
-      const existing = await admin.from("boardy_comment_reactions").select("emoji").eq("message_id", messageId).eq("user_id", user.id).eq("emoji", emoji).maybeSingle();
-      if (existing.data) await admin.from("boardy_comment_reactions").delete().eq("message_id", messageId).eq("user_id", user.id).eq("emoji", emoji);
-      else await admin.from("boardy_comment_reactions").insert({ message_id: messageId, user_id: user.id, emoji });
+      const existing = await admin
+        .from("boardy_comment_reactions")
+        .select("emoji")
+        .eq("message_id", messageId)
+        .eq("user_id", user.id)
+        .eq("emoji", emoji)
+        .maybeSingle();
+      if (existing.data)
+        await admin
+          .from("boardy_comment_reactions")
+          .delete()
+          .eq("message_id", messageId)
+          .eq("user_id", user.id)
+          .eq("emoji", emoji);
+      else
+        await admin
+          .from("boardy_comment_reactions")
+          .insert({ message_id: messageId, user_id: user.id, emoji });
       return response(request, 200, { reacted: !existing.data });
     }
 

@@ -592,11 +592,17 @@ const InviteAcceptance = ({ token }: { token: string }) => {
       .then((result) => {
         if (!current) return;
         if (result.sceneId) navigate(`/app/boards/${result.sceneId}`);
-        else if (result.collectionId) navigate(`/app/collections/${result.collectionId}`);
+        else if (result.collectionId)
+          navigate(`/app/collections/${result.collectionId}`);
         else navigate("/app");
       })
       .catch((caught) => {
-        if (current) setError(caught instanceof Error ? caught.message : "This invitation is unavailable.");
+        if (current)
+          setError(
+            caught instanceof Error
+              ? caught.message
+              : "This invitation is unavailable.",
+          );
       });
     return () => {
       current = false;
@@ -716,7 +722,10 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
     }
   }, [hasProAccess, localDemo, location, path, session]);
 
-  if (session === undefined || (path.startsWith("/app") && session && pendingNext?.startsWith("/app"))) {
+  if (
+    session === undefined ||
+    (path.startsWith("/app") && session && pendingNext?.startsWith("/app"))
+  ) {
     return (
       <main className="atelix-page atelix-loading-page" aria-live="polite">
         Loading Boardy…
@@ -761,7 +770,15 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
         </main>
       );
     }
-    return <WorkspaceApp BoardApp={BoardApp} session={session} onSignOut={signOut} localDemo={localDemo} locationHref={location} />;
+    return (
+      <WorkspaceApp
+        BoardApp={BoardApp}
+        session={session}
+        onSignOut={signOut}
+        localDemo={localDemo}
+        locationHref={location}
+      />
+    );
   }
 
   if (path.startsWith("/invite/")) {
