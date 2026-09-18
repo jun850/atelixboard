@@ -101,6 +101,18 @@ export const LibraryIcon = createIcon(
   tablerIconProps,
 );
 
+// Boardy: a reusable layout sheet, distinct from the personal Library book.
+export const TemplatesIcon = createIcon(
+  <g strokeWidth="1.5">
+    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <path d="M3 10h18" />
+    <path d="M9 10v10" />
+    <path d="M13 7h5" />
+  </g>,
+  tablerIconProps,
+);
+
 // tabler-icons: plus
 export const PlusIcon = createIcon(
   <svg strokeWidth="1.5">
@@ -656,6 +668,14 @@ export const ExportImageIcon = createIcon(
     <path d="M14 14l1 -1c.617 -.593 1.328 -.793 2.009 -.598"></path>
     <path d="M19 16v6"></path>
     <path d="M22 19l-3 3l-3 -3"></path>
+  </g>,
+  tablerIconProps,
+);
+
+export const DocumentIcon = createIcon(
+  <g strokeWidth="1.25">
+    <path d="M7 3.75h7.25L19 8.5v11.75H7z" />
+    <path d="M14.25 3.75V8.5H19M10 12h6M10 15h6M10 18h4" />
   </g>,
   tablerIconProps,
 );

@@ -1,169 +1,146 @@
-import {
-  DiagramToCodePlugin,
-  exportToBlob,
-  getNonDeletedElements,
-  getTextFromElements,
-  MIME_TYPES,
-  parseSSEStream,
-  TTDDialog,
-  TTDStreamFetch,
-} from "@excalidraw/excalidraw";
-import { getDataURL } from "@excalidraw/excalidraw/data/blob";
-import { safelyParseJSON } from "@excalidraw/common";
+import { useRef } from "react";
 
-import type { StreamChunk } from "@excalidraw/excalidraw";
+import { DiagramToCodePlugin, TTDDialog } from "@excalidraw/excalidraw";
+import { randomId } from "@excalidraw/common";
+
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 
+import { resolveActiveAssistantConnection } from "../agentic-board/active-connection";
+import { localApi } from "../agentic-board/client";
+import { validateResult } from "../agentic-board/protocol";
 import { TTDIndexedDBAdapter } from "../data/TTDStorage";
+
+import type { Content } from "../agentic-board/catalog";
+import type { GenerateRequest } from "../agentic-board/protocol";
+
+const safeMermaidLabel = (value: string) =>
+  value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, " ");
+
+const contentToMermaid = (content: Content) => {
+  const lines = ["flowchart TD"];
+  content.sections.forEach((section, index) => {
+    const details = section.items.filter(Boolean).join("<br/>");
+    const label = safeMermaidLabel(
+      details ? `${section.heading}<br/>${details}` : section.heading,
+    );
+    lines.push(`  step${index}["${label}"]`);
+    if (index > 0) {
+      lines.push(`  step${index - 1} --> step${index}`);
+    }
+  });
+  return lines.join("\n");
+};
+
+const contextElement = (element: {
+  type: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  text?: string;
+}) => ({
+  type: element.type,
+  ...(typeof element.text === "string" ? { text: element.text } : {}),
+  x: element.x,
+  y: element.y,
+  width: element.width,
+  height: element.height,
+});
 
 export const AIComponents = ({
   excalidrawAPI,
 }: {
   excalidrawAPI: ExcalidrawImperativeAPI;
 }) => {
+  const mountedNode = useRef<HTMLSpanElement>(null);
+  const getOwnerWindow = () => {
+    const ownerWindow = mountedNode.current?.ownerDocument.defaultView;
+    if (!ownerWindow) {
+      throw new Error("Boardy is not mounted.");
+    }
+    return ownerWindow;
+  };
+
   return (
     <>
+      <span ref={mountedNode} hidden />
       <DiagramToCodePlugin
-        generate={async ({ frame, children, onPartial }) => {
-          const appState = excalidrawAPI.getAppState();
-
-          // SAFETY: This should never happen, but log it just in case
-          if (children.some((el) => el.isDeleted)) {
-            console.error(
-              "[NONDELETED][INVARIANT] Generated children elements should not be `isDeleted: true`",
+        generate={async ({ frame, children }) => {
+          const ownerWindow = getOwnerWindow();
+          const { connection, model } = await resolveActiveAssistantConnection(
+            ownerWindow,
+          );
+          const request: GenerateRequest = {
+            requestId: randomId() + randomId(),
+            connectionId: connection.id,
+            model: model.id,
+            task: "ui",
+            templateId: "flowchart",
+            prompt:
+              "Convert this selected wireframe into a polished, responsive interface. Preserve its information hierarchy, visible labels, and intended interactions.",
+            allowUnknown: model.compatible === null,
+            context: {
+              mode: "selection",
+              elements: [frame, ...children].map(contextElement),
+            },
+          };
+          const response = await localApi<{ result: unknown }>(
+            ownerWindow,
+            "generate",
+            "POST",
+            request,
+          );
+          const result = validateResult(response.result, request);
+          if (!("html" in result)) {
+            throw new Error(
+              "The selected model did not return interface code.",
             );
           }
-
-          const blob = await exportToBlob({
-            elements: getNonDeletedElements(children),
-            appState: {
-              ...appState,
-              exportBackground: true,
-              viewBackgroundColor: appState.viewBackgroundColor,
-            },
-            exportingFrame: frame,
-            files: excalidrawAPI.getFiles(),
-            mimeType: MIME_TYPES.jpg,
-          });
-
-          const dataURL = await getDataURL(blob);
-
-          const textFromFrameChildren = getTextFromElements(children);
-
-          const response = await fetch(
-            `${
-              import.meta.env.VITE_APP_AI_BACKEND
-            }/v1/ai/diagram-to-code/generate-streaming`,
-            {
-              method: "POST",
-              headers: {
-                Accept: "text/event-stream",
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                texts: textFromFrameChildren,
-                image: dataURL,
-                theme: appState.theme,
-              }),
-            },
-          );
-
-          if (!response.ok) {
-            const text = await response.text();
-            const errorJSON = safelyParseJSON(text);
-
-            if (!errorJSON) {
-              throw new Error(text);
-            }
-
-            if (errorJSON.statusCode === 429) {
-              return {
-                html: `<html>
-                <body style="margin: 0; text-align: center">
-                <div style="display: flex; align-items: center; justify-content: center; flex-direction: column; height: 100vh; padding: 0 60px">
-                  <div style="color:red">Too many requests today,</br>please try again tomorrow!</div>
-                  </br>
-                  </br>
-                  <div>Please try again later.</div>
-                </div>
-                </body>
-                </html>`,
-              };
-            }
-
-            throw new Error(errorJSON.message || text);
-          }
-
-          const reader = response.body?.getReader();
-
-          if (!reader) {
-            throw new Error("Generation failed (invalid response)");
-          }
-
-          let html = "";
-          let streamError: Error | null = null;
-
-          for await (const data of parseSSEStream(reader)) {
-            if (data === "[DONE]") {
-              break;
-            }
-
-            const chunk = safelyParseJSON(data) as StreamChunk | null;
-
-            if (!chunk) {
-              continue;
-            }
-
-            switch (chunk.type) {
-              case "content": {
-                if (chunk.delta) {
-                  html += chunk.delta;
-                  onPartial?.(html);
-                }
-                break;
-              }
-              case "error": {
-                streamError = new Error(
-                  chunk.error.message || "Generation failed",
-                );
-                break;
-              }
-              case "done": {
-                break;
-              }
-            }
-          }
-
-          if (streamError) {
-            throw streamError;
-          }
-
-          if (!html.trim()) {
-            throw new Error("Generation failed (invalid response)");
-          }
-
-          return {
-            html,
-          };
+          return result;
         }}
       />
 
       <TTDDialog
-        onTextSubmit={async (props) => {
-          const { onChunk, onStreamCreated, signal, messages } = props;
-
-          const result = await TTDStreamFetch({
-            url: `${
-              import.meta.env.VITE_APP_AI_BACKEND
-            }/v1/ai/text-to-diagram/chat-streaming`,
-            messages,
-            onChunk,
-            onStreamCreated,
-            extractRateLimits: true,
+        onTextSubmit={async ({
+          messages,
+          onChunk,
+          onStreamCreated,
+          signal,
+        }) => {
+          const ownerWindow = getOwnerWindow();
+          const { connection, model, reasoningEffort } =
+            await resolveActiveAssistantConnection(ownerWindow, "economy");
+          const prompt = messages
+            .slice(-4)
+            .map((message) => `${message.role}: ${message.content}`)
+            .join("\n")
+            .slice(0, 16000);
+          const request: GenerateRequest = {
+            requestId: randomId() + randomId(),
+            connectionId: connection.id,
+            model: model.id,
+            task: "board",
+            templateId: "flowchart",
+            prompt,
+            allowUnknown: model.compatible === null,
+            reasoningEffort,
+            context: { mode: "prompt_only", elements: [] },
+          };
+          onStreamCreated?.();
+          const response = await localApi<{ result: unknown }>(
+            ownerWindow,
+            "generate",
+            "POST",
+            request,
             signal,
-          });
-
-          return result;
+          );
+          const result = validateResult(response.result, request);
+          if ("html" in result) {
+            throw new Error("The selected model did not return a diagram.");
+          }
+          const generatedResponse = contentToMermaid(result);
+          onChunk?.(generatedResponse);
+          return { generatedResponse, error: null };
         }}
         persistenceAdapter={TTDIndexedDBAdapter}
       />

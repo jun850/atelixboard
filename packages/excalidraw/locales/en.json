@@ -322,6 +322,7 @@
     "selection": "Selection",
     "lasso": "Lasso selection",
     "image": "Insert image",
+    "document": "Insert document",
     "rectangle": "Rectangle",
     "diamond": "Diamond",
     "ellipse": "Ellipse",

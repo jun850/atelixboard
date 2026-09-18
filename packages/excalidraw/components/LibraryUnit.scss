@@ -128,14 +128,21 @@
     animation: library-unit__adder-animation 1s ease-in infinite;
 
     position: absolute;
-    width: 1.5rem;
-    height: 1.5rem;
+    top: calc(55px + 0.25rem);
+    left: 50%;
+    min-width: 3.25rem;
+    height: 1.75rem;
+    padding: 0 0.5rem;
     background-color: var(--color-primary);
     border-radius: var(--border-radius-md);
 
     display: flex;
     justify-content: center;
     align-items: center;
+    gap: 0.25rem;
+    color: var(--color-primary-light);
+    font-size: 0.6875rem;
+    font-weight: 700;
 
     pointer-events: none;
 
@@ -146,9 +153,23 @@
     }
   }
 
+  .library-unit--pending {
+    height: calc(55px + 2.25rem);
+    align-self: start;
+
+    .library-unit__dragger {
+      align-self: start;
+      height: 55px;
+    }
+
+    .library-unit__adder {
+      transform: translateX(-50%) scale(1);
+    }
+  }
+
   .library-unit:active .library-unit__adder {
     animation: none;
-    transform: scale(0.8);
+    transform: translateX(-50%) scale(0.92);
   }
 
   .library-unit__active {
@@ -157,15 +178,15 @@
 
   @keyframes library-unit__adder-animation {
     0% {
-      transform: scale(0.85);
+      transform: translateX(-50%) scale(0.92);
     }
 
     50% {
-      transform: scale(1);
+      transform: translateX(-50%) scale(1);
     }
 
     100% {
-      transform: scale(0.85);
+      transform: translateX(-50%) scale(0.92);
     }
   }
 

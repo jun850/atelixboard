@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 
+import { localApi } from "../agentic-board/client";
 import { isSupabaseConfigured, supabase } from "../supabase/client";
 
 import { BoardArtwork, LandingIcon } from "./LandingArtwork";
@@ -473,6 +474,8 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
   const currentUrl = new URL(location);
   const path = currentUrl.pathname;
   const pendingNext = currentUrl.searchParams.get("next");
+  const localDemo =
+    import.meta.env.DEV && currentUrl.searchParams.get("localDemo") === "1";
 
   useEffect(() => {
     const onPopState = () => setLocation(window.location.href);
@@ -481,6 +484,24 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
   }, []);
 
   useEffect(() => {
+    if (localDemo) {
+      setSession({
+        access_token: "local-demo",
+        refresh_token: "local-demo",
+        expires_in: 3600,
+        token_type: "bearer",
+        user: {
+          id: "00000000-0000-4000-8000-000000000001",
+          aud: "authenticated",
+          role: "authenticated",
+          email: "local-demo@boardy.test",
+          app_metadata: {},
+          user_metadata: {},
+          created_at: new Date(0).toISOString(),
+        },
+      } as Session);
+      return;
+    }
     if (!isSupabaseConfigured) {
       setSession(null);
       return;
@@ -497,7 +518,7 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
       }
     });
     return () => subscription.unsubscribe();
-  }, []);
+  }, [localDemo]);
 
   useEffect(() => {
     if (path === "/app" && session === null) {
@@ -538,7 +559,14 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
             <button
               className="atelix-board-logout"
               type="button"
-              onClick={async () => {
+              onClick={async (event) => {
+                const ownerWindow =
+                  event.currentTarget.ownerDocument.defaultView;
+                if (import.meta.env.DEV && ownerWindow) {
+                  await localApi(ownerWindow, "session", "DELETE").catch(
+                    () => undefined,
+                  );
+                }
                 await supabase.auth.signOut();
                 navigate("/");
               }}

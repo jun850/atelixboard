@@ -1,4 +1,19 @@
 services:
+  onlyoffice:
+    image: onlyoffice/documentserver:9.4.0
+    container_name: boardy-onlyoffice
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    environment:
+      JWT_ENABLED: "true"
+      JWT_SECRET: ${DOCUMENT_SERVER_JWT_SECRET:-boardy-local-documents-change-me}
+      ALLOW_PRIVATE_IP_ADDRESS: "true"
+      ALLOW_META_IP_ADDRESS: "true"
+    volumes:
+      - onlyoffice_data:/var/www/onlyoffice/Data
+      - onlyoffice_logs:/var/log/onlyoffice
+
   excalidraw:
     build:
       context: .
@@ -21,3 +36,5 @@ services:
 
 volumes:
   notused:
+  onlyoffice_data:
+  onlyoffice_logs:

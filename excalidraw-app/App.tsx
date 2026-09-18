@@ -45,6 +45,7 @@ import {
   restoreElements,
 } from "@excalidraw/excalidraw/data/restore";
 import { newElementWith } from "@excalidraw/element";
+import { newEmbeddableElement } from "@excalidraw/element/newElement";
 import { isInitializedImageElement } from "@excalidraw/element";
 import clsx from "clsx";
 import {
@@ -128,9 +129,14 @@ import DebugCanvas, {
 } from "./components/DebugCanvas";
 import { useSimulatedCollaborators } from "./debugCollaborators";
 import { AIComponents } from "./components/AI";
+import { AgenticBoard } from "./agentic-board/AgenticBoard";
+import { DocumentEmbed } from "./documents/DocumentEmbed";
+import { getDocument, uploadDocument } from "./documents/api";
+import { DOCUMENT_LINK_PREFIX, getBoardyDocumentData } from "./documents/types";
 
 import "./index.scss";
 
+import type { DocumentRecord } from "./documents/types";
 import type { CollabAPI } from "./collab/Collab";
 
 polyfill();
@@ -378,6 +384,7 @@ const ExcalidrawWrapper = () => {
   }
 
   const debugCanvasRef = useRef<HTMLCanvasElement>(null);
+  const appRootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     trackEvent("load", "frame", getFrame());
@@ -389,6 +396,120 @@ const ExcalidrawWrapper = () => {
 
   const [, setShareDialogState] = useAtom(shareDialogStateAtom);
   const [collabAPI] = useAtom(collabAPIAtom);
+
+  const addDocumentRecords = useCallback(
+    (
+      records: readonly DocumentRecord[],
+      position: { x: number; y: number },
+    ) => {
+      if (!excalidrawAPI) {
+        return;
+      }
+      const current = excalidrawAPI.getSceneElementsIncludingDeleted();
+      const additions = records.map((record, index) =>
+        newEmbeddableElement({
+          type: "embeddable",
+          x: position.x + index * 36,
+          y: position.y + index * 36,
+          width: 595,
+          height: 842,
+          link: `${DOCUMENT_LINK_PREFIX}${record.id}`,
+          strokeColor: "#1b1d22",
+          backgroundColor: "transparent",
+          fillStyle: "solid",
+          strokeWidth: 1,
+          strokeStyle: "solid",
+          roughness: 0,
+          opacity: 100,
+          customData: {
+            boardyDocument: {
+              version: 1,
+              documentId: record.id,
+              title: record.title,
+              sourceType: record.sourceType,
+            },
+          },
+        }),
+      );
+      excalidrawAPI.updateScene({
+        elements: [...current, ...additions],
+        appState: {
+          selectedElementIds: Object.fromEntries(
+            additions.map((element) => [element.id, true]),
+          ),
+        },
+        captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+      });
+      const viewportPadding = 72;
+      const left = Math.min(...additions.map((element) => element.x));
+      const top = Math.min(...additions.map((element) => element.y));
+      const right = Math.max(
+        ...additions.map((element) => element.x + element.width),
+      );
+      const bottom = Math.max(
+        ...additions.map((element) => element.y + element.height),
+      );
+      excalidrawAPI.setViewport({
+        target: {
+          x: left - viewportPadding,
+          y: top - viewportPadding,
+          width: right - left + viewportPadding * 2,
+          height: bottom - top + viewportPadding * 2,
+        },
+        fit: "contain",
+        animation: false,
+      });
+    },
+    [excalidrawAPI],
+  );
+
+  const insertDocuments = useCallback(
+    async (files: readonly File[], position: { x: number; y: number }) => {
+      if (!excalidrawAPI) {
+        return;
+      }
+      try {
+        const roomLink = collabAPI?.getActiveRoomLink();
+        const roomId = roomLink
+          ? getCollaborationLinkData(roomLink)?.roomId || null
+          : null;
+        const records = await Promise.all(
+          files.map((file) => uploadDocument(file, roomId)),
+        );
+        addDocumentRecords(records, position);
+      } catch (error: any) {
+        setErrorMessage(
+          error?.message || "The document could not be inserted.",
+        );
+      }
+    },
+    [addDocumentRecords, collabAPI, excalidrawAPI],
+  );
+
+  useEffect(() => {
+    if (!import.meta.env.DEV || !excalidrawAPI || !appRootRef.current) {
+      return;
+    }
+    const ownerWindow = appRootRef.current.ownerDocument.defaultView;
+    const documentId = ownerWindow
+      ? new URL(ownerWindow.location.href).searchParams.get("documentDemo")
+      : null;
+    if (
+      !documentId ||
+      excalidrawAPI
+        .getSceneElements()
+        .some(
+          (element) =>
+            getBoardyDocumentData(element.customData)?.documentId ===
+            documentId,
+        )
+    ) {
+      return;
+    }
+    void getDocument(documentId)
+      .then((record) => addDocumentRecords([record], { x: 0, y: 0 }))
+      .catch((error) => setErrorMessage(error.message));
+  }, [addDocumentRecords, excalidrawAPI]);
   const [isCollaborating] = useAtomWithInitialValue(isCollaboratingAtom, () => {
     return isCollaborationLink(window.location.href);
   });
@@ -883,12 +1004,22 @@ const ExcalidrawWrapper = () => {
 
   return (
     <div
+      ref={appRootRef}
       style={{ height: "100%" }}
       className={clsx("excalidraw-app", {
         "is-collaborating": isCollaborating,
       })}
     >
       <Excalidraw
+        onDocumentFilesSelected={insertDocuments}
+        validateEmbeddable={(link) =>
+          link.startsWith(DOCUMENT_LINK_PREFIX) ? true : undefined
+        }
+        renderEmbeddable={(element, appState) =>
+          getBoardyDocumentData(element.customData) ? (
+            <DocumentEmbed element={element} appState={appState} />
+          ) : null
+        }
         viewportStatusFrame={viewportStatusFrame}
         userToFollow={userToFollow}
         onChange={onChange}
@@ -939,6 +1070,20 @@ const ExcalidrawWrapper = () => {
         }}
       >
         <AppMainMenu
+          onTemplatesOpen={() =>
+            excalidrawAPI?.toggleSidebar({
+              name: "default",
+              tab: "agentic-templates",
+              force: true,
+            })
+          }
+          onAssistantOpen={() =>
+            excalidrawAPI?.toggleSidebar({
+              name: "default",
+              tab: "agentic-assistant",
+              force: true,
+            })
+          }
           onCollabDialogOpen={onCollabDialogOpen}
           isCollaborating={isCollaborating}
           isCollabEnabled={!isCollabDisabled}
@@ -946,6 +1091,13 @@ const ExcalidrawWrapper = () => {
           refresh={() => forceRefresh((prev) => !prev)}
         />
         <AppWelcomeScreen
+          onTemplatesOpen={() =>
+            excalidrawAPI?.toggleSidebar({
+              name: "default",
+              tab: "agentic-templates",
+              force: true,
+            })
+          }
           onCollabDialogOpen={onCollabDialogOpen}
           isCollabEnabled={!isCollabDisabled}
         />
@@ -955,6 +1107,7 @@ const ExcalidrawWrapper = () => {
         </OverwriteConfirmDialog>
         <AppFooter onChange={() => excalidrawAPI?.refresh()} />
         {excalidrawAPI && <AIComponents excalidrawAPI={excalidrawAPI} />}
+        {excalidrawAPI && <AgenticBoard api={excalidrawAPI} />}
 
         <TTDDialogTrigger />
         {isCollaborating && isOffline && (
@@ -1003,6 +1156,30 @@ const ExcalidrawWrapper = () => {
 
         <CommandPalette
           customCommandPaletteItems={[
+            {
+              label: "Templates",
+              category: DEFAULT_CATEGORIES.app,
+              keywords: ["gallery", "starter", "templates"],
+              icon: usersIcon,
+              perform: () =>
+                excalidrawAPI?.toggleSidebar({
+                  name: "default",
+                  tab: "agentic-templates",
+                  force: true,
+                }),
+            },
+            {
+              label: "Assistant",
+              category: DEFAULT_CATEGORIES.app,
+              keywords: ["AI", "agentic", "generate"],
+              icon: usersIcon,
+              perform: () =>
+                excalidrawAPI?.toggleSidebar({
+                  name: "default",
+                  tab: "agentic-assistant",
+                  force: true,
+                }),
+            },
             {
               label: t("labels.liveCollaboration"),
               category: DEFAULT_CATEGORIES.app,

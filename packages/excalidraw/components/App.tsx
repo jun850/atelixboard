@@ -300,6 +300,8 @@ import type {
 
 import type { Mutable, ValueOf } from "@excalidraw/common/utility-types";
 
+import { safeGeneratedHtml } from "../generatedHtml";
+
 import {
   actionAddToLibrary,
   actionBringForward,
@@ -1872,48 +1874,7 @@ class App extends React.Component<AppProps, AppState> {
                 intrinsicSize: { w: el.width, h: el.height },
                 type: "document",
                 srcdoc: () => {
-                  return createSrcDoc(`
-                    <style>
-                      html, body {
-                        width: 100%;
-                        height: 100%;
-                        margin: 0;
-                      }
-                    </style>
-                    <script>
-                      // progressively renders the partial HTML snapshots the
-                      // editor streams in during generation by document.write-
-                      // ing them into this very document — feeding the
-                      // browser's incremental HTML parser, so incomplete
-                      // markup renders progressively
-                      // (see App.onMagicFrameGenerate)
-                      let writtenLength = 0;
-                      let opened = false;
-
-                      const onPartialMessage = (event) => {
-                        const data = event.data;
-                        if (
-                          !data ||
-                          data.type !== "excalidraw:diagramToCode:partial" ||
-                          typeof data.html !== "string" ||
-                          data.html.length <= writtenLength
-                        ) {
-                          return;
-                        }
-                        if (!opened) {
-                          opened = true;
-                          document.open();
-                          // document.open() wipes all listeners from both the
-                          // document and the window, so re-register
-                          window.addEventListener("message", onPartialMessage);
-                        }
-                        document.write(data.html.slice(writtenLength));
-                        writtenLength = data.html.length;
-                      };
-
-                      window.addEventListener("message", onPartialMessage);
-                    </script>
-                  `);
+                  return "<p>Generating…</p>";
                 },
               } as const;
               isPendingGeneration = true;
@@ -2056,7 +2017,12 @@ class App extends React.Component<AppProps, AppState> {
                         className="excalidraw__embeddable"
                         srcDoc={
                           src?.type === "document"
-                            ? src.srcdoc(this.state.theme)
+                            ? isIframeElement(el)
+                              ? safeGeneratedHtml(
+                                  src.srcdoc(this.state.theme),
+                                  this.ownerDocument,
+                                )
+                              : src.srcdoc(this.state.theme)
                             : undefined
                         }
                         src={
@@ -2066,13 +2032,21 @@ class App extends React.Component<AppProps, AppState> {
                         scrolling="no"
                         referrerPolicy="no-referrer-when-downgrade"
                         title="Boardy embedded content"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen={true}
-                        sandbox={`${
-                          src?.sandbox?.allowSameOrigin
-                            ? "allow-same-origin"
-                            : ""
-                        } allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation allow-downloads`}
+                        allow={
+                          isIframeElement(el)
+                            ? ""
+                            : "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        }
+                        allowFullScreen={!isIframeElement(el)}
+                        sandbox={
+                          isIframeElement(el)
+                            ? ""
+                            : `${
+                                src?.sandbox?.allowSameOrigin
+                                  ? "allow-same-origin"
+                                  : ""
+                              } allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation allow-downloads`
+                        }
                       />
                     )}
                   </div>
@@ -12972,6 +12946,40 @@ class App extends React.Component<AppProps, AppState> {
         fileId,
       },
     );
+  };
+
+  public onDocumentToolbarButtonClick = () => {
+    if (!this.props.onDocumentFilesSelected) {
+      return;
+    }
+    const input = this.ownerDocument.createElement("input");
+    input.type = "file";
+    input.accept =
+      ".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    input.multiple = true;
+    input.style.display = "none";
+    this.ownerDocument.body.append(input);
+    input.addEventListener(
+      "change",
+      () => {
+        const files = Array.from(input.files || []);
+        input.remove();
+        if (!files.length) {
+          return;
+        }
+        const { x, y } = viewportCoordsToSceneCoords(
+          {
+            clientX: this.state.width / 2 + this.state.offsetLeft,
+            clientY: this.state.height / 2 + this.state.offsetTop,
+          },
+          this.state,
+        );
+        void this.props.onDocumentFilesSelected?.(files, { x, y });
+      },
+      { once: true },
+    );
+    input.addEventListener("cancel", () => input.remove(), { once: true });
+    input.click();
   };
 
   private onImageToolbarButtonClick = async () => {

@@ -1,0 +1,140 @@
+.boardy-document {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  aspect-ratio: 210 / 297;
+  background: #fff;
+  color: #1b1d22;
+  font-family: var(--ui-font);
+  user-select: none;
+}
+
+.boardy-document__editor-shell,
+.boardy-document__editor,
+.boardy-document__editor > iframe {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.boardy-document:not(.is-active) :is(.boardy-document__editor-shell, button) {
+  pointer-events: none;
+}
+
+.boardy-document__message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 100%;
+  padding: 28px;
+  color: #626671;
+  text-align: center;
+}
+
+.boardy-document__message strong {
+  color: #1b1d22;
+  font-size: 18px;
+}
+.boardy-document button {
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 11px;
+  background: #e9efff;
+  color: #214fae;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.boardy-document button:hover {
+  background: #dce6ff;
+}
+.boardy-document button:focus-visible {
+  outline: 3px solid #7da2ff;
+  outline-offset: 2px;
+}
+.boardy-document button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.boardy-document__download {
+  position: absolute;
+  right: 12px;
+  bottom: 14px;
+  z-index: 4;
+  box-shadow: 0 6px 18px rgb(26 31 44 / 14%);
+}
+
+.boardy-document__viewer {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #fff;
+}
+.boardy-document__toolbar {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  align-items: center;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 10px;
+  overflow: hidden;
+  background: #fff;
+}
+.boardy-document__toolbar span {
+  white-space: nowrap;
+  color: #555a65;
+  font-variant-numeric: tabular-nums;
+}
+.boardy-document__toolbar button[aria-pressed="true"] {
+  background: #2458c6;
+  color: #fff;
+}
+.boardy-document__status {
+  padding: 6px 10px;
+  background: #fff4ce;
+  color: #573d00;
+  font-size: 13px;
+}
+.boardy-document__page {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  flex: 1;
+  box-sizing: border-box;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  scrollbar-color: #a8aebb transparent;
+}
+.boardy-document__page :is(img, canvas) {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: 100%;
+  width: 100%;
+  height: auto;
+  background: #fff;
+}
+.boardy-document__page img {
+  display: block;
+}
+.boardy-document__page canvas:last-child {
+  background: transparent;
+  pointer-events: none;
+  touch-action: pan-y;
+}
+.boardy-document__page canvas.is-drawing {
+  pointer-events: auto;
+  touch-action: none;
+  cursor: crosshair;
+}

@@ -24,6 +24,7 @@ import {
   MagicIcon,
   mermaidLogoIcon,
   DotsIcon,
+  DocumentIcon,
 } from "./icons";
 import {
   ArrowToolButton,
@@ -130,6 +131,15 @@ const ExtraToolsDropdown = ({
             disabled={isToolButtonDisabled(app, "image")}
           >
             {t("toolBar.image")}
+          </DropdownMenu.Item>
+        )}
+        {app.props.onDocumentFilesSelected && (
+          <DropdownMenu.Item
+            onSelect={app.onDocumentToolbarButtonClick}
+            icon={DocumentIcon}
+            data-testid="toolbar-document"
+          >
+            {t("toolBar.document")}
           </DropdownMenu.Item>
         )}
         <DropdownMenu.Item

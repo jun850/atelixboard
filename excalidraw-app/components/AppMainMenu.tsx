@@ -1,4 +1,8 @@
-import { eyeIcon } from "@excalidraw/excalidraw/components/icons";
+import {
+  eyeIcon,
+  MagicIcon,
+  TemplatesIcon,
+} from "@excalidraw/excalidraw/components/icons";
 import { MainMenu } from "@excalidraw/excalidraw/index";
 import React from "react";
 
@@ -11,6 +15,8 @@ import { LanguageList } from "../app-language/LanguageList";
 import { saveDebugState } from "./DebugCanvas";
 
 export const AppMainMenu: React.FC<{
+  onTemplatesOpen: () => void;
+  onAssistantOpen: () => void;
   onCollabDialogOpen: () => any;
   isCollaborating: boolean;
   isCollabEnabled: boolean;
@@ -19,6 +25,18 @@ export const AppMainMenu: React.FC<{
 }> = React.memo((props) => {
   return (
     <MainMenu>
+      <MainMenu.Group title="Create">
+        <MainMenu.Item icon={TemplatesIcon} onSelect={props.onTemplatesOpen}>
+          Templates
+        </MainMenu.Item>
+        <MainMenu.Item
+          icon={MagicIcon}
+          onSelect={props.onAssistantOpen}
+          badge={<MainMenu.Item.Badge>NEW</MainMenu.Item.Badge>}
+        >
+          Assistant
+        </MainMenu.Item>
+      </MainMenu.Group>
       <MainMenu.DefaultItems.LoadScene />
       <MainMenu.DefaultItems.SaveToActiveFile />
       <MainMenu.DefaultItems.Export />

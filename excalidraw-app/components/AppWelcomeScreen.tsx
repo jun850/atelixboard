@@ -3,6 +3,7 @@ import { WelcomeScreen } from "@excalidraw/excalidraw/index";
 import React from "react";
 
 export const AppWelcomeScreen: React.FC<{
+  onTemplatesOpen: () => void;
   onCollabDialogOpen: () => any;
   isCollabEnabled: boolean;
 }> = React.memo((props) => {
@@ -43,6 +44,9 @@ export const AppWelcomeScreen: React.FC<{
           {headingContent}
         </WelcomeScreen.Center.Heading>
         <WelcomeScreen.Center.Menu>
+          <WelcomeScreen.Center.MenuItem onSelect={props.onTemplatesOpen}>
+            Explore templates
+          </WelcomeScreen.Center.MenuItem>
           <WelcomeScreen.Center.MenuItemLoadScene />
           <WelcomeScreen.Center.MenuItemHelp />
           {props.isCollabEnabled && (

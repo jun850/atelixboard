@@ -11,11 +11,7 @@
  */
 
 import { clearAppStateForLocalStorage } from "@excalidraw/excalidraw/appState";
-import {
-  CANVAS_SEARCH_TAB,
-  DEFAULT_SIDEBAR,
-  debounce,
-} from "@excalidraw/common";
+import { debounce } from "@excalidraw/common";
 import {
   createStore,
   entries,
@@ -45,6 +41,7 @@ import { FileManager } from "./FileManager";
 import { FileStatusStore } from "./fileStatusStore";
 import { Locker } from "./Locker";
 import { updateBrowserStateVersion } from "./tabSync";
+import { clearSidebarForPersistence } from "./localStorage";
 
 const filesStore = createStore("files-db", "files-store");
 
@@ -78,14 +75,9 @@ const saveDataStateToLocalStorage = (
     localStorageQuotaExceededAtom,
   );
   try {
-    const _appState = clearAppStateForLocalStorage(appState);
-
-    if (
-      _appState.openSidebar?.name === DEFAULT_SIDEBAR.name &&
-      _appState.openSidebar.tab === CANVAS_SEARCH_TAB
-    ) {
-      _appState.openSidebar = null;
-    }
+    const _appState = clearSidebarForPersistence(
+      clearAppStateForLocalStorage(appState),
+    );
 
     localStorage.setItem(
       STORAGE_KEYS.LOCAL_STORAGE_ELEMENTS,

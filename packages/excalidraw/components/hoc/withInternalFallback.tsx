@@ -18,7 +18,7 @@ export const withInternalFallback = <P,>(
       tunnelsJotai: { useAtom },
     } = useTunnels();
     // for rerenders
-    const [, setCounter] = useAtom(renderAtom);
+    const [renderCount, setCounter] = useAtom(renderAtom);
     // for initial & subsequent renders. Tracked as component state
     // due to excalidraw multi-instance scanerios.
     const metaRef = useRef({
@@ -62,7 +62,7 @@ export const withInternalFallback = <P,>(
         metaRef.current.preferHost) ||
       // or after the counters are initialized, and both are rendered
       // (this is the default when host renders as well)
-      (metaRef.current.counter > 1 && props.__fallback)
+      (renderCount > 1 && props.__fallback)
     ) {
       return null;
     }

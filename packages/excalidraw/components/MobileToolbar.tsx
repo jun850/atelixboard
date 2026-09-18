@@ -34,6 +34,7 @@ import {
   mermaidLogoIcon,
   MagicIcon,
   stickyNoteToolIcon,
+  DocumentIcon,
 } from "./icons";
 
 import "./ToolIcon.scss";
@@ -113,7 +114,7 @@ export const MobileToolbar = ({ app, setAppState }: MobileToolbarProps) => {
   const showImageToolOutside = toolbarWidth >= MIN_WIDTH + 2 * ADDITIONAL_WIDTH;
   const showFrameToolOutside = toolbarWidth >= MIN_WIDTH + 3 * ADDITIONAL_WIDTH;
 
-  const extraTools: readonly typeof activeTool.type[] = (
+  const extraTools: ReadonlyArray<typeof activeTool.type> = (
     [
       "text",
       "stickynote",
@@ -281,6 +282,15 @@ export const MobileToolbar = ({ app, setAppState }: MobileToolbarProps) => {
               disabled={isToolButtonDisabled(app, "image")}
             >
               {t("toolBar.image")}
+            </DropdownMenu.Item>
+          )}
+          {app.props.onDocumentFilesSelected && (
+            <DropdownMenu.Item
+              onSelect={app.onDocumentToolbarButtonClick}
+              icon={DocumentIcon}
+              data-testid="toolbar-document"
+            >
+              {t("toolBar.document")}
             </DropdownMenu.Item>
           )}
           <DropdownMenu.Item

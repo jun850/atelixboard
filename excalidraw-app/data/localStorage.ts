@@ -8,6 +8,13 @@ import type { AppState } from "@excalidraw/excalidraw/types";
 
 import { STORAGE_KEYS } from "../app_constants";
 
+export const clearSidebarForPersistence = <T extends Partial<AppState>>(
+  appState: T,
+): T => ({
+  ...appState,
+  openSidebar: null,
+});
+
 export const saveUsernameToLocalStorage = (username: string) => {
   try {
     localStorage.setItem(
@@ -59,12 +66,12 @@ export const importFromLocalStorage = () => {
   let appState = null;
   if (savedState) {
     try {
-      appState = {
+      appState = clearSidebarForPersistence({
         ...getDefaultAppState(),
         ...clearAppStateForLocalStorage(
           JSON.parse(savedState) as Partial<AppState>,
         ),
-      };
+      });
     } catch (error: any) {
       console.error(error);
       // Do nothing because appState is already null

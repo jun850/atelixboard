@@ -38,12 +38,16 @@ export const LibraryUnit = memo(
     const [isHovered, setIsHovered] = useState(false);
     const isMobile = useEditorInterface().formFactor === "phone";
     const adder = isPending && (
-      <div className="library-unit__adder">{PlusIcon}</div>
+      <div className="library-unit__adder">
+        {PlusIcon}
+        <span>Add</span>
+      </div>
     );
 
     return (
       <div
         className={clsx("library-unit", {
+          "library-unit--pending": isPending,
           "library-unit__active": elements,
           "library-unit--hover": elements && isHovered,
           "library-unit--selected": selected,
