@@ -85,10 +85,11 @@ Deno.serve(async (request) => {
         throw error;
       }
       const sceneId = (data as { sceneId: string }).sceneId;
-      const { error: assignmentError } = await client
+      const { error: assignmentError } = await admin
         .from("scenes")
         .update({ workspace_id: workspaceId, collection_id: collectionId })
-        .eq("id", sceneId);
+        .eq("id", sceneId)
+        .eq("owner_id", user.id);
       if (assignmentError) {
         throw assignmentError;
       }
@@ -239,6 +240,7 @@ Deno.serve(async (request) => {
     }
     throw new Error("not_found");
   } catch (error) {
+    console.error("scenes request failed", error);
     return cloudErrorResponse(request, error);
   }
 });

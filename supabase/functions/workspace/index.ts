@@ -836,6 +836,7 @@ Deno.serve(async (request) => {
 
     throw new Error("not_found");
   } catch (error) {
+    console.error("workspace request failed", error);
     return cloudErrorResponse(request, error);
   }
 });
