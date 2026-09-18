@@ -41,11 +41,18 @@ export const createComment = (
     message,
     anchorKind,
     anchor,
-    requestId: crypto.randomUUID().replaceAll("-", ""),
   });
 
 export const replyToThread = (threadId: string, message: string) =>
   workspaceApi(`comments/threads/${threadId}`, "POST", {
     message,
-    requestId: crypto.randomUUID().replaceAll("-", ""),
   });
+
+export const updateThread = (
+  threadId: string,
+  action: "resolve" | "reopen" | "delete",
+  version: number,
+) => workspaceApi(`comments/threads/${threadId}`, "PATCH", { action, version });
+
+export const reactToMessage = (messageId: string, emoji: string) =>
+  workspaceApi(`comments/messages/${messageId}/reactions`, "POST", { emoji });

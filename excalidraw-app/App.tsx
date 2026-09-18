@@ -121,6 +121,7 @@ import DebugCanvas, {
 import { useSimulatedCollaborators } from "./debugCollaborators";
 import { AIComponents } from "./components/AI";
 import { AgenticBoard } from "./agentic-board/AgenticBoard";
+import { BoardCommentPins } from "./workspace/BoardCommentPins";
 import { DocumentEmbed } from "./documents/DocumentEmbed";
 import { getDocument, uploadDocument } from "./documents/api";
 import { DOCUMENT_LINK_PREFIX, getBoardyDocumentData } from "./documents/types";
@@ -1068,6 +1069,7 @@ const ExcalidrawWrapper = () => {
         <AppFooter onChange={() => excalidrawAPI?.refresh()} />
         {excalidrawAPI && <AIComponents excalidrawAPI={excalidrawAPI} />}
         {excalidrawAPI && <AgenticBoard api={excalidrawAPI} />}
+        {excalidrawAPI && <BoardCommentPins api={excalidrawAPI} />}
 
         <TTDDialogTrigger />
         {isCollaborating && isOffline && (

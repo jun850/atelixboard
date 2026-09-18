@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 
-import { localApi } from "../agentic-board/client";
+import { cloudApi } from "../agentic-board/client";
 import {
+  checkProEntitlement,
   getRevenueCatPublicOfferings,
   REVENUECAT_PRODUCT_IDS,
   syncRevenueCatUser,
 } from "../revenuecat";
 import { isSupabaseConfigured, supabase } from "../supabase/client";
+import { WorkspaceApp } from "../workspace/WorkspaceApp";
 
 import { BoardArtwork, LandingIcon } from "./LandingArtwork";
 import { EditorArtwork } from "./EditorArtwork";
@@ -579,6 +581,34 @@ const AuthPage = ({ mode }: { mode: AuthMode }) => {
   );
 };
 
+const InviteAcceptance = ({ token }: { token: string }) => {
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let current = true;
+    void cloudApi<{
+      sceneId: string | null;
+      collectionId: string | null;
+    }>("workspace", "invitations/redeem", "POST", { token })
+      .then((result) => {
+        if (!current) return;
+        if (result.sceneId) navigate(`/app/boards/${result.sceneId}`);
+        else if (result.collectionId) navigate(`/app/collections/${result.collectionId}`);
+        else navigate("/app");
+      })
+      .catch((caught) => {
+        if (current) setError(caught instanceof Error ? caught.message : "This invitation is unavailable.");
+      });
+    return () => {
+      current = false;
+    };
+  }, [token]);
+  return (
+    <main className="atelix-page atelix-loading-page" aria-live="polite">
+      {error || "Joining your Boardy workspace…"}
+    </main>
+  );
+};
+
 export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
   const [location, setLocation] = useState(window.location.href);
   const [session, setSession] = useState<Session | null>();
@@ -636,24 +666,47 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
     if (!session) {
       return;
     }
-    void syncRevenueCatUser(session.user.id, session.user.email).catch(() => {
-      // Billing surfaces the actionable configuration error. Auth and the board
-      // remain usable when RevenueCat is not configured for local work.
-    });
-  }, [session]);
+    let current = true;
+    const verifyAccess = async () => {
+      if (localDemo) {
+        if (current) setHasProAccess(true);
+        return;
+      }
+      try {
+        const access = await cloudApi<{ hasWorkspaceAccess: boolean }>(
+          "workspace",
+          "access",
+        );
+        if (access.hasWorkspaceAccess) {
+          if (current) setHasProAccess(true);
+          return;
+        }
+        await syncRevenueCatUser(session.user.id, session.user.email);
+        const entitled = await checkProEntitlement();
+        if (current) setHasProAccess(entitled);
+      } catch {
+        if (current) setHasProAccess(false);
+      }
+    };
+    void verifyAccess();
+    return () => {
+      current = false;
+    };
+  }, [localDemo, session]);
 
   useEffect(() => {
     setHasProAccess(null);
   }, [session?.user.id]);
 
   useEffect(() => {
-    if (path === "/app" && session === null) {
+    const protectedAppRoute = path === "/app" || path.startsWith("/app/");
+    if (protectedAppRoute && path !== "/app/subscription" && session === null) {
       navigate(
         `/login?next=${encodeURIComponent(
           `${window.location.pathname}${window.location.hash}`,
         )}`,
       );
-    } else if (path === "/app" && session) {
+    } else if (protectedAppRoute && path !== "/app/subscription" && session) {
       const next = new URLSearchParams(window.location.search).get("next");
       if (next?.startsWith("/app")) {
         navigate(next);
@@ -663,10 +716,7 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
     }
   }, [hasProAccess, localDemo, location, path, session]);
 
-  if (
-    session === undefined ||
-    (path === "/app" && session && pendingNext?.startsWith("/app"))
-  ) {
+  if (session === undefined || (path.startsWith("/app") && session && pendingNext?.startsWith("/app"))) {
     return (
       <main className="atelix-page atelix-loading-page" aria-live="polite">
         Loading Boardy…
@@ -700,7 +750,7 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
     );
   }
 
-  if (path === "/app") {
+  if (path.startsWith("/app") && path !== "/app/subscription") {
     if (!session) {
       return null;
     }
@@ -711,38 +761,16 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
         </main>
       );
     }
-    return (
-      <div className="atelix-board-shell">
-        <header className="atelix-board-header">
-          <BoardyBrand />
-          <div className="atelix-board-account">
-            <span title={session.user.email}>{session.user.email}</span>
-            <a className="atelix-board-billing" href="/app/subscription">
-              Billing
-            </a>
-            <button
-              className="atelix-board-logout"
-              type="button"
-              onClick={async (event) => {
-                const ownerWindow =
-                  event.currentTarget.ownerDocument.defaultView;
-                if (import.meta.env.DEV && ownerWindow) {
-                  await localApi(ownerWindow, "session", "DELETE").catch(
-                    () => undefined,
-                  );
-                }
-                await signOut();
-              }}
-            >
-              Sign out
-            </button>
-          </div>
-        </header>
-        <main className="atelix-board-content">
-          <BoardApp />
-        </main>
-      </div>
-    );
+    return <WorkspaceApp BoardApp={BoardApp} session={session} onSignOut={signOut} localDemo={localDemo} locationHref={location} />;
+  }
+
+  if (path.startsWith("/invite/")) {
+    const token = path.slice("/invite/".length);
+    if (!session) {
+      navigate(`/signup?next=${encodeURIComponent(path)}`);
+      return null;
+    }
+    return <InviteAcceptance token={token} />;
   }
 
   if (path === "/login") {

@@ -108,9 +108,11 @@ const SidebarButton = ({
 const WorkspaceSidebar = ({
   data,
   activeCollection,
+  pathname,
 }: {
   data: WorkspaceDashboard;
   activeCollection: string | null;
+  pathname: string;
 }) => (
   <aside className="boardy-workspace-sidebar">
     <a className="boardy-workspace-brand" href="/app" aria-label="Boardy whiteboards">
@@ -122,7 +124,7 @@ const WorkspaceSidebar = ({
       <span><strong>{data.workspace.name}</strong><small>{data.membership.role}</small></span>
     </button>
     <nav aria-label="Workspace navigation">
-      <SidebarButton active={!activeCollection && location.pathname === "/app"} icon="boards" onClick={() => routeTo("/app")}>Whiteboards</SidebarButton>
+      <SidebarButton active={!activeCollection && pathname === "/app"} icon="boards" onClick={() => routeTo("/app")}>Whiteboards</SidebarButton>
       <SidebarButton icon="shared" onClick={() => routeTo("/app?view=shared")}>Shared with me</SidebarButton>
       <SidebarButton icon="trash" onClick={() => routeTo("/app/trash")}>Trash</SidebarButton>
       {data.membership.role === "admin" && (
@@ -285,15 +287,16 @@ const ShareDialog = ({ data, sceneId, onClose }: { data: WorkspaceDashboard; sce
   return <div className="boardy-dialog-backdrop" role="presentation"><section className="boardy-dialog" role="dialog" aria-modal="true" aria-labelledby="share-title"><h2 id="share-title">Share whiteboard</h2><p>Invite collaborators by email. A copied whiteboard URL only works for people who already have access.</p><form onSubmit={async (event) => { event.preventDefault(); const result = await workspaceApi<{ token: string }>("invitations", "POST", { workspaceId: data.workspace.id, sceneId, recipientEmail: email, workspaceRole: "external", resourceRole: role, maxUses: 1 }); setLink(`${location.origin}/invite/${result.token}`); }}><label>Email<input type="email" required value={email} onChange={(event) => setEmail(event.target.value)}/></label><label>Permission<select value={role} onChange={(event) => setRole(event.target.value)}><option value="editor">Editor</option><option value="commenter">Commenter</option><option value="viewer">Viewer</option></select></label><button className="boardy-button is-primary" type="submit">Create invitation</button></form>{link && <div className="boardy-invite-result"><input readOnly value={link}/><button type="button" onClick={() => void navigator.clipboard.writeText(link)}>Copy</button></div>}<div className="boardy-dialog-actions"><button className="boardy-button is-secondary" type="button" onClick={onClose}>Done</button></div></section></div>;
 };
 
-export const WorkspaceApp = ({ BoardApp, session, onSignOut, localDemo }: { BoardApp: ComponentType; session: Session; onSignOut: () => Promise<void>; localDemo: boolean }) => {
+export const WorkspaceApp = ({ BoardApp, onSignOut, localDemo, locationHref }: { BoardApp: ComponentType; session: Session; onSignOut: () => Promise<void>; localDemo: boolean; locationHref: string }) => {
   const [data, setData] = useState<WorkspaceDashboard | null>(null);
   const [error, setError] = useState("");
   const refresh = async () => { try { setData(await loadWorkspace()); setError(""); } catch (caught) { setError(caught instanceof Error ? caught.message : "Workspace could not be loaded."); } };
   useEffect(() => { void refresh(); }, []);
-  const sceneId = location.pathname.match(/^\/app\/boards\/([0-9a-f-]{36})$/i)?.[1] || null;
-  const collectionId = location.pathname.match(/^\/app\/collections\/([0-9a-f-]{36})$/i)?.[1] || null;
+  const pathname = new URL(locationHref).pathname;
+  const sceneId = pathname.match(/^\/app\/boards\/([0-9a-f-]{36})$/i)?.[1] || null;
+  const collectionId = pathname.match(/^\/app\/collections\/([0-9a-f-]{36})$/i)?.[1] || null;
   if (!data) return <main className="atelix-page atelix-loading-page" aria-live="polite">{error || "Preparing your workspace…"}</main>;
   if (sceneId) return <BoardEditor data={data} BoardApp={BoardApp} sceneId={sceneId}/>;
-  const content = location.pathname === "/app/members" ? <MembersView data={data} refresh={refresh}/> : location.pathname === "/app/profile" ? <ProfileView data={data} refresh={refresh}/> : <DashboardContent data={data} activeCollection={collectionId} refresh={refresh}/>;
-  return <div className="boardy-workspace-shell"><a className="boardy-skip-link" href="#main-content">Skip to content</a><WorkspaceSidebar data={data} activeCollection={collectionId}/><div className="boardy-workspace-stage">{content}<button type="button" className="boardy-sign-out" onClick={async (event) => { const ownerWindow = event.currentTarget.ownerDocument.defaultView; if (import.meta.env.DEV && ownerWindow && localDemo) await localApi(ownerWindow, "session", "DELETE").catch(() => undefined); await supabase.auth.signOut(); await onSignOut(); }}>Sign out</button></div></div>;
+  const content = pathname === "/app/members" ? <MembersView data={data} refresh={refresh}/> : pathname === "/app/profile" ? <ProfileView data={data} refresh={refresh}/> : <DashboardContent data={data} activeCollection={collectionId} refresh={refresh}/>;
+  return <div className="boardy-workspace-shell"><a className="boardy-skip-link" href="#main-content">Skip to content</a><WorkspaceSidebar data={data} activeCollection={collectionId} pathname={pathname}/><div className="boardy-workspace-stage">{content}<button type="button" className="boardy-sign-out" onClick={async (event) => { const ownerWindow = event.currentTarget.ownerDocument.defaultView; if (import.meta.env.DEV && ownerWindow && localDemo) await localApi(ownerWindow, "session", "DELETE").catch(() => undefined); await supabase.auth.signOut(); await onSignOut(); }}>Sign out</button></div></div>;
 };

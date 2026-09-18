@@ -188,6 +188,54 @@ create table public.boardy_audit_events (
 create index boardy_audit_workspace_idx
   on public.boardy_audit_events(workspace_id, id desc);
 
+create or replace function public.boardy_redeem_invitation(p_token_hash text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  invitation public.boardy_invitations%rowtype;
+  actor_id uuid := auth.uid();
+  actor_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  already_redeemed boolean;
+begin
+  if actor_id is null then raise exception 'UNAUTHENTICATED'; end if;
+  select * into invitation from public.boardy_invitations
+    where token_hash = p_token_hash for update;
+  if not found or invitation.revoked_at is not null
+    or invitation.expires_at <= now() or invitation.use_count >= invitation.max_uses
+    or (invitation.recipient_email is not null and lower(invitation.recipient_email) <> actor_email)
+  then raise exception 'forbidden'; end if;
+
+  select exists(select 1 from public.boardy_invitation_redemptions
+    where invitation_id = invitation.id and user_id = actor_id) into already_redeemed;
+  if not already_redeemed then
+    insert into public.boardy_invitation_redemptions(invitation_id, user_id)
+      values (invitation.id, actor_id);
+    update public.boardy_invitations set use_count = use_count + 1 where id = invitation.id;
+  end if;
+
+  insert into public.boardy_workspace_members(workspace_id, user_id, role, status, removed_at)
+    values (invitation.workspace_id, actor_id, coalesce(invitation.workspace_role, 'external'), 'active', null)
+    on conflict (workspace_id, user_id) do update set status = 'active', removed_at = null;
+  if invitation.collection_id is not null then
+    insert into public.boardy_collection_members(collection_id, user_id, role, created_by)
+      values (invitation.collection_id, actor_id, coalesce(invitation.resource_role, 'viewer'), invitation.created_by)
+      on conflict (collection_id, user_id) do update set role = excluded.role;
+  end if;
+  if invitation.scene_id is not null then
+    insert into public.scene_members(scene_id, user_id, role)
+      values (invitation.scene_id, actor_id, coalesce(invitation.resource_role, 'viewer'))
+      on conflict (scene_id, user_id) do update set role = excluded.role;
+  end if;
+  return jsonb_build_object('workspaceId', invitation.workspace_id, 'sceneId', invitation.scene_id, 'collectionId', invitation.collection_id);
+end;
+$$;
+
+revoke all on function public.boardy_redeem_invitation(text) from public, anon;
+grant execute on function public.boardy_redeem_invitation(text) to authenticated;
+
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'boardy-avatars', 'boardy-avatars', false, 5242880,

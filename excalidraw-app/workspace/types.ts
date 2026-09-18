@@ -72,6 +72,8 @@ export type CommentMessage = {
   deleted_at: string | null;
   created_at: string;
   author: BoardyProfile;
+  mentions?: BoardyProfile[];
+  reactions?: Array<{ emoji: string; count: number; reacted: boolean }>;
 };
 
 export type CommentAnchor = {

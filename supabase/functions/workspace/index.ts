@@ -1,7 +1,8 @@
 import { authenticate, response } from "../_shared/agentic.ts";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.116.0";
 import { cloudErrorResponse, requireUuid } from "../_shared/cloud.ts";
 
-type AdminClient = ReturnType<typeof import("../_shared/agentic.ts")["adminClient"]>;
+type AdminClient = SupabaseClient;
 
 const slugify = (value: string) =>
   value
@@ -269,75 +270,11 @@ Deno.serve(async (request) => {
     if (parts[0] === "invitations" && parts[1] === "redeem" && method === "POST") {
       const token = String(body.token || "");
       const tokenHash = await sha256(token);
-      const { data: invitation, error } = await admin
-        .from("boardy_invitations")
-        .select("*")
-        .eq("token_hash", tokenHash)
-        .maybeSingle();
-      if (error) throw error;
-      if (
-        !invitation ||
-        invitation.revoked_at ||
-        new Date(invitation.expires_at) <= new Date() ||
-        invitation.use_count >= invitation.max_uses ||
-        (invitation.recipient_email &&
-          invitation.recipient_email.toLowerCase() !== user.email?.toLowerCase())
-      ) {
-        throw new Error("forbidden");
-      }
-      const existing = await admin
-        .from("boardy_invitation_redemptions")
-        .select("invitation_id")
-        .eq("invitation_id", invitation.id)
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (!existing.data) {
-        const { error: redemptionError } = await admin
-          .from("boardy_invitation_redemptions")
-          .insert({ invitation_id: invitation.id, user_id: user.id });
-        if (redemptionError) throw redemptionError;
-        await admin
-          .from("boardy_invitations")
-          .update({ use_count: invitation.use_count + 1 })
-          .eq("id", invitation.id)
-          .eq("use_count", invitation.use_count);
-      }
-      await admin.from("boardy_workspace_members").upsert(
-        {
-          workspace_id: invitation.workspace_id,
-          user_id: user.id,
-          role: invitation.workspace_role || "external",
-          status: "active",
-          removed_at: null,
-        },
-        { onConflict: "workspace_id,user_id" },
-      );
-      if (invitation.collection_id) {
-        await admin.from("boardy_collection_members").upsert(
-          {
-            collection_id: invitation.collection_id,
-            user_id: user.id,
-            role: invitation.resource_role || "viewer",
-            created_by: invitation.created_by,
-          },
-          { onConflict: "collection_id,user_id" },
-        );
-      }
-      if (invitation.scene_id) {
-        await admin.from("scene_members").upsert(
-          {
-            scene_id: invitation.scene_id,
-            user_id: user.id,
-            role: invitation.resource_role || "viewer",
-          },
-          { onConflict: "scene_id,user_id" },
-        );
-      }
-      return response(request, 200, {
-        workspaceId: invitation.workspace_id,
-        sceneId: invitation.scene_id,
-        collectionId: invitation.collection_id,
+      const { data, error } = await client.rpc("boardy_redeem_invitation", {
+        p_token_hash: tokenHash,
       });
+      if (error) throw error;
+      return response(request, 200, data);
     }
 
     if (parts[0] === "access" && method === "GET") {
@@ -537,6 +474,13 @@ Deno.serve(async (request) => {
             .order("created_at")
         : { data: [], error: null };
       if (messageError) throw messageError;
+      const messageIds = (messages || []).map((message) => message.id);
+      const [{ data: reactions }, { data: mentions }] = messageIds.length
+        ? await Promise.all([
+            admin.from("boardy_comment_reactions").select("message_id,user_id,emoji").in("message_id", messageIds),
+            admin.from("boardy_comment_mentions").select("message_id,user_id").in("message_id", messageIds),
+          ])
+        : [{ data: [] }, { data: [] }];
       const authorIds = [...new Set((messages || []).map((message) => message.author_id))];
       const { data: profileRows } = authorIds.length
         ? await admin
@@ -554,7 +498,20 @@ Deno.serve(async (request) => {
           ...thread,
           messages: (messages || [])
             .filter((message) => message.thread_id === thread.id)
-            .map((message) => ({ ...message, author: byUser[message.author_id] })),
+            .map((message) => ({
+              ...message,
+              author: byUser[message.author_id],
+              mentions: (mentions || []).filter((item) => item.message_id === message.id).map((item) => byUser[item.user_id]).filter(Boolean),
+              reactions: Object.entries(
+                (reactions || []).filter((item) => item.message_id === message.id).reduce((all, item) => {
+                  const current = all[item.emoji] || { count: 0, reacted: false };
+                  current.count += 1;
+                  current.reacted ||= item.user_id === user.id;
+                  all[item.emoji] = current;
+                  return all;
+                }, {} as Record<string, { count: number; reacted: boolean }>),
+              ).map(([emoji, value]) => ({ emoji, ...value })),
+            })),
         })),
       });
     }
@@ -590,6 +547,13 @@ Deno.serve(async (request) => {
         .select("*")
         .single();
       if (messageError) throw messageError;
+      const mentionIds = Array.isArray(body.mentionUserIds)
+        ? [...new Set(body.mentionUserIds.map(String))].filter((id) => id !== user.id).slice(0, 20)
+        : [];
+      if (mentionIds.length) {
+        await admin.from("boardy_comment_mentions").insert(mentionIds.map((mentionedUserId) => ({ message_id: message.id, user_id: mentionedUserId })));
+        await admin.from("boardy_notifications").insert(mentionIds.map((mentionedUserId) => ({ user_id: mentionedUserId, scene_id: sceneId, thread_id: thread.id, actor_id: user.id, kind: "mention" })));
+      }
       return response(request, 201, { thread, message });
     }
 
@@ -616,6 +580,13 @@ Deno.serve(async (request) => {
         .select("*")
         .single();
       if (error) throw error;
+      const mentionIds = Array.isArray(body.mentionUserIds)
+        ? [...new Set(body.mentionUserIds.map(String))].filter((id) => id !== user.id).slice(0, 20)
+        : [];
+      if (mentionIds.length) {
+        await admin.from("boardy_comment_mentions").insert(mentionIds.map((mentionedUserId) => ({ message_id: message.id, user_id: mentionedUserId })));
+        await admin.from("boardy_notifications").insert(mentionIds.map((mentionedUserId) => ({ user_id: mentionedUserId, scene_id: thread.scene_id, thread_id: threadId, actor_id: user.id, kind: "mention" })));
+      }
       await admin
         .from("boardy_comment_threads")
         .update({ last_activity_at: new Date().toISOString(), updated_at: new Date().toISOString() })
@@ -658,6 +629,21 @@ Deno.serve(async (request) => {
         .eq("version", body.version || thread.version);
       if (updateError) throw updateError;
       return response(request, 200, { ok: true, version: thread.version + 1 });
+    }
+
+    if (parts[0] === "comments" && parts[1] === "messages" && parts[2] && parts[3] === "reactions" && method === "POST") {
+      const messageId = requireUuid(parts[2]);
+      const emoji = String(body.emoji || "").trim();
+      if (!emoji || emoji.length > 32) throw new Error("limit");
+      const { data: message, error } = await admin.from("boardy_comment_messages").select("thread_id,boardy_comment_threads!inner(scene_id)").eq("id", messageId).single();
+      if (error || !message) throw error || new Error("not_found");
+      const sceneId = (message.boardy_comment_threads as unknown as { scene_id: string }).scene_id;
+      const capabilities = await sceneRole(client, sceneId);
+      if (!capabilities.can_comment) throw new Error("forbidden");
+      const existing = await admin.from("boardy_comment_reactions").select("emoji").eq("message_id", messageId).eq("user_id", user.id).eq("emoji", emoji).maybeSingle();
+      if (existing.data) await admin.from("boardy_comment_reactions").delete().eq("message_id", messageId).eq("user_id", user.id).eq("emoji", emoji);
+      else await admin.from("boardy_comment_reactions").insert({ message_id: messageId, user_id: user.id, emoji });
+      return response(request, 200, { reacted: !existing.data });
     }
 
     throw new Error("not_found");
