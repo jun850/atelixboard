@@ -481,12 +481,15 @@ Deno.serve(async (request) => {
             admin.from("boardy_comment_mentions").select("message_id,user_id").in("message_id", messageIds),
           ])
         : [{ data: [] }, { data: [] }];
-      const authorIds = [...new Set((messages || []).map((message) => message.author_id))];
-      const { data: profileRows } = authorIds.length
+      const profileIds = [...new Set([
+        ...(messages || []).map((message) => message.author_id),
+        ...(mentions || []).map((mention) => mention.user_id),
+      ])];
+      const { data: profileRows } = profileIds.length
         ? await admin
             .from("boardy_profiles")
             .select("user_id,display_name,email,avatar_path")
-            .in("user_id", authorIds)
+            .in("user_id", profileIds)
         : { data: [] };
       const profiles = await addAvatarUrls(admin, profileRows || []);
       const byUser = Object.fromEntries(

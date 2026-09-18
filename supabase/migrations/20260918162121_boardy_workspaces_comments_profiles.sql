@@ -204,12 +204,14 @@ begin
   select * into invitation from public.boardy_invitations
     where token_hash = p_token_hash for update;
   if not found or invitation.revoked_at is not null
-    or invitation.expires_at <= now() or invitation.use_count >= invitation.max_uses
+    or invitation.expires_at <= now()
     or (invitation.recipient_email is not null and lower(invitation.recipient_email) <> actor_email)
   then raise exception 'forbidden'; end if;
 
   select exists(select 1 from public.boardy_invitation_redemptions
     where invitation_id = invitation.id and user_id = actor_id) into already_redeemed;
+  if not already_redeemed and invitation.use_count >= invitation.max_uses
+  then raise exception 'forbidden'; end if;
   if not already_redeemed then
     insert into public.boardy_invitation_redemptions(invitation_id, user_id)
       values (invitation.id, actor_id);
