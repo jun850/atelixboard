@@ -87,6 +87,27 @@ const BoardyBrand = () => (
   </a>
 );
 
+const landingFooterGroups = [
+  {
+    title: "Product",
+    links: ["Features", "Pricing", "Teams", "Roadmap"],
+  },
+  {
+    title: "Resources",
+    links: ["Help center", "Community", "Templates", "Updates"],
+  },
+  {
+    title: "Company",
+    links: ["About", "Contact", "Privacy", "Terms"],
+  },
+] as const;
+
+const PlaceholderFooterLink = ({ children }: { children: React.ReactNode }) => (
+  <button type="button" disabled>
+    {children}
+  </button>
+);
+
 const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">(
     "monthly",
@@ -94,7 +115,6 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
   const [pricingOfferings, setPricingOfferings] = useState<Offerings | null>(
     null,
   );
-  const [pricingError, setPricingError] = useState(false);
 
   useEffect(() => {
     let isCurrent = true;
@@ -104,11 +124,7 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
           setPricingOfferings(offerings);
         }
       })
-      .catch(() => {
-        if (isCurrent) {
-          setPricingError(true);
-        }
-      });
+      .catch(() => undefined);
 
     return () => {
       isCurrent = false;
@@ -122,14 +138,6 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
   const selectedProduct = selectedPackage?.webBillingProduct;
   const selectedPrice = selectedProduct?.price.formattedPrice;
   const selectedPeriod = getPackagePeriodLabel(selectedPackage);
-  const offerDescription = selectedProduct?.freeTrialPhase?.period
-    ? `Includes a ${selectedProduct.freeTrialPhase.period.number} ${selectedProduct.freeTrialPhase.period.unit} free trial.`
-    : selectedProduct?.introPricePhase?.price
-    ? `Intro pricing: ${selectedProduct.introPricePhase.price.formattedPrice}.`
-    : selectedProduct?.description ||
-      (pricingError
-        ? "Choose your cadence and see the latest local price at checkout."
-        : "Localized pricing and availability are loading from RevenueCat.");
 
   return (
     <main className="atelix-page atelix-landing-page">
@@ -284,12 +292,11 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
               <strong>{selectedPrice ?? "—"}</strong>
               <span>{selectedPeriod}</span>
             </div>
-            <small>{offerDescription}</small>
             <a
               className="atelix-button"
               href={signedIn ? "/app/subscription" : primaryPath}
             >
-              {signedIn ? "Choose Pro" : "Choose Pro"}
+              Sign Up
             </a>
             <h4>Everything included</h4>
             <ul className="atelix-plan__benefits">
@@ -307,16 +314,52 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
       </section>
 
       <footer className="atelix-site-footer" data-landing-reveal>
-        <div>
-          <h2>Your next breakthrough starts on Boardy.</h2>
-          <p>
-            Bring your team, your half-formed ideas, and the work worth figuring
-            out together.
-          </p>
+        <div className="atelix-site-footer__inner">
+          <div className="atelix-site-footer__cta">
+            <div>
+              <h2>Your next breakthrough starts on Boardy.</h2>
+              <p>
+                Bring your team, your half-formed ideas, and the work worth
+                figuring out together.
+              </p>
+            </div>
+            <a className="atelix-button" href={primaryPath}>
+              {primaryLabel} <LandingIcon name="arrow" />
+            </a>
+          </div>
+
+          <div className="atelix-site-footer__directory">
+            <div className="atelix-site-footer__brand">
+              <BoardyBrand />
+              <p>A calmer canvas for clearer thinking and stronger teamwork.</p>
+            </div>
+            <nav
+              className="atelix-site-footer__links"
+              aria-label="Footer navigation"
+            >
+              {landingFooterGroups.map((group) => (
+                <section key={group.title}>
+                  <h3>{group.title}</h3>
+                  {group.links.map((link) => (
+                    <PlaceholderFooterLink key={link}>
+                      {link}
+                    </PlaceholderFooterLink>
+                  ))}
+                </section>
+              ))}
+            </nav>
+          </div>
+
+          <div className="atelix-site-footer__bottom">
+            <span>
+              © {new Date().getFullYear()} Atelix. All rights reserved.
+            </span>
+            <div aria-label="Social links">
+              <PlaceholderFooterLink>LinkedIn</PlaceholderFooterLink>
+              <PlaceholderFooterLink>X</PlaceholderFooterLink>
+            </div>
+          </div>
         </div>
-        <a className="atelix-button" href={primaryPath}>
-          {primaryLabel} <LandingIcon name="arrow" />
-        </a>
       </footer>
     </main>
   );

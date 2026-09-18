@@ -27,7 +27,7 @@ type BillingPageProps = {
 const getErrorMessage = (error: unknown) =>
   error instanceof Error
     ? error.message
-    : "RevenueCat could not complete that request.";
+    : "We couldn't complete that request. Please try again.";
 
 const formatPeriod = (pkg: Package) => {
   const period = pkg.webBillingProduct.period;
@@ -54,29 +54,16 @@ const getAnnualSavingsPercent = (
   return savings > 0 ? savings : null;
 };
 
-const getOfferText = (pkg: Package, packages: Package[]) => {
+const getOfferText = (pkg: Package) => {
   const product = pkg.webBillingProduct;
   if (product.identifier === REVENUECAT_PRODUCT_IDS.annual) {
-    const annual = packages.find(
-      (candidate) =>
-        candidate.webBillingProduct.identifier ===
-        REVENUECAT_PRODUCT_IDS.annual,
-    );
-    const monthly = packages.find(
-      (candidate) =>
-        candidate.webBillingProduct.identifier ===
-          REVENUECAT_PRODUCT_IDS.monthly ||
-        candidate.webBillingProduct.identifier ===
-          REVENUECAT_PRODUCT_IDS.monthlyLegacy,
-    );
-    const savings = getAnnualSavingsPercent(monthly, annual);
-    return savings ? `Annual billing · Save ${savings}%` : "Annual billing";
+    return "Annually";
   }
   if (
     product.identifier === REVENUECAT_PRODUCT_IDS.monthly ||
     product.identifier === REVENUECAT_PRODUCT_IDS.monthlyLegacy
   ) {
-    return "Monthly billing";
+    return "Monthly";
   }
   return formatPeriod(pkg);
 };
@@ -167,9 +154,24 @@ const ProductOption = ({
   onSelect: () => void;
 }) => {
   const product = pkg.webBillingProduct;
+  const isAnnual = product.identifier === REVENUECAT_PRODUCT_IDS.annual;
+  const annual = packages.find(
+    (candidate) =>
+      candidate.webBillingProduct.identifier === REVENUECAT_PRODUCT_IDS.annual,
+  );
+  const monthly = packages.find(
+    (candidate) =>
+      candidate.webBillingProduct.identifier ===
+        REVENUECAT_PRODUCT_IDS.monthly ||
+      candidate.webBillingProduct.identifier ===
+        REVENUECAT_PRODUCT_IDS.monthlyLegacy,
+  );
+  const savings = isAnnual ? getAnnualSavingsPercent(monthly, annual) : null;
   return (
     <button
-      className={`boardy-paywall-product${selected ? " is-selected" : ""}`}
+      className={`boardy-paywall-product${selected ? " is-selected" : ""}${
+        savings ? " has-savings" : ""
+      }`}
       type="button"
       role="radio"
       aria-checked={selected}
@@ -177,8 +179,15 @@ const ProductOption = ({
     >
       <span className="boardy-paywall-product__radio" aria-hidden="true" />
       <span className="boardy-paywall-product__copy">
-        <strong>{getPlanTitle(pkg)}</strong>
-        <small>{getOfferText(pkg, packages)}</small>
+        <span className="boardy-paywall-product__title-row">
+          <strong>{getPlanTitle(pkg)}</strong>
+          {savings && (
+            <span className="boardy-paywall-product__savings">
+              Save {savings}%
+            </span>
+          )}
+        </span>
+        <small>{getOfferText(pkg)}</small>
       </span>
       <span className="boardy-paywall-product__price">
         <strong>{product.price.formattedPrice}</strong>
@@ -278,10 +287,18 @@ export const BillingPage = ({
         <a className="boardy-paywall__brand" href="/" aria-label="Boardy home">
           <span>Boardy</span>
           <span className="boardy-paywall__brand-mark">
-            <span>By</span>
+            <span className="boardy-paywall__brand-by">By</span>
             <img src="/atelix-horizontal.png" alt="Atelix" />
           </span>
         </a>
+        {onSignOut && (
+          <div className="boardy-paywall__nav-actions">
+            <span className="boardy-paywall__nav-account">{user.email}</span>
+            <button type="button" onClick={() => void onSignOut()}>
+              Sign out
+            </button>
+          </div>
+        )}
       </header>
 
       <div className="boardy-paywall__layout">
@@ -293,22 +310,26 @@ export const BillingPage = ({
             The complete whiteboard toolkit—local-first when you want it,
             cloud-powered when your team needs it.
           </p>
-          <div className="boardy-paywall__benefit-grid">
-            {PRO_BENEFIT_GROUPS.map((group) => (
-              <article key={group.title}>
-                <PaywallBenefitIcon icon={group.icon} />
-                <h3>{group.title}</h3>
-                <ul>
-                  {group.benefits.map((benefit) => (
-                    <li key={benefit}>
-                      <span aria-hidden="true">✓</span>
-                      {benefit}
-                    </li>
-                  ))}
-                </ul>
-              </article>
-            ))}
-          </div>
+        </section>
+
+        <section
+          className="boardy-paywall__benefit-grid"
+          aria-label="Everything included with Boardy Pro"
+        >
+          {PRO_BENEFIT_GROUPS.map((group) => (
+            <article key={group.title}>
+              <PaywallBenefitIcon icon={group.icon} />
+              <h3>{group.title}</h3>
+              <ul>
+                {group.benefits.map((benefit) => (
+                  <li key={benefit}>
+                    <span aria-hidden="true">✓</span>
+                    {benefit}
+                  </li>
+                ))}
+              </ul>
+            </article>
+          ))}
         </section>
 
         <section
@@ -410,11 +431,11 @@ export const BillingPage = ({
                   disabled={isWorking}
                   onClick={() => void openRevenueCatPaywall()}
                 >
-                  View full RevenueCat paywall
+                  View full checkout
                 </button>
               )}
               <p className="boardy-paywall__fineprint">
-                Secure checkout by RevenueCat · Cancel anytime
+                Secure checkout · Cancel anytime
                 <br />
                 Subscription details and applicable taxes appear before payment.
               </p>
@@ -422,27 +443,13 @@ export const BillingPage = ({
           ) : (
             <div className="boardy-paywall__empty" role="alert">
               <strong>No plans are available yet.</strong>
-              <p>
-                Set a current RevenueCat offering with at least one web package,
-                then try again.
-              </p>
+              <p>Plans are temporarily unavailable. Refresh to try again.</p>
               <button type="button" onClick={() => void refresh()}>
                 Refresh plans
               </button>
             </div>
           )}
         </section>
-      </div>
-
-      <div className="boardy-paywall__footer">
-        {onSignOut ? (
-          <button type="button" onClick={() => void onSignOut()}>
-            Sign out
-          </button>
-        ) : (
-          <a href="/">Return home</a>
-        )}
-        <span>Need help? Contact your workspace administrator.</span>
       </div>
     </main>
   );

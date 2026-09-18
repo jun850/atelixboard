@@ -472,29 +472,104 @@
 }
 
 .atelix-site-footer {
+  padding: 0 max(32px, calc((100vw - 1120px) / 2));
+  color: #fff;
+  background: #183269;
+}
+.atelix-site-footer__inner {
+  width: min(100%, 1120px);
+  margin: 0 auto;
+}
+.atelix-site-footer__cta {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 48px;
-  padding: 70px max(32px, calc((100vw - 1120px) / 2));
-  color: #fff;
-  background: #183269;
+  padding: 70px 0 64px;
+  border-bottom: 1px solid rgb(255 255 255 / 16%);
 }
-.atelix-site-footer h2 {
+.atelix-site-footer__cta h2 {
   margin: 0;
   font-size: clamp(30px, 3.3vw, 48px);
   letter-spacing: -0.035em;
 }
-.atelix-site-footer p {
+.atelix-site-footer__cta p {
   max-width: 640px;
   margin: 12px 0 0;
   color: #c9d7f3;
   font-size: 17px;
 }
-.atelix-site-footer .atelix-button {
+.atelix-site-footer__cta .atelix-button {
   flex: none;
   color: var(--atelix-blue-dark);
   background: #fff;
+}
+.atelix-site-footer__directory {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.25fr) 2fr;
+  gap: clamp(56px, 8vw, 112px);
+  padding: 56px 0 48px;
+}
+.atelix-site-footer__brand .boardy-brand {
+  color: #fff;
+}
+.atelix-site-footer__brand .boardy-brand__byline {
+  color: #c9d7f3;
+}
+.atelix-site-footer__brand .boardy-brand__byline img {
+  filter: brightness(0) invert(1);
+  opacity: 0.82;
+}
+.atelix-site-footer__brand > p {
+  max-width: 300px;
+  margin: 22px 0 0;
+  color: #aebfdf;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.atelix-site-footer__links {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(110px, 1fr));
+  gap: 32px;
+}
+.atelix-site-footer__links section {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 12px;
+}
+.atelix-site-footer__links h3 {
+  margin: 0 0 6px;
+  color: #fff;
+  font-size: 12px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+.atelix-site-footer__links button,
+.atelix-site-footer__bottom button {
+  padding: 0;
+  border: 0;
+  color: #bfcdeb;
+  background: transparent;
+  font-size: 14px;
+  font-family: inherit;
+  text-decoration: none;
+  cursor: default;
+  opacity: 1;
+}
+.atelix-site-footer__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 0 30px;
+  border-top: 1px solid rgb(255 255 255 / 12%);
+  color: #92a7ce;
+  font-size: 12px;
+}
+.atelix-site-footer__bottom > div {
+  display: flex;
+  gap: 20px;
 }
 
 .atelix-auth-page {
@@ -719,8 +794,7 @@
     sans-serif;
   overflow: hidden;
 }
-.boardy-paywall__topbar,
-.boardy-paywall__footer {
+.boardy-paywall__topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -738,7 +812,7 @@
   color: #fff;
   text-decoration: none;
 }
-.boardy-paywall__brand span {
+.boardy-paywall__brand > span:first-child {
   font-size: 25px;
   font-weight: 800;
   letter-spacing: -0.04em;
@@ -933,6 +1007,12 @@
   box-shadow: 0 0 0 3px rgb(47 108 229 / 12%);
   background: #fbfdff;
 }
+.boardy-paywall-product.has-savings {
+  background-image: linear-gradient(135deg, #fff 55%, #f0f6ff);
+}
+.boardy-paywall-product.has-savings.is-selected {
+  background-image: linear-gradient(135deg, #fbfdff 45%, #eaf2ff);
+}
 .boardy-paywall-product__radio {
   display: block;
   width: 16px;
@@ -947,6 +1027,28 @@
 .boardy-paywall-product__price {
   display: grid;
   gap: 5px;
+}
+.boardy-paywall-product__title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.boardy-paywall-product__savings {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border: 1px solid #b8e8c9;
+  border-radius: 999px;
+  color: #11683f;
+  background: #dcf7e6;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+  box-shadow: 0 3px 10px rgb(17 104 63 / 10%);
 }
 .boardy-paywall-product__copy strong,
 .boardy-paywall-product__price strong {
@@ -1120,22 +1222,6 @@
   min-height: 38px;
   font-size: 13px;
 }
-.boardy-paywall__footer {
-  color: var(--atelix-muted);
-  background: #fff;
-  font-size: 12px;
-}
-.boardy-paywall__footer button,
-.boardy-paywall__footer a {
-  padding: 0;
-  border: 0;
-  color: var(--paywall-deep);
-  background: transparent;
-  font: inherit;
-  font-weight: 800;
-  text-decoration: none;
-  cursor: pointer;
-}
 .boardy-paywall button:focus-visible,
 .boardy-paywall a:focus-visible {
   outline: 3px solid #8dbbff;
@@ -1295,8 +1381,8 @@
     width: 100%;
     box-sizing: border-box;
     grid-template-columns: minmax(0, 1fr);
-    gap: 28px;
-    padding: 28px 16px 36px;
+    gap: 22px;
+    padding: 24px 16px calc(56px + env(safe-area-inset-bottom));
   }
   .boardy-paywall__story {
     min-width: 0;
@@ -1304,12 +1390,12 @@
   }
   .boardy-paywall__story h1 {
     max-width: 100%;
-    font-size: clamp(38px, 12vw, 56px);
+    font-size: clamp(36px, 10vw, 44px);
     overflow-wrap: anywhere;
   }
   .boardy-paywall__lede {
     max-width: 100%;
-    margin: 18px 0 22px;
+    margin: 16px 0 0;
     font-size: 16px;
   }
   .boardy-paywall__benefit-grid {
@@ -1324,15 +1410,23 @@
     width: 100%;
     min-width: 0;
     min-height: 0;
-    padding: 26px 18px 30px;
+    padding: 22px 18px 24px;
+  }
+  .boardy-paywall__panel-heading {
+    margin-bottom: 20px;
+  }
+  .boardy-paywall__panel-heading .boardy-paywall__eyebrow {
+    margin-bottom: 10px;
   }
   .boardy-paywall__panel-heading h2 {
-    font-size: 30px;
+    font-size: 28px;
   }
   .boardy-paywall-product {
-    grid-template-columns: 20px minmax(0, 1fr);
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    gap: 10px;
     min-width: 0;
-    min-height: 82px;
+    min-height: 72px;
+    padding: 12px;
   }
   .boardy-paywall-product__copy,
   .boardy-paywall-product__price {
@@ -1343,17 +1437,18 @@
     overflow-wrap: anywhere;
   }
   .boardy-paywall-product__price {
-    grid-column: 2;
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    text-align: left;
+    grid-column: auto;
+    display: grid;
+    gap: 4px;
+    text-align: right;
   }
   .boardy-paywall-product__price strong {
     white-space: nowrap;
   }
   .boardy-paywall__summary {
     gap: 12px;
+    margin-top: 16px;
+    padding-block: 14px;
   }
   .boardy-paywall__summary strong {
     overflow-wrap: anywhere;
@@ -1475,7 +1570,7 @@
 .boardy-paywall__topbar {
   min-height: 84px;
   box-sizing: border-box;
-  justify-content: flex-start;
+  justify-content: space-between;
   padding: 0 42px;
   border-bottom: 1px solid #dfe6f1;
   background: #fff;
@@ -1483,7 +1578,7 @@
 .boardy-paywall__brand {
   color: #233b78;
 }
-.boardy-paywall__brand span {
+.boardy-paywall__brand > span:first-child {
   font-size: 24px;
 }
 .boardy-paywall__brand small {
@@ -1501,21 +1596,67 @@
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.12em;
-  text-transform: uppercase;
+}
+.boardy-paywall__brand-by {
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-transform: none;
 }
 .boardy-paywall__brand-mark img {
   display: block;
   width: 55px;
   height: auto;
 }
+.boardy-paywall__nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.boardy-paywall__nav-account {
+  max-width: min(32vw, 280px);
+  overflow: hidden;
+  color: #667085;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.boardy-paywall__nav-actions button {
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid #d6dfed;
+  border-radius: 8px;
+  color: #233b78;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease,
+    transform 160ms ease;
+}
+.boardy-paywall__nav-actions button:hover {
+  border-color: #9abaff;
+  background: #f3f7ff;
+  transform: translateY(-1px);
+}
+.boardy-paywall__nav-actions button:focus-visible {
+  outline: 3px solid rgb(47 108 229 / 35%);
+  outline-offset: 3px;
+}
 .boardy-paywall__layout {
+  grid-template-areas:
+    "story panel"
+    "benefits panel";
   grid-template-columns: minmax(0, 1.25fr) minmax(460px, 0.75fr);
+  grid-template-rows: auto 1fr;
   align-items: start;
-  gap: 42px;
+  column-gap: 42px;
+  row-gap: 0;
   padding: 42px 52px 30px;
   background: #f3f7ff;
 }
 .boardy-paywall__story {
+  grid-area: story;
   justify-content: flex-start;
   padding: 4px 0 0;
   color: #233b78;
@@ -1537,6 +1678,7 @@
 }
 .boardy-paywall__benefit-grid {
   display: grid;
+  grid-area: benefits;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px 18px;
   max-width: 795px;
@@ -1593,6 +1735,7 @@
   font-size: 13px;
 }
 .boardy-paywall__panel {
+  grid-area: panel;
   min-height: 762px;
   box-sizing: border-box;
   justify-content: flex-start;
@@ -1677,8 +1820,17 @@
 
 @media (max-width: 900px) {
   .boardy-paywall__layout {
+    grid-template-areas:
+      "story"
+      "panel"
+      "benefits";
     grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    gap: 28px;
     padding: 30px 24px 36px;
+  }
+  .boardy-paywall__lede {
+    margin-bottom: 0;
   }
   .boardy-paywall__panel {
     min-height: 0;
@@ -1710,11 +1862,10 @@
 }
 
 @media (max-width: 720px) {
-  .boardy-paywall__topbar,
-  .boardy-paywall__footer {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 10px;
+  .boardy-paywall__topbar {
+    align-items: center;
+    flex-direction: row;
+    gap: 12px;
     padding: 18px 20px;
   }
   .boardy-paywall__secure {
@@ -1833,7 +1984,8 @@
     padding: 76px 20px 80px;
   }
   .atelix-billing-toggle small {
-    display: none;
+    font-size: 10px;
+    white-space: nowrap;
   }
   .atelix-plan {
     min-height: auto;
@@ -1843,9 +1995,26 @@
     grid-template-columns: 1fr;
   }
   .atelix-site-footer {
+    padding-inline: 20px;
+  }
+  .atelix-site-footer__cta {
     align-items: flex-start;
     flex-direction: column;
-    padding: 58px 20px;
+    gap: 28px;
+    padding: 56px 0 48px;
+  }
+  .atelix-site-footer__directory {
+    grid-template-columns: 1fr;
+    gap: 44px;
+    padding: 44px 0 38px;
+  }
+  .atelix-site-footer__links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 40px;
+  }
+  .atelix-site-footer__bottom {
+    align-items: flex-start;
+    flex-direction: column;
   }
   .atelix-auth-card {
     padding: 28px 22px;
@@ -1946,13 +2115,34 @@
     min-height: 68px;
     padding: 0 20px;
   }
+  .boardy-paywall__brand {
+    min-width: 0;
+    gap: 7px;
+  }
+  .boardy-paywall__brand > span:first-child {
+    font-size: 22px;
+  }
+  .boardy-paywall__brand-mark {
+    gap: 4px;
+    padding-left: 7px;
+  }
+  .boardy-paywall__brand-mark img {
+    width: 48px;
+  }
+  .boardy-paywall__nav-account {
+    display: none;
+  }
+  .boardy-paywall__nav-actions {
+    flex: 0 0 auto;
+    gap: 0;
+  }
   .boardy-paywall__layout {
     display: grid;
     width: 100%;
     box-sizing: border-box;
     grid-template-columns: minmax(0, 1fr);
-    gap: 28px;
-    padding: 28px 16px 36px;
+    gap: 22px;
+    padding: 24px 16px calc(56px + env(safe-area-inset-bottom));
   }
   .boardy-paywall__story {
     min-width: 0;
@@ -1960,12 +2150,12 @@
   }
   .boardy-paywall__story h1 {
     max-width: 100%;
-    font-size: clamp(38px, 12vw, 56px);
+    font-size: clamp(36px, 10vw, 44px);
     overflow-wrap: anywhere;
   }
   .boardy-paywall__lede {
     max-width: 100%;
-    margin: 18px 0 22px;
+    margin: 16px 0 0;
     font-size: 16px;
   }
   .boardy-paywall__benefit-grid {
@@ -1980,12 +2170,23 @@
     width: 100%;
     min-width: 0;
     min-height: 0;
-    padding: 26px 18px 30px;
+    padding: 22px 18px 24px;
+  }
+  .boardy-paywall__panel-heading {
+    margin-bottom: 20px;
+  }
+  .boardy-paywall__panel-heading .boardy-paywall__eyebrow {
+    margin-bottom: 10px;
+  }
+  .boardy-paywall__panel-heading h2 {
+    font-size: 28px;
   }
   .boardy-paywall-product {
-    grid-template-columns: 20px minmax(0, 1fr);
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    gap: 10px;
     min-width: 0;
-    min-height: 82px;
+    min-height: 72px;
+    padding: 12px;
   }
   .boardy-paywall-product__copy,
   .boardy-paywall-product__price {
@@ -1996,14 +2197,18 @@
     overflow-wrap: anywhere;
   }
   .boardy-paywall-product__price {
-    grid-column: 2;
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    text-align: left;
+    grid-column: auto;
+    display: grid;
+    gap: 4px;
+    text-align: right;
   }
   .boardy-paywall-product__price strong {
     white-space: nowrap;
+  }
+  .boardy-paywall__summary {
+    gap: 12px;
+    margin-top: 16px;
+    padding-block: 14px;
   }
   .boardy-paywall__primary-action {
     width: 100%;
