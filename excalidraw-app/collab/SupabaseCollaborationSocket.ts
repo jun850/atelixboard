@@ -111,15 +111,6 @@ export class SupabaseCollaborationSocket implements CollaborationSocket {
   async connect() {
     try {
       const client = requireSupabase();
-      const { error } = await client.from("board_members").insert({
-        room_id: this.roomId,
-        user_id: this.user.id,
-      });
-
-      if (error && error.code !== "23505") {
-        throw error;
-      }
-
       if (this.closed) {
         return;
       }

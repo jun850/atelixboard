@@ -54,7 +54,8 @@ class CloudSceneStore {
     if (auth.session?.access_token === "local-demo") {
       return { version: 1 as const, elements: [], appState: null, files: {} };
     }
-    const requestedId = url.searchParams.get("scene");
+    const routeMatch = url.pathname.match(/^\/app\/boards\/([0-9a-f-]{36})$/i);
+    const requestedId = routeMatch?.[1] || url.searchParams.get("scene");
     let sceneId = requestedId;
     if (!sceneId) {
       const list = await invoke<{ scenes: SceneMetadata[] }>("scenes");
@@ -76,7 +77,7 @@ class CloudSceneStore {
     this.files = new Map(
       Object.entries(loaded.document.files || {}) as [FileId, BinaryFileData][],
     );
-    if (url.searchParams.get("scene") !== sceneId) {
+    if (!routeMatch && url.searchParams.get("scene") !== sceneId) {
       url.searchParams.set("scene", sceneId);
       ownerWindow.history.replaceState({}, "", url);
     }

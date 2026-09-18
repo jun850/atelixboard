@@ -46,6 +46,20 @@ Deno.serve(async (request) => {
 
     if (method === "POST" && parts.length === 1) {
       const requestId = requireRequestId(body.requestId);
+      const workspaceId = requireUuid(body.workspaceId);
+      const collectionId = requireUuid(body.collectionId);
+      const { data: collection, error: collectionError } = await client
+        .from("boardy_collections")
+        .select("id,workspace_id")
+        .eq("id", collectionId)
+        .eq("workspace_id", workspaceId)
+        .maybeSingle();
+      if (collectionError) {
+        throw collectionError;
+      }
+      if (!collection) {
+        throw new Error("forbidden");
+      }
       const encoded = await encodeScene(body.document);
       const storagePath = `pending/${user.id}/${requestId}.json.gz`;
       const { error: uploadError } = await admin.storage
@@ -69,6 +83,14 @@ Deno.serve(async (request) => {
       });
       if (error) {
         throw error;
+      }
+      const sceneId = (data as { sceneId: string }).sceneId;
+      const { error: assignmentError } = await client
+        .from("scenes")
+        .update({ workspace_id: workspaceId, collection_id: collectionId })
+        .eq("id", sceneId);
+      if (assignmentError) {
+        throw assignmentError;
       }
       return response(request, 201, data);
     }

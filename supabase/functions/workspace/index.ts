@@ -340,6 +340,21 @@ Deno.serve(async (request) => {
       });
     }
 
+    if (parts[0] === "access" && method === "GET") {
+      const { data, error } = await admin
+        .from("boardy_workspace_members")
+        .select("workspace_id,role")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .limit(1);
+      if (error) throw error;
+      return response(request, 200, {
+        hasWorkspaceAccess: Boolean(data?.length),
+        workspaceId: data?.[0]?.workspace_id || null,
+        role: data?.[0]?.role || null,
+      });
+    }
+
     const defaultWorkspaceId = await ensureAccount(admin, user);
     const workspaceId = body.workspaceId
       ? requireUuid(body.workspaceId)
