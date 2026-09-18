@@ -1403,6 +1403,38 @@
   }
 }
 
+.boardy-paywall__loading {
+  min-height: 300px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #667085;
+  font-size: 14px;
+}
+.boardy-paywall__loader-art {
+  display: block;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  animation: boardy-loader-orbit 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes boardy-loader-orbit {
+  0% {
+    transform: rotate(0deg) scale(0.92);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.04);
+  }
+  100% {
+    transform: rotate(360deg) scale(0.92);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .boardy-paywall__loader-art {
+    animation: none;
+  }
+}
+
 /* Pen-aligned pricing surfaces: centered light canvas, editorial hierarchy,
    and RevenueCat-powered plan selection. */
 .atelix-pricing {

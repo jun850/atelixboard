@@ -39,26 +39,46 @@ const formatPeriod = (pkg: Package) => {
   }`;
 };
 
-const getOfferText = (pkg: Package) => {
+const getAnnualSavingsPercent = (
+  monthly: Package | undefined,
+  annual: Package | undefined,
+) => {
+  const monthlyAmount = monthly?.webBillingProduct.price.amountMicros;
+  const annualAmount = annual?.webBillingProduct.price.amountMicros;
+  if (!monthlyAmount || !annualAmount) {
+    return null;
+  }
+  const savings = Math.round(
+    ((monthlyAmount * 12 - annualAmount) / (monthlyAmount * 12)) * 100,
+  );
+  return savings > 0 ? savings : null;
+};
+
+const getOfferText = (pkg: Package, packages: Package[]) => {
   const product = pkg.webBillingProduct;
   if (product.identifier === REVENUECAT_PRODUCT_IDS.annual) {
-    return "Best value · billed yearly";
+    const annual = packages.find(
+      (candidate) =>
+        candidate.webBillingProduct.identifier ===
+        REVENUECAT_PRODUCT_IDS.annual,
+    );
+    const monthly = packages.find(
+      (candidate) =>
+        candidate.webBillingProduct.identifier ===
+          REVENUECAT_PRODUCT_IDS.monthly ||
+        candidate.webBillingProduct.identifier ===
+          REVENUECAT_PRODUCT_IDS.monthlyLegacy,
+    );
+    const savings = getAnnualSavingsPercent(monthly, annual);
+    return savings ? `Annual billing · Save ${savings}%` : "Annual billing";
   }
   if (
     product.identifier === REVENUECAT_PRODUCT_IDS.monthly ||
     product.identifier === REVENUECAT_PRODUCT_IDS.monthlyLegacy
   ) {
-    return "Flexible monthly billing";
+    return "Monthly billing";
   }
-  const trial = product.freeTrialPhase;
-  if (trial?.period) {
-    return `Includes a ${trial.period.number} ${trial.period.unit} free trial`;
-  }
-  const intro = product.introPricePhase;
-  if (intro?.price) {
-    return `Intro price ${intro.price.formattedPrice}`;
-  }
-  return product.description || formatPeriod(pkg);
+  return formatPeriod(pkg);
 };
 
 const getPlanTitle = (pkg: Package) =>
@@ -137,10 +157,12 @@ const getProPackages = (availablePackages: Package[]) => {
 
 const ProductOption = ({
   pkg,
+  packages,
   selected,
   onSelect,
 }: {
   pkg: Package;
+  packages: Package[];
   selected: boolean;
   onSelect: () => void;
 }) => {
@@ -156,7 +178,7 @@ const ProductOption = ({
       <span className="boardy-paywall-product__radio" aria-hidden="true" />
       <span className="boardy-paywall-product__copy">
         <strong>{getPlanTitle(pkg)}</strong>
-        <small>{getOfferText(pkg)}</small>
+        <small>{getOfferText(pkg, packages)}</small>
       </span>
       <span className="boardy-paywall-product__price">
         <strong>{product.price.formattedPrice}</strong>
@@ -312,9 +334,17 @@ export const BillingPage = ({
           )}
 
           {isLoading ? (
-            <div className="boardy-paywall__loading" aria-live="polite">
-              <span className="boardy-paywall__loader" />
-              Loading plans from RevenueCat…
+            <div
+              className="boardy-paywall__loading"
+              aria-live="polite"
+              aria-label="Getting your workspace ready"
+            >
+              <img
+                className="boardy-paywall__loader-art"
+                src="/brand/boardy-loader.png"
+                alt=""
+              />
+              <span>Getting your workspace ready…</span>
             </div>
           ) : error ? null : isPro ? (
             <div className="boardy-paywall__active" role="status">
@@ -341,6 +371,7 @@ export const BillingPage = ({
                   <ProductOption
                     key={pkg.identifier}
                     pkg={pkg}
+                    packages={packages}
                     selected={selectedPackage?.identifier === pkg.identifier}
                     onSelect={() => setSelectedPackage(pkg)}
                   />

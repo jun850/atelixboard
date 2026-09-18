@@ -69,3 +69,5 @@ Use CustomerInfo after every purchase and on app startup. Do not unlock Pro mere
 ## Sandbox testing
 
 Use a RevenueCat sandbox key (`rcb_sb_...`) and sandbox products. Test with a dedicated account, sign in before opening `/app/subscription`, and verify both the RevenueCat customer ID and `boardybyatelix_pro` in the RevenueCat dashboard. Keep the key in `.env.development.local`; never commit it or place a RevenueCat secret key in `VITE_*`.
+
+The local sandbox flow was verified with `junarcana263@gmail.com` using the monthly Web Billing checkout and a Stripe test card. Production uses a separate non-sandbox Vercel key. The customer-facing loading state is intentionally vendor-neutral: it centers the Boardy loader artwork, uses playful rotation with a reduced-motion fallback, and does not expose provider names while offerings resolve.
