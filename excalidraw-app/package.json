@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@excalidraw/random-username": "1.0.0",
+    "@revenuecat/purchases-js": "1.63.1",
     "@sentry/browser": "9.0.1",
     "@supabase/supabase-js": "2.116.0",
     "callsites": "4.2.0",

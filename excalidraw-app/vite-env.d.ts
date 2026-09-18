@@ -19,6 +19,7 @@ interface ImportMetaEnv {
 
   VITE_SUPABASE_URL: string;
   VITE_SUPABASE_PUBLISHABLE_KEY: string;
+  VITE_REVENUECAT_PUBLIC_API_KEY?: string;
 
   // whether to disable live reload / HMR. Usuaully what you want to do when
   // debugging Service Workers.

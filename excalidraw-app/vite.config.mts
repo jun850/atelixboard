@@ -227,7 +227,7 @@ export default defineConfig(({ mode }) => {
               },
             },
           ],
-          maximumFileSizeToCacheInBytes: 3 * 1024 ** 2, // 3MB
+          maximumFileSizeToCacheInBytes: 5 * 1024 ** 2, // 5MB
         },
         manifest: {
           short_name: "Boardy",

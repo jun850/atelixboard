@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 
 import { localApi } from "../agentic-board/client";
+import { syncRevenueCatUser } from "../revenuecat";
 import { isSupabaseConfigured, supabase } from "../supabase/client";
 
 import { BoardArtwork, LandingIcon } from "./LandingArtwork";
 import { EditorArtwork } from "./EditorArtwork";
+import { BillingPage } from "./BillingPage";
 
 import "./AtelixRouter.scss";
 
@@ -224,8 +226,11 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
                 ? "or $50 billed annually"
                 : "billed annually"}
             </small>
-            <a className="atelix-button" href={primaryPath}>
-              Sign up for Pro
+            <a
+              className="atelix-button"
+              href={signedIn ? "/app/subscription" : primaryPath}
+            >
+              {signedIn ? "View Pro plans" : "Sign up for Pro"}
             </a>
             <h4>Everything in Standard, plus</h4>
             <ul>
@@ -471,6 +476,7 @@ const AuthPage = ({ mode }: { mode: AuthMode }) => {
 export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
   const [location, setLocation] = useState(window.location.href);
   const [session, setSession] = useState<Session | null>();
+  const [hasProAccess, setHasProAccess] = useState<boolean | null>(null);
   const currentUrl = new URL(location);
   const path = currentUrl.pathname;
   const pendingNext = currentUrl.searchParams.get("next");
@@ -521,6 +527,20 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
   }, [localDemo]);
 
   useEffect(() => {
+    if (!session) {
+      return;
+    }
+    void syncRevenueCatUser(session.user.id, session.user.email).catch(() => {
+      // Billing surfaces the actionable configuration error. Auth and the board
+      // remain usable when RevenueCat is not configured for local work.
+    });
+  }, [session]);
+
+  useEffect(() => {
+    setHasProAccess(null);
+  }, [session?.user.id]);
+
+  useEffect(() => {
     if (path === "/app" && session === null) {
       navigate(
         `/login?next=${encodeURIComponent(
@@ -531,9 +551,11 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
       const next = new URLSearchParams(window.location.search).get("next");
       if (next?.startsWith("/app")) {
         navigate(next);
+      } else if (hasProAccess !== true) {
+        navigate(`/app/subscription${localDemo ? "?localDemo=1" : ""}`);
       }
     }
-  }, [location, path, session]);
+  }, [hasProAccess, localDemo, location, path, session]);
 
   if (
     session === undefined ||
@@ -546,9 +568,42 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
     );
   }
 
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
+
+  if (path === "/app/subscription") {
+    if (!session) {
+      navigate(
+        `/login?next=${encodeURIComponent(
+          `/app/subscription${localDemo ? "?localDemo=1" : ""}`,
+        )}`,
+      );
+      return null;
+    }
+    return (
+      <BillingPage
+        user={session.user}
+        onUnlocked={() => {
+          setHasProAccess(true);
+          navigate(`/app${localDemo ? "?localDemo=1" : ""}`);
+        }}
+        onSignOut={signOut}
+      />
+    );
+  }
+
   if (path === "/app") {
     if (!session) {
       return null;
+    }
+    if (hasProAccess !== true) {
+      return (
+        <main className="atelix-page atelix-loading-page" aria-live="polite">
+          Preparing your workspace…
+        </main>
+      );
     }
     return (
       <div className="atelix-board-shell">
@@ -556,6 +611,9 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
           <BoardyBrand />
           <div className="atelix-board-account">
             <span title={session.user.email}>{session.user.email}</span>
+            <a className="atelix-board-billing" href="/app/subscription">
+              Billing
+            </a>
             <button
               className="atelix-board-logout"
               type="button"
@@ -567,8 +625,7 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
                     () => undefined,
                   );
                 }
-                await supabase.auth.signOut();
-                navigate("/");
+                await signOut();
               }}
             >
               Sign out
@@ -593,6 +650,14 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
   }
   if (path === "/reset-password") {
     return <AuthPage mode="reset" />;
+  }
+  if (path === "/billing") {
+    if (!session) {
+      navigate(`/login?next=${encodeURIComponent("/app/subscription")}`);
+      return null;
+    }
+    navigate(`/app/subscription${localDemo ? "?localDemo=1" : ""}`);
+    return null;
   }
 
   return <LandingPage signedIn={Boolean(session)} />;
