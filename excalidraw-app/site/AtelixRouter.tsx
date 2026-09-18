@@ -730,9 +730,15 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
       const next = new URLSearchParams(window.location.search).get("next");
       if (next?.startsWith("/app")) {
         navigate(next);
-      } else if (hasProAccess !== true) {
+      } else if (hasProAccess === false) {
         navigate(`/app/subscription${localDemo ? "?localDemo=1" : ""}`);
       }
+    } else if (
+      path === "/app/subscription" &&
+      session &&
+      hasProAccess === true
+    ) {
+      navigate(`/app${localDemo ? "?localDemo=1" : ""}`);
     }
   }, [hasProAccess, localDemo, location, path, session]);
 
@@ -760,6 +766,13 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
         )}`,
       );
       return null;
+    }
+    if (hasProAccess === true) {
+      return (
+        <main className="atelix-page atelix-loading-page" aria-live="polite">
+          Preparing your workspace…
+        </main>
+      );
     }
     return (
       <BillingPage

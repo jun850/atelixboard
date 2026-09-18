@@ -8,6 +8,7 @@ Use distinct browser profiles for Owner/Admin, Staff, External Editor, Commenter
 2. An unpaid user without an invitation is redirected to `/app/subscription`.
 3. An unpaid invited user signs up through `/invite/:token`, redeems once, and reaches the target without the paywall.
 4. Reopening a redeemed invitation is idempotent. Expired, revoked, wrong-email, and exhausted links fail without partial membership rows.
+5. Every Auth user present when the migration runs has one allowlist row and bypasses billing; a user created after migration without subscription/invitation is not allowlisted.
 
 ## 2. Whiteboards and collections
 

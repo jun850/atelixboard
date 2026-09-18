@@ -2,9 +2,7 @@ import { authenticate, response } from "../_shared/agentic.ts";
 
 import { cloudErrorResponse, requireUuid } from "../_shared/cloud.ts";
 
-import type { SupabaseClient } from "npm:@supabase/supabase-js@2.116.0";
-
-type AdminClient = SupabaseClient;
+type AdminClient = Awaited<ReturnType<typeof authenticate>>["admin"];
 
 const slugify = (value: string) =>
   value
@@ -323,19 +321,32 @@ Deno.serve(async (request) => {
     }
 
     if (parts[0] === "access" && method === "GET") {
-      const { data, error } = await admin
-        .from("boardy_workspace_members")
-        .select("workspace_id,role")
-        .eq("user_id", user.id)
-        .eq("status", "active")
-        .limit(1);
-      if (error) {
-        throw error;
+      const [membershipResult, allowlistResult] = await Promise.all([
+        admin
+          .from("boardy_workspace_members")
+          .select("workspace_id,role")
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .limit(1),
+        admin
+          .from("boardy_subscription_allowlist")
+          .select("user_id")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+      ]);
+      if (membershipResult.error || allowlistResult.error) {
+        throw membershipResult.error || allowlistResult.error;
       }
+      const data = membershipResult.data;
       return response(request, 200, {
-        hasWorkspaceAccess: Boolean(data?.length),
+        hasWorkspaceAccess: Boolean(data?.length || allowlistResult.data),
         workspaceId: data?.[0]?.workspace_id || null,
         role: data?.[0]?.role || null,
+        accessSource: data?.length
+          ? "workspace"
+          : allowlistResult.data
+          ? "allowlist"
+          : null,
       });
     }
 

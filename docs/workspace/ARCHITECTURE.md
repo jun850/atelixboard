@@ -19,7 +19,7 @@ Workspace
 └── Invitations + audit events
 ```
 
-An account with a paid entitlement creates a sponsored workspace at first bootstrap. A valid workspace, collection, or whiteboard invitation grants access before the subscription screen, so invited collaborators bypass the individual paywall without becoming billing sponsors.
+An account with a paid entitlement creates a sponsored workspace at first bootstrap. A valid workspace, collection, or whiteboard invitation grants access before the subscription screen, so invited collaborators bypass the individual paywall without becoming billing sponsors. At rollout, all existing Supabase Auth users are snapshotted into `boardy_subscription_allowlist`; this grandfathering does not automatically include later signups.
 
 ## Boundaries and flows
 

@@ -37,7 +37,10 @@ const MentionPicker = ({
         ) : (
           <span>{member.profile.displayName.slice(0, 1).toUpperCase()}</span>
         )}
-        {member.profile.displayName}
+        <span className="boardy-mention-picker__identity">
+          <strong>{member.profile.displayName}</strong>
+          <small>{member.profile.email}</small>
+        </span>
       </button>
     ))}
   </div>

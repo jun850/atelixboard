@@ -86,6 +86,9 @@ export async function cloudApi<T>(
   }
   const { data, error } = await supabase.functions.invoke(functionName, {
     body: { path, method, body },
+    headers: {
+      Authorization: `Bearer ${sessionData.session.access_token}`,
+    },
   });
   if (error) {
     throw new Error(

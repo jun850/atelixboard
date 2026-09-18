@@ -35,6 +35,19 @@ create table public.boardy_workspace_members (
 create index boardy_workspace_members_user_idx
   on public.boardy_workspace_members(user_id, status, workspace_id);
 
+create table public.boardy_subscription_allowlist (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  reason text not null check (reason in ('legacy_existing_user', 'support', 'test')),
+  granted_at timestamptz not null default now()
+);
+
+-- Grandfather the complete Auth population at rollout time. This is intentionally
+-- a one-time snapshot: users created after the migration still need a paid
+-- entitlement or an invitation.
+insert into public.boardy_subscription_allowlist (user_id, reason)
+select id, 'legacy_existing_user' from auth.users
+on conflict (user_id) do nothing;
+
 create table public.boardy_collections (
   id uuid primary key default gen_random_uuid(),
   workspace_id uuid not null references public.boardy_workspaces(id) on delete cascade,
@@ -357,6 +370,7 @@ grant execute on function public.boardy_filter_scene_mentions(uuid, uuid[]) to a
 alter table public.boardy_profiles enable row level security;
 alter table public.boardy_workspaces enable row level security;
 alter table public.boardy_workspace_members enable row level security;
+alter table public.boardy_subscription_allowlist enable row level security;
 alter table public.boardy_collections enable row level security;
 alter table public.boardy_collection_members enable row level security;
 alter table public.boardy_invitations enable row level security;
@@ -437,7 +451,8 @@ create policy "users delete own avatars" on storage.objects for delete to authen
 using (bucket_id = 'boardy-avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
 
 revoke all on public.boardy_profiles, public.boardy_workspaces,
-  public.boardy_workspace_members, public.boardy_collections,
+  public.boardy_workspace_members, public.boardy_subscription_allowlist,
+  public.boardy_collections,
   public.boardy_collection_members, public.boardy_invitations,
   public.boardy_invitation_redemptions, public.boardy_comment_threads,
   public.boardy_comment_messages, public.boardy_comment_reactions,
@@ -452,7 +467,8 @@ grant select on public.boardy_workspaces, public.boardy_workspace_members,
   public.boardy_comment_reads, public.boardy_notifications,
   public.boardy_audit_events to authenticated;
 grant all on public.boardy_profiles, public.boardy_workspaces,
-  public.boardy_workspace_members, public.boardy_collections,
+  public.boardy_workspace_members, public.boardy_subscription_allowlist,
+  public.boardy_collections,
   public.boardy_collection_members, public.boardy_invitations,
   public.boardy_invitation_redemptions, public.boardy_comment_threads,
   public.boardy_comment_messages, public.boardy_comment_reactions,

@@ -12,7 +12,7 @@
   min-height: 100dvh;
   color: var(--boardy-ink);
   background: var(--boardy-soft);
-  font-family: Inter, system-ui, sans-serif;
+  font-family: "Assistant", system-ui, sans-serif;
 }
 
 .boardy-workspace-shell {
@@ -679,7 +679,7 @@ a:focus-visible {
   cursor: pointer;
 }
 .boardy-mention-picker img,
-.boardy-mention-picker button > span {
+.boardy-mention-picker button > span:not(.boardy-mention-picker__identity) {
   width: 20px;
   height: 20px;
   display: grid;
@@ -688,6 +688,18 @@ a:focus-visible {
   color: #fff;
   background: var(--boardy-accent);
   object-fit: cover;
+}
+.boardy-mention-picker__identity {
+  display: grid;
+  justify-items: start;
+  line-height: 1.15;
+}
+.boardy-mention-picker__identity strong {
+  font-size: 11px;
+}
+.boardy-mention-picker__identity small {
+  color: var(--boardy-muted);
+  font-size: 9px;
 }
 .boardy-comments-tools {
   display: flex;
