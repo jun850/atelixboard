@@ -150,9 +150,11 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
           <a href="#pricing">Pricing</a>
         </nav>
         <div className="atelix-site-actions">
-          <a className="atelix-text-link" href={signedIn ? "/app" : "/login"}>
-            {signedIn ? "Workspace" : "Login"}
-          </a>
+          {!signedIn && (
+            <a className="atelix-text-link" href="/login">
+              Login
+            </a>
+          )}
           <a className="atelix-button atelix-button-primary" href={primaryPath}>
             {primaryLabel}
           </a>
@@ -161,9 +163,6 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
 
       <section className="atelix-hero" aria-labelledby="atelix-hero-title">
         <div className="atelix-hero__copy">
-          <p className="atelix-hero__promise">
-            <span /> The canvas for teams that think together
-          </p>
           <h1 id="atelix-hero-title">Turn big ideas into clear next steps.</h1>
           <p className="atelix-hero__description">
             Boardy is the fast, flexible workspace for brainstorming, mapping,
@@ -308,6 +307,8 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
               <li>Templates and libraries</li>
               <li>Extended AI tools</li>
               <li>Bring your own LLM subscription</li>
+              <li>Live collaboration</li>
+              <li>Comments and threads</li>
             </ul>
           </article>
         </div>
@@ -352,7 +353,7 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
 
           <div className="atelix-site-footer__bottom">
             <span>
-              © {new Date().getFullYear()} Atelix. All rights reserved.
+              © {new Date().getFullYear()} Atelix AI Inc. All rights reserved.
             </span>
             <div aria-label="Social links">
               <PlaceholderFooterLink>LinkedIn</PlaceholderFooterLink>

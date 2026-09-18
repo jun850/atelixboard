@@ -307,8 +307,8 @@ export const BillingPage = ({
             Everything you need to think, share, and ship.
           </h1>
           <p className="boardy-paywall__lede">
-            The complete whiteboard toolkit—local-first when you want it,
-            cloud-powered when your team needs it.
+            Simplify your brainstorming workflow with familiar, smart
+            whiteboarding and live collaboration.
           </p>
         </section>
 
