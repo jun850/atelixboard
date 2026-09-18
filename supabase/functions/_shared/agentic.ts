@@ -20,10 +20,19 @@ export const adminClient = () =>
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
 
+export const userClient = (authorization: string) =>
+  createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    {
+      global: { headers: { Authorization: authorization } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    },
+  );
+
 export async function authenticate(request: Request) {
-  const token = request.headers
-    .get("authorization")
-    ?.match(/^Bearer (.+)$/)?.[1];
+  const authorization = request.headers.get("authorization") || "";
+  const token = authorization.match(/^Bearer (.+)$/)?.[1];
   if (!token) {
     throw new Error("UNAUTHENTICATED");
   }
@@ -32,7 +41,7 @@ export async function authenticate(request: Request) {
   if (error || !data.user) {
     throw new Error("UNAUTHENTICATED");
   }
-  return { admin, user: data.user };
+  return { admin, user: data.user, client: userClient(authorization) };
 }
 
 export function response(request: Request, status: number, body: unknown) {

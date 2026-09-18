@@ -28,12 +28,7 @@ import type {
 
 import { supabase } from "../supabase/client";
 
-import {
-  CATEGORIES,
-  defaultContent,
-  templates,
-  validateContent,
-} from "./catalog";
+import { CATEGORIES, defaultContent, templates } from "./catalog";
 import {
   applyDraft,
   buildTemplate,
@@ -41,7 +36,7 @@ import {
   sanitizeSnapshot,
 } from "./scene";
 import { ScenePreview } from "./ScenePreview";
-import { localApi } from "./client";
+import { cloudApi, localApi } from "./client";
 import {
   PenChip,
   PenIconButton,
@@ -129,7 +124,7 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
   const [preferences, setPreferences] = useState<AssistantPreferences>(
     defaultAssistantPreferences,
   );
-  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+  const [, setPreferencesLoaded] = useState(false);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [connectionId, setConnectionId] = useState("");
   const [model, setModel] = useState("");
@@ -150,7 +145,6 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
   const [saveName, setSaveName] = useState("");
   const [saveCategory, setSaveCategory] = useState<string>(CATEGORIES[0]);
   const [rename, setRename] = useState<Personal | null>(null);
-  const db = useRef<IDBDatabase | null>(null);
   const currentOwner = useRef("");
   const connection = connections.find((c) => c.id === connectionId);
   const selectedModel = connection?.models.find((m) => m.id === model);
@@ -246,28 +240,7 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
           return;
         }
         if (loadError) {
-          if (import.meta.env.DEV) {
-            try {
-              const stored = JSON.parse(
-                ownerWindow?.localStorage.getItem(
-                  `boardy-assistant-preferences-${owner}`,
-                ) || "null",
-              ) as AssistantPreferences | null;
-              if (stored) {
-                setPreferences(stored);
-                setTask(stored.defaultTask);
-                setScope(stored.defaultContext);
-                setConnectionId(stored.defaultConnectionId);
-                setModel(stored.defaultModel);
-              }
-            } catch {
-              ownerWindow?.localStorage.removeItem(
-                `boardy-assistant-preferences-${owner}`,
-              );
-            }
-          } else {
-            setError("Assistant defaults could not be loaded. Try again.");
-          }
+          setError("Assistant defaults could not be loaded. Try again.");
           setPreferencesLoaded(true);
           return;
         }
@@ -294,75 +267,6 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
       alive = false;
     };
   }, [owner, ownerWindow]);
-  useEffect(() => {
-    if (!owner || !ownerWindow || !preferencesLoaded) {
-      return;
-    }
-    const storageKey = `boardy-assistant-history-${owner}`;
-    if (!preferences.persistLocalHistory) {
-      ownerWindow.localStorage.removeItem(storageKey);
-      return;
-    }
-    try {
-      const stored = JSON.parse(
-        ownerWindow.localStorage.getItem(storageKey) || "null",
-      );
-      if (stored?.version !== 1) {
-        ownerWindow.localStorage.removeItem(storageKey);
-        return;
-      }
-      const storedTemplate = templates.find(
-        (item) => item.id === stored?.templateId,
-      );
-      if (!storedTemplate) {
-        return;
-      }
-      setTemplate(storedTemplate);
-      setPrompt(typeof stored.prompt === "string" ? stored.prompt : "");
-      setTask(stored.task === "ui" ? "ui" : "board");
-      setScope(
-        ["prompt_only", "selection", "whole_board"].includes(stored.scope)
-          ? stored.scope
-          : "prompt_only",
-      );
-      if (stored.content) {
-        const content = validateContent(stored.content, storedTemplate);
-        setDraft({
-          id: randomId(),
-          elements: buildTemplate(storedTemplate, content),
-          content,
-          base: {},
-          connectionId:
-            typeof stored.connectionId === "string"
-              ? stored.connectionId
-              : undefined,
-        });
-      } else if (typeof stored.html === "string" && root.current) {
-        const html = safeGeneratedHtml(stored.html, root.current.ownerDocument);
-        setDraft({
-          id: randomId(),
-          elements: [
-            newIframeElement({
-              type: "iframe",
-              x: 0,
-              y: 0,
-              width: 1000,
-              height: 720,
-              customData: { generationData: { status: "done", html } },
-            }),
-          ],
-          html,
-          base: {},
-          connectionId:
-            typeof stored.connectionId === "string"
-              ? stored.connectionId
-              : undefined,
-        });
-      }
-    } catch {
-      ownerWindow.localStorage.removeItem(storageKey);
-    }
-  }, [owner, ownerWindow, preferences.persistLocalHistory, preferencesLoaded]);
   useEffect(() => {
     if (!owner || !ownerWindow) {
       return;
@@ -410,46 +314,6 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
     preferences.defaultConnectionId,
     preferences.defaultModel,
   ]);
-  useEffect(() => {
-    if (
-      !owner ||
-      !ownerWindow ||
-      !preferencesLoaded ||
-      !preferences.persistLocalHistory
-    ) {
-      return;
-    }
-    const timer = ownerWindow.setTimeout(() => {
-      try {
-        ownerWindow.localStorage.setItem(
-          `boardy-assistant-history-${owner}`,
-          JSON.stringify({
-            version: 1,
-            prompt,
-            task,
-            scope,
-            templateId: template.id,
-            content: draft?.content,
-            html: draft?.html,
-            connectionId: draft?.connectionId,
-          }),
-        );
-      } catch {
-        setError("Local assistant history could not be saved.");
-      }
-    }, 250);
-    return () => ownerWindow.clearTimeout(timer);
-  }, [
-    draft,
-    owner,
-    ownerWindow,
-    preferences.persistLocalHistory,
-    preferencesLoaded,
-    prompt,
-    scope,
-    task,
-    template.id,
-  ]);
   useEffect(
     () =>
       api.onChange((elements, state) => {
@@ -465,46 +329,23 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
     [api],
   );
   useEffect(() => {
-    if (!owner || !root.current?.ownerDocument.defaultView) {
+    if (!owner || !mountedNode) {
       return;
     }
     let alive = true;
-    const request = root.current.ownerDocument.defaultView.indexedDB.open(
-      `boardy-agentic-templates-${owner}`,
-      1,
-    );
-    request.onupgradeneeded = () =>
-      request.result.createObjectStore("templates", { keyPath: "id" });
-    request.onsuccess = () => {
-      if (!alive) {
-        request.result.close();
-        return;
-      }
-      db.current = request.result;
-      const all = request.result
-        .transaction("templates")
-        .objectStore("templates")
-        .getAll();
-      all.onsuccess = () => {
-        if (alive) {
-          setPersonal(
-            (all.result as Personal[]).map((item) => ({
-              ...item,
-              files: item.files || {},
-            })),
-          );
+    void cloudApi<{ templates: Personal[] }>("ai-templates", "templates")
+      .then(({ templates: saved }) => {
+        if (alive && currentOwner.current === owner) {
+          setPersonal(saved);
         }
-      };
-    };
-    request.onerror = () => {
-      if (alive) {
-        setError("Local template storage is unavailable.");
-      }
-    };
+      })
+      .catch(() => {
+        if (alive) {
+          setError("Saved templates could not be loaded from your workspace.");
+        }
+      });
     return () => {
       alive = false;
-      db.current?.close();
-      db.current = null;
     };
   }, [owner, mountedNode]);
   useEffect(() => {
@@ -523,28 +364,35 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
     return () => ownerWindow.removeEventListener("hashchange", clearBoardDraft);
   }, [ownerWindow]);
   const persist = async (next: Personal | null, id: string) => {
-    if (!db.current) {
-      throw new Error("Sign in and enable browser storage to save templates.");
-    }
     const expectedOwner = owner;
-    await new Promise<void>((resolve, reject) => {
-      const tx = db.current!.transaction("templates", "readwrite");
-      const store = tx.objectStore("templates");
-      if (next) {
-        store.put(next);
-      } else {
-        store.delete(id);
-      }
-      tx.oncomplete = () => resolve();
-      tx.onerror = () =>
-        reject(
-          new Error("Could not save template. Browser storage may be full."),
-        );
-    });
+    let saved = next;
+    if (!next) {
+      await cloudApi("ai-templates", `templates/${id}`, "PATCH", {
+        action: "delete",
+      });
+    } else if (personal.some((item) => item.id === id)) {
+      await cloudApi("ai-templates", `templates/${id}`, "PATCH", {
+        name: next.title,
+        category: next.category,
+      });
+    } else {
+      const result = await cloudApi<{ templateId: string }>(
+        "ai-templates",
+        "templates",
+        "POST",
+        {
+          requestId: `${win().crypto.randomUUID()}-${Date.now().toString(36)}`,
+          name: next.title,
+          category: next.category,
+          document: { version: 1, elements: next.elements, files: next.files },
+        },
+      );
+      saved = { ...next, id: result.templateId };
+    }
     if (currentOwner.current === expectedOwner) {
       setPersonal((old) =>
-        next
-          ? [...old.filter((p) => p.id !== id), next]
+        saved
+          ? [...old.filter((p) => p.id !== id), saved]
           : old.filter((p) => p.id !== id),
       );
     }
@@ -565,15 +413,6 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
         updated_at: new Date().toISOString(),
       });
     if (saveError) {
-      if (import.meta.env.DEV && ownerWindow) {
-        ownerWindow.localStorage.setItem(
-          `boardy-assistant-preferences-${owner}`,
-          JSON.stringify(next),
-        );
-        setPreferences(next);
-        setStatus("Settings saved on this device.");
-        return;
-      }
       throw new Error("Assistant settings could not be synced.");
     }
     setPreferences(next);
@@ -595,6 +434,14 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
     setReview(true);
     setDetail(null);
     setError("");
+  };
+  const previewPersonal = async (item: Personal) => {
+    const result = await cloudApi<{ template: Personal }>(
+      "ai-templates",
+      `templates/${item.id}`,
+    );
+    const snapshot = sanitizeSnapshot(result.template.elements);
+    preview(snapshot.elements, result.template.files);
   };
   const apply = (copy = false) =>
     runAction(() => {
@@ -762,6 +609,8 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
         templateId: template.id,
         prompt,
         allowUnknown,
+        sceneId:
+          new URL(win().location.href).searchParams.get("scene") || undefined,
         context: {
           mode: scope,
           elements: contextElements.map((e) => ({
@@ -868,9 +717,7 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
         0,
       );
       if (fileSize > 10 * 1024 * 1024) {
-        throw new Error(
-          "Selected images exceed the 10 MB local template limit.",
-        );
+        throw new Error("Selected images exceed the 10 MB template limit.");
       }
       setSave({ ...snapshot, files });
       setSaveName("");
@@ -990,21 +837,20 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
                       <button
                         type="button"
                         className="agentic-template"
-                        onClick={() =>
-                          runAction(() =>
-                            preview(
-                              sanitizeSnapshot(item.elements).elements,
-                              item.files,
-                            ),
-                          )
-                        }
+                        onClick={() => runAction(() => previewPersonal(item))}
                       >
-                        <ScenePreview
-                          elements={item.elements}
-                          files={item.files}
-                          title={item.title}
-                          variant="card"
-                        />
+                        {item.elements.length ? (
+                          <ScenePreview
+                            elements={item.elements}
+                            files={item.files}
+                            title={item.title}
+                            variant="card"
+                          />
+                        ) : (
+                          <span className="agentic-preview agentic-preview--card agentic-preview--stored">
+                            Saved template
+                          </span>
+                        )}
                         <strong>{item.title}</strong>
                         <span>{item.category}</span>
                       </button>
@@ -1078,90 +924,97 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
               title={detail.title}
               onCloseRequest={() => setDetail(null)}
               size="regular"
+              className="agentic-template-dialog"
             >
               <div className="agentic-board agentic-detail">
-                <p>{detail.description}</p>
-                <ScenePreview elements={detailScene} title={detail.title} />
-                <label>
-                  Title
-                  <input
-                    maxLength={160}
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                  />
-                </label>
-                <details>
-                  <summary>Edit template content</summary>
-                  {(detailContent || defaultContent(detail)).sections.map(
-                    (section, index) => (
-                      <div key={index}>
-                        <label>
-                          Section {index + 1}
-                          <input
-                            maxLength={100}
-                            value={section.heading}
-                            onChange={(e) =>
-                              setDetailContent((old) => ({
-                                ...(old || defaultContent(detail)),
-                                sections: (
-                                  old || defaultContent(detail)
-                                ).sections.map((item, i) =>
-                                  i === index
-                                    ? {
-                                        ...item,
-                                        heading: e.target.value || "Untitled",
-                                      }
-                                    : item,
-                                ),
-                              }))
-                            }
-                          />
-                        </label>
-                        <label>
-                          Content · one item per line
-                          <textarea
-                            rows={3}
-                            value={section.items.join("\n")}
-                            onChange={(e) => {
-                              const items = e.target.value.split("\n");
-                              if (
-                                items.length <= 6 &&
-                                items.every((item) => item.length <= 300)
-                              ) {
+                <p className="agentic-detail__description">
+                  {detail.description}
+                </p>
+                <div className="agentic-detail__preview-stage">
+                  <ScenePreview elements={detailScene} title={detail.title} />
+                </div>
+                <div className="agentic-detail__controls">
+                  <label>
+                    Title
+                    <input
+                      maxLength={160}
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                    />
+                  </label>
+                  <details>
+                    <summary>Edit template content</summary>
+                    {(detailContent || defaultContent(detail)).sections.map(
+                      (section, index) => (
+                        <div key={index}>
+                          <label>
+                            Section {index + 1}
+                            <input
+                              maxLength={100}
+                              value={section.heading}
+                              onChange={(e) =>
                                 setDetailContent((old) => ({
                                   ...(old || defaultContent(detail)),
                                   sections: (
                                     old || defaultContent(detail)
                                   ).sections.map((item, i) =>
-                                    i === index ? { ...item, items } : item,
+                                    i === index
+                                      ? {
+                                          ...item,
+                                          heading: e.target.value || "Untitled",
+                                        }
+                                      : item,
                                   ),
-                                }));
+                                }))
                               }
-                            }}
-                          />
-                        </label>
-                      </div>
-                    ),
-                  )}
-                </details>
-                <div className="agentic-actions">
-                  <Button onSelect={() => preview(detailScene)}>
-                    Preview template
-                  </Button>
-                  <Button
-                    onSelect={() => {
-                      setTemplate(detail);
-                      setPrompt(title === detail.title ? "" : title);
-                      api.toggleSidebar({
-                        name: "default",
-                        tab: "agentic-assistant",
-                        force: true,
-                      });
-                      setDetail(null);
-                    }}
-                  >
-                    Customize with AI
-                  </Button>
+                            />
+                          </label>
+                          <label>
+                            Content · one item per line
+                            <textarea
+                              rows={3}
+                              value={section.items.join("\n")}
+                              onChange={(e) => {
+                                const items = e.target.value.split("\n");
+                                if (
+                                  items.length <= 6 &&
+                                  items.every((item) => item.length <= 300)
+                                ) {
+                                  setDetailContent((old) => ({
+                                    ...(old || defaultContent(detail)),
+                                    sections: (
+                                      old || defaultContent(detail)
+                                    ).sections.map((item, i) =>
+                                      i === index ? { ...item, items } : item,
+                                    ),
+                                  }));
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+                      ),
+                    )}
+                  </details>
+                  <div className="agentic-actions">
+                    <Button onSelect={() => preview(detailScene)}>
+                      Preview template
+                    </Button>
+                    <Button
+                      onSelect={() => {
+                        setTemplate(detail);
+                        setPrompt(title === detail.title ? "" : title);
+                        api.toggleSidebar({
+                          name: "default",
+                          tab: "agentic-assistant",
+                          force: true,
+                        });
+                        setDetail(null);
+                      }}
+                    >
+                      Customize with AI
+                    </Button>
+                  </div>
                 </div>
               </div>
             </Dialog>
@@ -1410,14 +1263,14 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
                     ? "Models & connections"
                     : settingsTab === "defaults"
                     ? "Assistant defaults"
-                    : "Privacy & local data"}
+                    : "Privacy & cloud data"}
                 </h3>
                 <p>
                   {settingsTab === "connections"
                     ? "Connect the models you already use. Choose one later in the Assistant."
                     : settingsTab === "defaults"
                     ? "Choose how new assistant sessions begin."
-                    : "Control shared context and what stays on this device."}
+                    : "Control shared context and what is stored in your private workspace."}
                 </p>
               </div>
               <PenSegmentedControl
@@ -1786,37 +1639,11 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
                     Whole-board context is always an explicit one-time choice.
                     It can never be saved as the default.
                   </p>
-                  <label className="agentic-check">
-                    <input
-                      type="checkbox"
-                      checked={preferences.persistLocalHistory}
-                      onChange={(e) => {
-                        const next = {
-                          ...preferences,
-                          persistLocalHistory: e.target.checked,
-                        };
-                        void runAction(() => savePreferences(next));
-                      }}
-                    />
-                    Keep assistant draft history on this device
-                  </label>
-                  <button
-                    type="button"
-                    className="pen-danger-action"
-                    onClick={() => {
-                      if (ownerWindow && owner) {
-                        ownerWindow.localStorage.removeItem(
-                          `boardy-assistant-history-${owner}`,
-                        );
-                      }
-                      setPrompt("");
-                      setDraft(null);
-                      setReview(false);
-                      setStatus("Local assistant data cleared.");
-                    }}
-                  >
-                    Clear local assistant data
-                  </button>
+                  <p className="agentic-note">
+                    Assistant threads and drafts are stored in your private
+                    Boardy workspace. Provider keys remain encrypted and are
+                    never written to browser storage.
+                  </p>
                 </section>
               )}
             </>
@@ -1925,7 +1752,7 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
                   {save.elements.length} reusable elements included;{" "}
                   {save.excluded} unsupported elements excluded. Links and
                   custom metadata are removed. Selected images are copied into
-                  this private local template.
+                  this private cloud template.
                 </p>
                 <ScenePreview
                   elements={save.elements}
@@ -1958,7 +1785,7 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
               onSelect={() =>
                 runAction(async () => {
                   if (!rename && personal.length >= 100) {
-                    throw new Error("You can save up to 100 local templates.");
+                    throw new Error("You can save up to 100 cloud templates.");
                   }
                   const next = rename
                     ? {
@@ -1976,7 +1803,7 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
                   await persist(next, next.id);
                   setSave(null);
                   setRename(null);
-                  setStatus("Template saved locally.");
+                  setStatus("Template saved to your workspace.");
                 })
               }
             >

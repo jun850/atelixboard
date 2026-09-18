@@ -27,6 +27,7 @@ Deno.serve(async (request) => {
   try {
     const authenticated = await authenticate(request);
     admin = authenticated.admin;
+    const client = authenticated.client;
     userId = authenticated.user.id;
     const envelope = await request.json();
     if (envelope.path === "cancel") {
@@ -61,6 +62,19 @@ Deno.serve(async (request) => {
       input.context.elements.length > 300
     ) {
       throw new Error("LIMIT_EXCEEDED");
+    }
+    let sceneId: string | null = null;
+    if (typeof input.sceneId === "string") {
+      const { data: scene } = await client
+        .from("scenes")
+        .select("id")
+        .eq("id", input.sceneId)
+        .eq("status", "active")
+        .maybeSingle();
+      if (!scene) {
+        throw new Error("UNAUTHENTICATED");
+      }
+      sceneId = scene.id;
     }
     const encoded = new TextEncoder().encode(
       JSON.stringify([input.context, input.previous]),
@@ -213,7 +227,56 @@ Deno.serve(async (request) => {
       .update({ status: "complete", finished_at: new Date().toISOString() })
       .eq("user_id", userId)
       .eq("request_id", requestId);
-    return response(request, 200, { result });
+    let persisted: { threadId: string; draftId: string } | undefined;
+    if (sceneId) {
+      const { data: thread, error: threadError } = await admin
+        .from("ai_threads")
+        .insert({
+          scene_id: sceneId,
+          user_id: userId,
+          title: input.prompt.trim().slice(0, 120),
+        })
+        .select("id")
+        .single();
+      if (threadError) {
+        throw threadError;
+      }
+      const { error: messagesError } = await admin.from("ai_messages").insert([
+        {
+          thread_id: thread.id,
+          user_id: userId,
+          role: "user",
+          content: { text: input.prompt, contextMode: input.context.mode },
+        },
+        {
+          thread_id: thread.id,
+          user_id: userId,
+          role: "assistant",
+          content: result,
+        },
+      ]);
+      if (messagesError) {
+        throw messagesError;
+      }
+      const { data: savedDraft, error: draftError } = await admin
+        .from("ai_drafts")
+        .insert({
+          thread_id: thread.id,
+          scene_id: sceneId,
+          created_by: userId,
+          provider,
+          model: input.model,
+          status: "generated",
+          content: result,
+        })
+        .select("id")
+        .single();
+      if (draftError) {
+        throw draftError;
+      }
+      persisted = { threadId: thread.id, draftId: savedDraft.id };
+    }
+    return response(request, 200, { result, ...persisted });
   } catch (error) {
     if (admin && userId && requestId) {
       await admin

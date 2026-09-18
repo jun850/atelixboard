@@ -602,9 +602,9 @@
   },
   "welcomeScreen": {
     "app": {
-      "center_heading": "Your drawings are saved in your browser's storage.",
-      "center_heading_line2": "Browser storage can be cleared unexpectedly.",
-      "center_heading_line3": "Save your work to a file regularly to avoid losing it.",
+      "center_heading": "Saved to your private Boardy workspace.",
+      "center_heading_line2": "Every edit is versioned in the cloud.",
+      "center_heading_line3": "Your work follows your account across devices.",
       "center_heading_plus": "Did you want to go to Atelix+ instead?",
       "menuHint": "Export, preferences, languages, ..."
     },

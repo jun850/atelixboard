@@ -61,6 +61,7 @@ export type GenerateRequest = {
   previous?: Content | { html: string };
   allowUnknown: boolean;
   reasoningEffort?: string;
+  sceneId?: string;
 };
 export function validateRequest(value: unknown): GenerateRequest {
   const v = value as GenerateRequest;
@@ -120,6 +121,12 @@ export function validateRequest(value: unknown): GenerateRequest {
     ...(typeof v.reasoningEffort === "string" &&
     ["none", "minimal", "low"].includes(v.reasoningEffort)
       ? { reasoningEffort: v.reasoningEffort }
+      : {}),
+    ...(typeof v.sceneId === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      v.sceneId,
+    )
+      ? { sceneId: v.sceneId }
       : {}),
   };
 }

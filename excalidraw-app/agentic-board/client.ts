@@ -73,3 +73,25 @@ export async function localApi<T>(
   }
   return result;
 }
+
+export async function cloudApi<T>(
+  functionName: "ai-templates" | "scene-assets" | "scenes",
+  path: string,
+  method = "GET",
+  body?: unknown,
+): Promise<T> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData.session) {
+    throw new Error(messages.UNAUTHENTICATED);
+  }
+  const { data, error } = await supabase.functions.invoke(functionName, {
+    body: { path, method, body },
+  });
+  if (error) {
+    throw new Error(
+      (data as { error?: string } | null)?.error ||
+        "Cloud data could not be updated. Try again.",
+    );
+  }
+  return data as T;
+}
