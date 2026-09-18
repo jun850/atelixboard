@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
 
 import { localApi } from "../agentic-board/client";
-import { syncRevenueCatUser } from "../revenuecat";
+import {
+  getRevenueCatPublicOfferings,
+  REVENUECAT_PRODUCT_IDS,
+  syncRevenueCatUser,
+} from "../revenuecat";
 import { isSupabaseConfigured, supabase } from "../supabase/client";
 
 import { BoardArtwork, LandingIcon } from "./LandingArtwork";
@@ -11,9 +15,37 @@ import { BillingPage } from "./BillingPage";
 import "./AtelixRouter.scss";
 
 import type { Session } from "@supabase/supabase-js";
+import type { Offerings, Package } from "@revenuecat/purchases-js";
 
 type BoardAppComponent = React.ComponentType;
 type AuthMode = "login" | "signup" | "forgot" | "reset";
+
+const getPublicProPackages = (offerings: Offerings | null) => {
+  const availablePackages = offerings?.current?.availablePackages ?? [];
+  const annual = availablePackages.find(
+    (pkg) => pkg.webBillingProduct.identifier === REVENUECAT_PRODUCT_IDS.annual,
+  );
+  const monthly = availablePackages.find(
+    (pkg) =>
+      pkg.webBillingProduct.identifier === REVENUECAT_PRODUCT_IDS.monthly,
+  );
+  const legacyMonthly = availablePackages.find(
+    (pkg) =>
+      pkg.webBillingProduct.identifier === REVENUECAT_PRODUCT_IDS.monthlyLegacy,
+  );
+
+  return { annual, monthly: monthly ?? legacyMonthly };
+};
+
+const getPackagePeriodLabel = (pkg: Package | undefined) => {
+  const period = pkg?.webBillingProduct.period;
+  if (!period) {
+    return "access";
+  }
+  return period.number === 1
+    ? `/${period.unit}`
+    : `/${period.number} ${period.unit}s`;
+};
 
 const navigate = (path: string) => {
   window.history.pushState({}, "", path);
@@ -44,9 +76,45 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">(
     "monthly",
   );
+  const [pricingOfferings, setPricingOfferings] = useState<Offerings | null>(
+    null,
+  );
+  const [pricingError, setPricingError] = useState(false);
+
+  useEffect(() => {
+    let isCurrent = true;
+    void getRevenueCatPublicOfferings()
+      .then((offerings) => {
+        if (isCurrent) {
+          setPricingOfferings(offerings);
+        }
+      })
+      .catch(() => {
+        if (isCurrent) {
+          setPricingError(true);
+        }
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
 
   const primaryPath = signedIn ? "/app" : "/signup";
   const primaryLabel = signedIn ? "Open workspace" : "Sign up";
+  const publicProPackages = getPublicProPackages(pricingOfferings);
+  const selectedPackage = publicProPackages[billingCycle];
+  const selectedProduct = selectedPackage?.webBillingProduct;
+  const selectedPrice = selectedProduct?.price.formattedPrice;
+  const selectedPeriod = getPackagePeriodLabel(selectedPackage);
+  const offerDescription = selectedProduct?.freeTrialPhase?.period
+    ? `Includes a ${selectedProduct.freeTrialPhase.period.number} ${selectedProduct.freeTrialPhase.period.unit} free trial.`
+    : selectedProduct?.introPricePhase?.price
+    ? `Intro pricing: ${selectedProduct.introPricePhase.price.formattedPrice}.`
+    : selectedProduct?.description ||
+      (pricingError
+        ? "Choose your cadence and see the latest local price at checkout."
+        : "Localized pricing and availability are loading from RevenueCat.");
 
   return (
     <main className="atelix-page atelix-landing-page">
@@ -158,10 +226,10 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
         id="pricing"
         aria-labelledby="pricing-title"
       >
-        <h2 id="pricing-title">Pick the plan that fits your flow.</h2>
+        <h2 id="pricing-title">Everything your workspace needs to move.</h2>
         <p>
-          All the essentials for visual thinking, with powerful upgrades when
-          your team needs more.
+          One focused Pro plan, with pricing and availability localized by
+          RevenueCat for your country and device.
         </p>
         <div
           className="atelix-billing-toggle"
@@ -188,57 +256,31 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
           </button>
         </div>
         <div className="atelix-pricing-grid">
-          <article className="atelix-plan atelix-plan--standard">
-            <h3>Standard</h3>
-            <p>Everything you need to create and collaborate.</p>
-            <div className="atelix-plan__price">
-              <strong>{billingCycle === "monthly" ? "$3" : "$20"}</strong>
-              <span>{billingCycle === "monthly" ? "/ month" : "/ year"}</span>
-            </div>
-            <small>
-              {billingCycle === "monthly"
-                ? "or $20 billed annually"
-                : "billed annually"}
-            </small>
-            <a
-              className="atelix-button atelix-button-secondary"
-              href={primaryPath}
-            >
-              Sign up for Standard
-            </a>
-            <h4>Includes</h4>
-            <ul>
-              <li>Real-time collaboration</li>
-              <li>Comments and sharing</li>
-              <li>Secure Boardy workspace</li>
-            </ul>
-          </article>
-          <article className="atelix-plan atelix-plan--pro">
+          <article className="atelix-plan atelix-plan--pro atelix-plan--single">
             <span className="atelix-plan__badge">Most popular</span>
             <h3>Pro</h3>
-            <p>Premium tools for ambitious teams and polished delivery.</p>
+            <p>Everything included for focused work and polished delivery.</p>
             <div className="atelix-plan__price">
-              <strong>{billingCycle === "monthly" ? "$6" : "$50"}</strong>
-              <span>{billingCycle === "monthly" ? "/ month" : "/ year"}</span>
+              <strong>{selectedPrice ?? "—"}</strong>
+              <span>{selectedPeriod}</span>
             </div>
-            <small>
-              {billingCycle === "monthly"
-                ? "or $50 billed annually"
-                : "billed annually"}
-            </small>
+            <small>{offerDescription}</small>
             <a
               className="atelix-button"
               href={signedIn ? "/app/subscription" : primaryPath}
             >
-              {signedIn ? "View Pro plans" : "Sign up for Pro"}
+              {signedIn ? "View Pro plans" : "Start with Pro"}
             </a>
-            <h4>Everything in Standard, plus</h4>
-            <ul>
-              <li>Unlimited boards for focused work</li>
-              <li>Advanced team workflows</li>
-              <li>Priority collaboration tools</li>
-              <li>Expanded workspace controls</li>
-              <li>Early access to new features</li>
+            <h4>Everything included</h4>
+            <ul className="atelix-plan__benefits">
+              <li>Unlimited boards &amp; folders</li>
+              <li>Cloud sync and version history</li>
+              <li>Roles and access controls</li>
+              <li>View-only links and embeds</li>
+              <li>Team workspace management</li>
+              <li>Templates and libraries</li>
+              <li>Extended AI tools</li>
+              <li>Bring your own LLM subscription</li>
             </ul>
           </article>
         </div>

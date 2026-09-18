@@ -83,6 +83,35 @@ export const syncRevenueCatUser = async (
   return purchases;
 };
 
+/**
+ * Load public pricing before authentication. This uses a short-lived anonymous
+ * RevenueCat identity only to resolve localized offering data for the landing
+ * page; authenticated users are switched to their Supabase identity later.
+ */
+export const getRevenueCatPublicOfferings = async () => {
+  const apiKey = getConfiguredApiKey();
+  if (!apiKey) {
+    return null;
+  }
+  if (!isWebBillingKey(apiKey)) {
+    throw new Error(
+      "RevenueCat Web Billing needs an rcb_ public API key. The supplied test_ key is not a Web SDK key.",
+    );
+  }
+  validateEnvironmentKey(apiKey);
+
+  if (!purchases) {
+    const anonymousId =
+      typeof globalThis.crypto?.randomUUID === "function"
+        ? `$RCAnonymousID:${globalThis.crypto.randomUUID()}`
+        : `$RCAnonymousID:${Math.random().toString(36).slice(2)}`;
+    purchases = Purchases.configure({ apiKey, appUserId: anonymousId });
+    configuredUserId = anonymousId;
+  }
+
+  return purchases.getOfferings();
+};
+
 export const getRevenueCatCustomerInfo = () =>
   requirePurchases().getCustomerInfo();
 

@@ -905,6 +905,10 @@
     transform 160ms ease, background-color 160ms ease;
   animation: boardy-paywall-fade-up 440ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+.boardy-paywall-product:focus-visible {
+  outline: 3px solid rgb(47 108 229 / 35%);
+  outline-offset: 3px;
+}
 .boardy-paywall-product:nth-child(1) {
   animation-delay: 300ms;
 }
@@ -953,6 +957,36 @@
 .boardy-paywall-product__price strong {
   color: var(--paywall-deep);
   font-size: 18px;
+}
+.boardy-paywall__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 14px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  color: var(--paywall-deep);
+  background: var(--paywall-mist);
+  animation: boardy-paywall-fade-up 420ms 400ms cubic-bezier(0.16, 1, 0.3, 1)
+    both;
+}
+.boardy-paywall__summary > span {
+  display: grid;
+  gap: 4px;
+}
+.boardy-paywall__summary > span:last-child {
+  text-align: right;
+}
+.boardy-paywall__summary small {
+  color: var(--atelix-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.boardy-paywall__summary strong {
+  font-size: 15px;
 }
 .boardy-paywall__primary-action,
 .boardy-paywall__secondary-action,

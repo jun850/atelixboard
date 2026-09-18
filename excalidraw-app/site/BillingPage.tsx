@@ -95,7 +95,8 @@ const ProductOption = ({
     <button
       className={`boardy-paywall-product${selected ? " is-selected" : ""}`}
       type="button"
-      aria-pressed={selected}
+      role="radio"
+      aria-checked={selected}
       onClick={onSelect}
     >
       <span className="boardy-paywall-product__radio" aria-hidden="true" />
@@ -272,7 +273,11 @@ export const BillingPage = ({
             </div>
           ) : packages.length ? (
             <>
-              <div className="boardy-paywall__products">
+              <div
+                className="boardy-paywall__products"
+                role="radiogroup"
+                aria-label="Choose your Pro billing cadence"
+              >
                 {packages.map((pkg) => (
                   <ProductOption
                     key={pkg.identifier}
@@ -282,6 +287,20 @@ export const BillingPage = ({
                   />
                 ))}
               </div>
+              {selectedPackage && (
+                <div className="boardy-paywall__summary" aria-live="polite">
+                  <span>
+                    <small>Selected plan</small>
+                    <strong>{selectedPackage.webBillingProduct.title}</strong>
+                  </span>
+                  <span>
+                    <small>{formatPeriod(selectedPackage)}</small>
+                    <strong>
+                      {selectedPackage.webBillingProduct.price.formattedPrice}
+                    </strong>
+                  </span>
+                </div>
+              )}
               <button
                 className="boardy-paywall__primary-action"
                 type="button"
