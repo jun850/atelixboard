@@ -278,7 +278,6 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
         </div>
         <div className="atelix-pricing-grid">
           <article className="atelix-plan atelix-plan--pro atelix-plan--single">
-            <span className="atelix-plan__badge">Most popular</span>
             <h3>Pro</h3>
             <p>Everything teams need to move from idea to delivery.</p>
             <div className="atelix-plan__price">
