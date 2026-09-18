@@ -75,7 +75,7 @@ export async function localApi<T>(
 }
 
 export async function cloudApi<T>(
-  functionName: "ai-templates" | "scene-assets" | "scenes",
+  functionName: "ai-templates" | "scene-assets" | "scenes" | "workspace",
   path: string,
   method = "GET",
   body?: unknown,

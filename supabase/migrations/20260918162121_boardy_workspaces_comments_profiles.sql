@@ -261,6 +261,17 @@ returns boolean language sql stable security definer set search_path = public, p
   select private.scene_effective_role(target_scene_id, target_user_id) = 'owner'
 $$;
 
+create or replace function public.boardy_scene_capabilities(target_scene_id uuid)
+returns jsonb language sql stable security invoker set search_path = public, pg_temp as $$
+  select jsonb_build_object(
+    'role', private.scene_effective_role(target_scene_id, (select auth.uid())),
+    'can_edit', private.can_edit_scene(target_scene_id, (select auth.uid())),
+    'can_comment', private.can_comment_scene(target_scene_id, (select auth.uid())),
+    'can_manage', private.is_scene_owner(target_scene_id, (select auth.uid()))
+  )
+  where private.can_read_scene(target_scene_id, (select auth.uid()))
+$$;
+
 revoke all on function private.workspace_role(uuid, uuid) from public, anon, authenticated;
 revoke all on function private.is_workspace_admin(uuid, uuid) from public, anon, authenticated;
 revoke all on function private.collection_role(uuid, uuid) from public, anon, authenticated;
@@ -271,6 +282,8 @@ grant execute on function private.is_workspace_admin(uuid, uuid) to authenticate
 grant execute on function private.collection_role(uuid, uuid) to authenticated, service_role;
 grant execute on function private.scene_effective_role(uuid, uuid) to authenticated, service_role;
 grant execute on function private.can_comment_scene(uuid, uuid) to authenticated, service_role;
+revoke all on function public.boardy_scene_capabilities(uuid) from public, anon;
+grant execute on function public.boardy_scene_capabilities(uuid) to authenticated;
 
 alter table public.boardy_profiles enable row level security;
 alter table public.boardy_workspaces enable row level security;
@@ -294,6 +307,15 @@ using (
     join public.boardy_workspace_members theirs using (workspace_id)
     where mine.user_id = (select auth.uid()) and mine.status = 'active'
       and theirs.user_id = boardy_profiles.user_id and theirs.status = 'active'
+      and mine.role in ('admin', 'staff')
+  ) or exists (
+    select 1 from public.scene_members mine
+    join public.scene_members theirs using (scene_id)
+    where mine.user_id = (select auth.uid()) and theirs.user_id = boardy_profiles.user_id
+  ) or exists (
+    select 1 from public.boardy_collection_members mine
+    join public.boardy_collection_members theirs using (collection_id)
+    where mine.user_id = (select auth.uid()) and theirs.user_id = boardy_profiles.user_id
   )
 );
 create policy "users update own profile" on public.boardy_profiles for update to authenticated
@@ -302,7 +324,10 @@ using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()))
 create policy "members read workspaces" on public.boardy_workspaces for select to authenticated
 using (private.workspace_role(id, (select auth.uid())) is not null);
 create policy "members read memberships" on public.boardy_workspace_members for select to authenticated
-using (private.workspace_role(workspace_id, (select auth.uid())) is not null);
+using (
+  user_id = (select auth.uid()) or
+  private.workspace_role(workspace_id, (select auth.uid())) in ('admin', 'staff')
+);
 create policy "members read collections" on public.boardy_collections for select to authenticated
 using (private.collection_role(id, (select auth.uid())) is not null);
 create policy "members read collection grants" on public.boardy_collection_members for select to authenticated
@@ -366,3 +391,25 @@ grant all on public.boardy_profiles, public.boardy_workspaces,
   public.boardy_notifications, public.boardy_audit_events to service_role;
 grant usage, select on sequence public.boardy_comment_threads_thread_number_seq,
   public.boardy_audit_events_id_seq to service_role;
+
+drop policy if exists "users can join a board from its private link" on public.board_members;
+revoke insert on public.board_members from authenticated;
+
+drop policy if exists "board members can receive private realtime events" on realtime.messages;
+drop policy if exists "board members can send private realtime events" on realtime.messages;
+create policy "scene participants receive private realtime events"
+on realtime.messages for select to authenticated
+using (
+  split_part(realtime.topic(), ':', 1) = 'board'
+  and split_part(realtime.topic(), ':', 3) = 'collaboration'
+  and split_part(realtime.topic(), ':', 2) ~ '^[0-9a-f-]{36}$'
+  and private.can_read_scene(split_part(realtime.topic(), ':', 2)::uuid, (select auth.uid()))
+);
+create policy "scene editors send private realtime events"
+on realtime.messages for insert to authenticated
+with check (
+  split_part(realtime.topic(), ':', 1) = 'board'
+  and split_part(realtime.topic(), ':', 3) = 'collaboration'
+  and split_part(realtime.topic(), ':', 2) ~ '^[0-9a-f-]{36}$'
+  and private.can_edit_scene(split_part(realtime.topic(), ':', 2)::uuid, (select auth.uid()))
+);
