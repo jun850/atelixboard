@@ -364,7 +364,7 @@
 .atelix-pricing-grid {
   display: grid;
   max-width: 1040px;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
   margin: 42px auto 0;
   text-align: left;
@@ -383,6 +383,14 @@
   color: #fff;
   background: var(--atelix-blue-dark);
   box-shadow: 0 26px 60px rgb(24 50 105 / 22%);
+}
+.atelix-plan--single {
+  min-height: 0;
+}
+.atelix-plan--single .atelix-plan__benefits {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 36px;
+  row-gap: 14px;
 }
 .atelix-plan h3 {
   margin: 0;
@@ -1211,6 +1219,244 @@
   }
 }
 
+/* Pen-aligned pricing surfaces: centered light canvas, editorial hierarchy,
+   and RevenueCat-powered plan selection. */
+.atelix-pricing {
+  background: #f3f7ff;
+}
+.atelix-pricing > h2 {
+  color: #111827;
+}
+.atelix-pricing > p {
+  max-width: 760px;
+  color: #667085;
+}
+.atelix-pricing-grid {
+  max-width: 795px;
+}
+.atelix-plan--single {
+  min-height: 638px;
+  padding: 40px;
+  border-radius: 16px;
+}
+.atelix-plan--single > p {
+  margin-top: 12px;
+  font-size: 16px;
+}
+.atelix-plan--single .atelix-plan__price strong {
+  font-size: 48px;
+}
+.atelix-plan--single .atelix-plan__benefits {
+  margin-top: 8px;
+}
+
+.boardy-paywall {
+  min-height: 100dvh;
+  overflow: auto;
+  color: #172554;
+  background: #f3f7ff;
+}
+.boardy-paywall__topbar {
+  min-height: 84px;
+  box-sizing: border-box;
+  justify-content: flex-start;
+  padding: 0 42px;
+  border-bottom: 1px solid #dfe6f1;
+  background: #fff;
+}
+.boardy-paywall__brand {
+  color: #233b78;
+}
+.boardy-paywall__brand span {
+  font-size: 24px;
+}
+.boardy-paywall__brand small {
+  color: #667085;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+}
+.boardy-paywall__layout {
+  grid-template-columns: minmax(0, 1.25fr) minmax(460px, 0.75fr);
+  align-items: start;
+  gap: 42px;
+  padding: 42px 52px 30px;
+  background: #f3f7ff;
+}
+.boardy-paywall__story {
+  justify-content: flex-start;
+  padding: 4px 0 0;
+  color: #233b78;
+  background: transparent;
+  animation: boardy-paywall-fade-up 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.boardy-paywall__story h1 {
+  max-width: 720px;
+  font-size: clamp(42px, 4.6vw, 64px);
+  letter-spacing: -0.055em;
+  line-height: 1.02;
+}
+.boardy-paywall__lede {
+  max-width: 690px;
+  margin: 28px 0 26px;
+  color: #667085;
+  font-size: 17px;
+  line-height: 1.45;
+}
+.boardy-paywall__benefit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+  max-width: 795px;
+}
+.boardy-paywall__benefit-grid article {
+  min-height: 122px;
+  padding: 18px;
+  border: 1px solid #dfe6f1;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgb(24 50 105 / 3%);
+}
+.boardy-paywall__benefit-grid h3 {
+  margin: 0 0 14px;
+  color: #172554;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+.boardy-paywall__benefit-grid ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: #4b5563;
+  font-size: 13px;
+}
+.boardy-paywall__benefit-grid li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.boardy-paywall__benefit-grid li span {
+  color: #25885e;
+  font-size: 13px;
+}
+.boardy-paywall__panel {
+  min-height: 762px;
+  box-sizing: border-box;
+  justify-content: flex-start;
+  margin: 0;
+  padding: 36px 32px;
+  border: 1px solid #d6dfed;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 48px rgb(24 50 105 / 10%);
+  animation: boardy-paywall-panel-in 620ms 100ms cubic-bezier(0.16, 1, 0.3, 1)
+    both;
+}
+.boardy-paywall__panel-heading {
+  display: block;
+  margin-bottom: 28px;
+}
+.boardy-paywall__panel-heading .boardy-paywall__eyebrow {
+  margin-bottom: 16px;
+  color: #2f6ce5;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+}
+.boardy-paywall__panel-heading h2 {
+  color: #233b78;
+  font-size: 30px;
+  letter-spacing: -0.04em;
+}
+.boardy-paywall__panel-heading > div > p:last-child {
+  margin: 10px 0 0;
+  color: #667085;
+  font-size: 13px;
+}
+.boardy-paywall-product {
+  min-height: 82px;
+  padding: 14px 16px;
+  border-color: #d6dfed;
+  border-radius: 13px;
+}
+.boardy-paywall-product.is-selected {
+  border-width: 2px;
+  border-color: #3f6fe5;
+  box-shadow: none;
+  background: #fbfdff;
+}
+.boardy-paywall-product__copy strong,
+.boardy-paywall-product__price strong {
+  color: #172554;
+  font-size: 15px;
+}
+.boardy-paywall-product__copy small,
+.boardy-paywall-product__price small {
+  color: #7b8498;
+}
+.boardy-paywall-product__price strong {
+  font-size: 16px;
+}
+.boardy-paywall__summary {
+  margin-top: 20px;
+  padding: 18px 0;
+  border-top: 1px solid #dfe6f1;
+  border-bottom: 1px solid #dfe6f1;
+  border-radius: 0;
+  background: transparent;
+}
+.boardy-paywall__summary small {
+  color: #667085;
+}
+.boardy-paywall__summary strong {
+  color: #172554;
+}
+.boardy-paywall__primary-action {
+  min-height: 54px;
+  margin-top: 20px;
+  justify-content: center;
+  background: #3f6fe5;
+  box-shadow: 0 12px 24px rgb(63 111 229 / 18%);
+}
+.boardy-paywall__fineprint {
+  margin-top: 18px;
+  color: #8b94a7;
+}
+
+@media (max-width: 900px) {
+  .boardy-paywall__layout {
+    grid-template-columns: 1fr;
+    padding: 30px 24px 36px;
+  }
+  .boardy-paywall__panel {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .atelix-plan--single {
+    min-height: auto;
+    padding: 30px 24px;
+  }
+  .boardy-paywall__topbar {
+    min-height: 68px;
+    padding: 0 20px;
+  }
+  .boardy-paywall__layout {
+    gap: 26px;
+    padding: 28px 20px 32px;
+  }
+  .boardy-paywall__story h1 {
+    font-size: 44px;
+  }
+  .boardy-paywall__benefit-grid {
+    grid-template-columns: 1fr;
+  }
+  .boardy-paywall__panel {
+    padding: 28px 20px;
+  }
+}
+
 @media (max-width: 720px) {
   .boardy-paywall__topbar,
   .boardy-paywall__footer {
@@ -1340,6 +1586,9 @@
   .atelix-plan {
     min-height: auto;
     padding: 30px 24px;
+  }
+  .atelix-plan--single .atelix-plan__benefits {
+    grid-template-columns: 1fr;
   }
   .atelix-site-footer {
     align-items: flex-start;

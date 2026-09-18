@@ -63,6 +63,25 @@ const PRO_BENEFITS = [
   "Bring your own LLM subscription",
 ];
 
+const PRO_BENEFIT_GROUPS = [
+  {
+    title: "Create without limits",
+    benefits: [PRO_BENEFITS[0], PRO_BENEFITS[1]],
+  },
+  {
+    title: "Collaborate clearly",
+    benefits: [PRO_BENEFITS[4], PRO_BENEFITS[3]],
+  },
+  {
+    title: "Use your own stack",
+    benefits: [PRO_BENEFITS[6], PRO_BENEFITS[7]],
+  },
+  {
+    title: "Share with control",
+    benefits: [PRO_BENEFITS[2], PRO_BENEFITS[5]],
+  },
+];
+
 const getProPackages = (availablePackages: Package[]) => {
   const annual = availablePackages.find(
     (pkg) => pkg.webBillingProduct.identifier === REVENUECAT_PRODUCT_IDS.annual,
@@ -198,34 +217,37 @@ export const BillingPage = ({
 
   return (
     <main className="boardy-paywall" aria-labelledby="boardy-paywall-title">
-      <div className="boardy-paywall__topbar">
+      <header className="boardy-paywall__topbar">
         <a className="boardy-paywall__brand" href="/" aria-label="Boardy home">
           <span>Boardy</span>
-          <small>By Atelix</small>
+          <small>BY ATELIX</small>
         </a>
-        <span className="boardy-paywall__secure">
-          Secure checkout · Powered by RevenueCat
-        </span>
-      </div>
+      </header>
 
       <div className="boardy-paywall__layout">
         <section className="boardy-paywall__story">
-          <p className="boardy-paywall__eyebrow">Boardy Pro</p>
-          <h1 id="boardy-paywall-title">Make the next move visible.</h1>
+          <h1 id="boardy-paywall-title">
+            Everything you need to think, share, and ship.
+          </h1>
           <p className="boardy-paywall__lede">
-            One focused plan for teams that want more room to think, build, and
-            move together.
+            The complete whiteboard toolkit—local-first when you want it,
+            cloud-powered when your team needs it.
           </p>
-          <p className="boardy-paywall__benefits-title">Everything included</p>
-          <ul className="boardy-paywall__benefits">
-            {PRO_BENEFITS.map((benefit) => (
-              <li key={benefit}>
-                <span aria-hidden="true">✓</span>
-                {benefit}
-              </li>
+          <div className="boardy-paywall__benefit-grid">
+            {PRO_BENEFIT_GROUPS.map((group) => (
+              <article key={group.title}>
+                <h3>{group.title}</h3>
+                <ul>
+                  {group.benefits.map((benefit) => (
+                    <li key={benefit}>
+                      <span aria-hidden="true">✓</span>
+                      {benefit}
+                    </li>
+                  ))}
+                </ul>
+              </article>
             ))}
-          </ul>
-          <p className="boardy-paywall__account">Signed in as {user.email}</p>
+          </div>
         </section>
 
         <section
@@ -234,12 +256,10 @@ export const BillingPage = ({
         >
           <div className="boardy-paywall__panel-heading">
             <div>
-              <p className="boardy-paywall__eyebrow">Boardy Pro</p>
-              <h2>Choose your rhythm.</h2>
+              <p className="boardy-paywall__eyebrow">Choose your plan</p>
+              <h2>Boardy Pro</h2>
+              <p>One plan, two billing rhythms. Cancel anytime.</p>
             </div>
-            {offerings?.current?.serverDescription && (
-              <p>{offerings.current.serverDescription}</p>
-            )}
           </div>
 
           {error && (
@@ -324,9 +344,9 @@ export const BillingPage = ({
                 </button>
               )}
               <p className="boardy-paywall__fineprint">
-                Your selected plan and price are provided by RevenueCat.
-                Subscription details and applicable taxes appear in secure
-                checkout.
+                Secure checkout by RevenueCat · Cancel anytime
+                <br />
+                Subscription details and applicable taxes appear before payment.
               </p>
             </>
           ) : (

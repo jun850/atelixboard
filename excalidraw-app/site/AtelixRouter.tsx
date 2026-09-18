@@ -47,6 +47,21 @@ const getPackagePeriodLabel = (pkg: Package | undefined) => {
     : `/${period.number} ${period.unit}s`;
 };
 
+const getAnnualSavingsLabel = (
+  monthly: Package | undefined,
+  annual: Package | undefined,
+) => {
+  const monthlyAmount = monthly?.webBillingProduct.price.amountMicros;
+  const annualAmount = annual?.webBillingProduct.price.amountMicros;
+  if (!monthlyAmount || !annualAmount) {
+    return "Annual billing";
+  }
+  const savings = Math.round(
+    ((monthlyAmount * 12 - annualAmount) / (monthlyAmount * 12)) * 100,
+  );
+  return savings > 0 ? `Save ${savings}%` : "Annual billing";
+};
+
 const navigate = (path: string) => {
   window.history.pushState({}, "", path);
   window.dispatchEvent(new PopStateEvent("popstate"));
@@ -226,10 +241,10 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
         id="pricing"
         aria-labelledby="pricing-title"
       >
-        <h2 id="pricing-title">Everything your workspace needs to move.</h2>
+        <h2 id="pricing-title">Choose your rhythm.</h2>
         <p>
-          One focused Pro plan, with pricing and availability localized by
-          RevenueCat for your country and device.
+          One Pro plan. Pick monthly or annual billing and get the complete
+          Boardy workspace.
         </p>
         <div
           className="atelix-billing-toggle"
@@ -252,14 +267,20 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
             className={billingCycle === "annual" ? "is-active" : ""}
             onClick={() => setBillingCycle("annual")}
           >
-            Annual <small>Save up to 44%</small>
+            Annual{" "}
+            <small>
+              {getAnnualSavingsLabel(
+                publicProPackages.monthly,
+                publicProPackages.annual,
+              )}
+            </small>
           </button>
         </div>
         <div className="atelix-pricing-grid">
           <article className="atelix-plan atelix-plan--pro atelix-plan--single">
             <span className="atelix-plan__badge">Most popular</span>
             <h3>Pro</h3>
-            <p>Everything included for focused work and polished delivery.</p>
+            <p>Everything teams need to move from idea to delivery.</p>
             <div className="atelix-plan__price">
               <strong>{selectedPrice ?? "—"}</strong>
               <span>{selectedPeriod}</span>
@@ -269,7 +290,7 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
               className="atelix-button"
               href={signedIn ? "/app/subscription" : primaryPath}
             >
-              {signedIn ? "View Pro plans" : "Start with Pro"}
+              {signedIn ? "Choose Pro" : "Choose Pro"}
             </a>
             <h4>Everything included</h4>
             <ul className="atelix-plan__benefits">
