@@ -2234,3 +2234,176 @@
     transition-duration: 1ms;
   }
 }
+
+/* Conversion-focused Pro plan: decision first, proof immediately alongside it. */
+.atelix-plan--single {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1.28fr);
+  grid-template-rows: auto auto auto 1fr;
+  column-gap: clamp(36px, 6vw, 76px);
+  align-items: start;
+  min-height: 0;
+  padding: clamp(32px, 4vw, 48px);
+  border-radius: 20px;
+  background: #1e3975;
+  box-shadow: 0 28px 70px rgb(24 50 105 / 24%);
+}
+.atelix-plan--single h3,
+.atelix-plan--single > p,
+.atelix-plan--single .atelix-plan__price,
+.atelix-plan--single > .atelix-button {
+  grid-column: 1;
+}
+.atelix-plan--single h3 {
+  font-size: clamp(28px, 3vw, 36px);
+  letter-spacing: -0.03em;
+}
+.atelix-plan--single > p {
+  min-height: 0;
+  margin: 10px 0 30px;
+  font-size: 17px;
+  line-height: 1.5;
+}
+.atelix-plan--single .atelix-plan__price {
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 9px;
+  margin-bottom: 26px;
+}
+.atelix-plan--single .atelix-plan__price strong {
+  max-width: 100%;
+  font-size: clamp(42px, 5vw, 64px);
+  line-height: 0.98;
+  overflow-wrap: anywhere;
+}
+.atelix-plan--single .atelix-plan__price span {
+  padding-bottom: 0;
+  opacity: 0.74;
+}
+.atelix-plan--single > .atelix-button {
+  display: inline-flex;
+  min-height: 56px;
+  margin: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 16px;
+  box-shadow: 0 12px 24px rgb(11 31 75 / 18%);
+}
+.atelix-plan--single h4 {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0 0 20px;
+  padding-top: 2px;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  opacity: 0.78;
+}
+.atelix-plan--single .atelix-plan__benefits {
+  grid-column: 2;
+  grid-row: 2 / span 3;
+  align-self: stretch;
+  margin: 0;
+  padding-top: 20px;
+  border-top: 1px solid rgb(143 179 255 / 28%);
+  column-gap: 28px;
+  row-gap: 18px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.atelix-plan--single .atelix-plan__benefits li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.atelix-plan--single .atelix-plan__benefits li::before {
+  flex: 0 0 8px;
+  margin: 5px 0 0;
+}
+
+@media (max-width: 900px) {
+  .atelix-plan--single {
+    grid-template-columns: 1fr;
+    row-gap: 0;
+  }
+  .atelix-plan--single h3,
+  .atelix-plan--single > p,
+  .atelix-plan--single .atelix-plan__price,
+  .atelix-plan--single > .atelix-button,
+  .atelix-plan--single h4,
+  .atelix-plan--single .atelix-plan__benefits {
+    grid-column: 1;
+  }
+  .atelix-plan--single h4 {
+    grid-row: auto;
+    margin-top: 34px;
+    padding-top: 22px;
+    border-top: 1px solid rgb(143 179 255 / 28%);
+  }
+  .atelix-plan--single .atelix-plan__benefits {
+    grid-row: auto;
+    padding-top: 18px;
+    border-top: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .atelix-plan--single {
+    display: block;
+    padding: 30px 24px 32px;
+    border-radius: 16px;
+  }
+  .atelix-plan--single > p {
+    margin-bottom: 24px;
+  }
+  .atelix-plan--single .atelix-plan__price {
+    margin-bottom: 22px;
+  }
+  .atelix-plan--single h4 {
+    margin-top: 32px;
+    margin-bottom: 0;
+    padding-top: 20px;
+    border-top: 1px solid rgb(143 179 255 / 28%);
+  }
+  .atelix-plan--single .atelix-plan__benefits {
+    padding-top: 18px;
+    border-top: 0;
+  }
+}
+
+/* Keep the sales decision compact on desktop too: price first, proof second. */
+.atelix-pricing-grid {
+  max-width: 720px;
+}
+.atelix-plan--single {
+  grid-template-columns: 1fr;
+  row-gap: 0;
+}
+.atelix-plan--single h3,
+.atelix-plan--single > p,
+.atelix-plan--single .atelix-plan__price,
+.atelix-plan--single > .atelix-button,
+.atelix-plan--single h4,
+.atelix-plan--single .atelix-plan__benefits {
+  grid-column: 1;
+  grid-row: auto;
+}
+.atelix-plan--single > .atelix-button {
+  max-width: none;
+  width: 100%;
+}
+.atelix-plan--single h4 {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid rgb(143 179 255 / 28%);
+}
+.atelix-plan--single .atelix-plan__benefits {
+  padding-top: 18px;
+  border-top: 0;
+}
+
+@media (max-width: 720px) {
+  .atelix-pricing-grid {
+    max-width: none;
+  }
+}

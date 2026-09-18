@@ -464,3 +464,15 @@
 .editor-art-scene > :not(.editor-art-real) {
   z-index: 3;
 }
+
+@media (max-width: 900px) {
+  .editor-art-real {
+    right: 0;
+  }
+  .editor-art-sidebar,
+  .editor-art-thread,
+  .editor-art-comment-menu,
+  .editor-art-collaborators {
+    display: none;
+  }
+}
