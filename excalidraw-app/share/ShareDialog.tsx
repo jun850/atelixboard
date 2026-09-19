@@ -20,6 +20,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { atom, useAtom, useAtomValue } from "../app-jotai";
 import { activeRoomLinkAtom } from "../collab/Collab";
+import { InfoTooltip } from "../workspace/InfoTooltip";
 import { loadWorkspace, workspaceApi } from "../workspace/api";
 
 import "./ShareDialog.scss";
@@ -100,10 +101,6 @@ const BoardyBoardShare = () => {
       <div className="ShareDialog__picker__header">
         Invite to this whiteboard
       </div>
-      <div className="ShareDialog__picker__description">
-        Choose exactly what this person can do. They can register from the
-        invitation without purchasing a subscription.
-      </div>
       <form onSubmit={(event) => void createInvite(event)}>
         <label>
           <span>Email</span>
@@ -114,9 +111,31 @@ const BoardyBoardShare = () => {
             onChange={(event) => setEmail(event.target.value)}
           />
         </label>
-        <label>
-          <span>Permission</span>
+        <div className="ShareDialog__boardy__field">
+          <div className="ShareDialog__boardy__label">
+            <label htmlFor="boardy-share-permission">Permission</label>
+            <InfoTooltip
+              id="boardy-share-permission-help"
+              label="Explain whiteboard permissions"
+            >
+              <strong>Editor</strong>
+              <span>Can change the whiteboard and add comments.</span>
+              <strong>Commenter</strong>
+              <span>Can view and comment without changing the canvas.</span>
+              <strong>Viewer</strong>
+              <span>
+                Can view the whiteboard without editing or commenting.
+              </span>
+              <span className="boardy-info-tooltip__note">
+                Important: this applies only to this whiteboard and does not
+                transfer ownership. Invitees can register from the link without
+                purchasing a separate subscription.
+              </span>
+            </InfoTooltip>
+          </div>
           <select
+            id="boardy-share-permission"
+            aria-describedby="boardy-share-permission-help"
             value={role}
             onChange={(event) =>
               setRole(event.target.value as "editor" | "commenter" | "viewer")
@@ -126,7 +145,7 @@ const BoardyBoardShare = () => {
             <option value="commenter">Commenter</option>
             <option value="viewer">Viewer</option>
           </select>
-        </label>
+        </div>
         <button
           className="ShareDialog__boardy__submit"
           type="submit"

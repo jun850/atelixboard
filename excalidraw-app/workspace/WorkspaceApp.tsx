@@ -4,6 +4,7 @@ import { cloudApi, localApi } from "../agentic-board/client";
 import { supabase } from "../supabase/client";
 
 import { createCollection, loadWorkspace, workspaceApi } from "./api";
+import { InfoTooltip } from "./InfoTooltip";
 import { WorkspaceCommentsContext } from "./WorkspaceCommentsContext";
 
 import "./WorkspaceApp.scss";
@@ -242,7 +243,6 @@ const WhiteboardPreview = ({
                 } ${element.y + element.height / 2})`
               : undefined;
             const common = {
-              key: element.id,
               opacity: (element.opacity ?? 100) / 100,
               stroke,
               strokeWidth: element.strokeWidth || 2,
@@ -252,6 +252,7 @@ const WhiteboardPreview = ({
             if (element.type === "ellipse") {
               return (
                 <ellipse
+                  key={element.id}
                   {...common}
                   cx={element.x + element.width / 2}
                   cy={element.y + element.height / 2}
@@ -263,6 +264,7 @@ const WhiteboardPreview = ({
             if (element.type === "diamond") {
               return (
                 <polygon
+                  key={element.id}
                   {...common}
                   points={`${element.x + element.width / 2},${element.y} ${
                     element.x + element.width
@@ -280,6 +282,7 @@ const WhiteboardPreview = ({
             ) {
               return (
                 <polyline
+                  key={element.id}
                   {...common}
                   points={element.points
                     .map(
@@ -295,6 +298,7 @@ const WhiteboardPreview = ({
             if (element.type === "text") {
               return (
                 <text
+                  key={element.id}
                   {...common}
                   x={element.x}
                   y={element.y + (element.fontSize || 20)}
@@ -328,6 +332,7 @@ const WhiteboardPreview = ({
             }
             return (
               <rect
+                key={element.id}
                 {...common}
                 x={element.x}
                 y={element.y}
@@ -998,9 +1003,28 @@ const CollectionDialog = ({
               onChange={(event) => setName(event.target.value)}
             />
           </label>
-          <label>
-            Access
+          <div className="boardy-field">
+            <div className="boardy-field-label">
+              <label htmlFor="collection-access">Access</label>
+              <InfoTooltip
+                id="collection-access-help"
+                label="Explain collection access options"
+              >
+                <strong>Private</strong>
+                <span>Only the owner and people given access can open it.</span>
+                <strong>Workspace staff</strong>
+                <span>Admins and staff can open and edit the collection.</span>
+                <strong>Selected people</strong>
+                <span>Only people added to this collection can open it.</span>
+                <span className="boardy-info-tooltip__note">
+                  Important: workspace admins retain access to every collection,
+                  including private collections.
+                </span>
+              </InfoTooltip>
+            </div>
             <select
+              id="collection-access"
+              aria-describedby="collection-access-help"
               value={visibility}
               onChange={(event) =>
                 setVisibility(
@@ -1008,13 +1032,11 @@ const CollectionDialog = ({
                 )
               }
             >
-              <option value="private">
-                Private — workspace admins can still access
-              </option>
-              <option value="workspace">Everyone in the workspace</option>
+              <option value="private">Private</option>
+              <option value="workspace">Workspace staff</option>
               <option value="selected">Selected people</option>
             </select>
-          </label>
+          </div>
           {error && (
             <p className="boardy-form-error" role="alert">
               {error}
@@ -1096,26 +1118,49 @@ const MembersView = ({
           <div className="boardy-member-row" key={member.user_id}>
             <UserIdentity profile={member.profile} />
             <div className="boardy-member-actions">
-              <label>
-                <span className="sr-only">
-                  Role for {member.profile.displayName}
-                </span>
-                <select
-                  value={member.role}
-                  disabled={member.user_id === data.profile.userId}
-                  onChange={async (event) => {
-                    await workspaceApi(`members/${member.user_id}`, "PATCH", {
-                      workspaceId: data.workspace.id,
-                      role: event.target.value,
-                    });
-                    await refresh();
-                  }}
+              <div className="boardy-member-role">
+                <label>
+                  <span className="sr-only">
+                    Role for {member.profile.displayName}
+                  </span>
+                  <select
+                    aria-describedby={`workspace-role-help-${member.user_id}`}
+                    value={member.role}
+                    disabled={member.user_id === data.profile.userId}
+                    onChange={async (event) => {
+                      await workspaceApi(`members/${member.user_id}`, "PATCH", {
+                        workspaceId: data.workspace.id,
+                        role: event.target.value,
+                      });
+                      await refresh();
+                    }}
+                  >
+                    <option value="admin">Admin</option>
+                    <option value="staff">Staff</option>
+                    <option value="external">External</option>
+                  </select>
+                </label>
+                <InfoTooltip
+                  id={`workspace-role-help-${member.user_id}`}
+                  label="Explain workspace roles"
                 >
-                  <option value="admin">Admin</option>
-                  <option value="staff">Staff</option>
-                  <option value="external">External</option>
-                </select>
-              </label>
+                  <strong>Admin</strong>
+                  <span>
+                    Manages billing, members, settings, and all content.
+                  </span>
+                  <strong>Staff</strong>
+                  <span>Creates content and manages resources they own.</span>
+                  <strong>External</strong>
+                  <span>
+                    Only accesses boards and collections shared with them.
+                  </span>
+                  <span className="boardy-info-tooltip__note">
+                    Important: a workspace role is the access ceiling.
+                    Individual board or collection sharing can grant narrower
+                    access.
+                  </span>
+                </InfoTooltip>
+              </div>
               {member.user_id !== data.profile.userId && (
                 <button
                   type="button"
@@ -1426,7 +1471,6 @@ const BoardEditor = ({
   sceneId: string;
 }) => {
   const board = data.whiteboards.find((item) => item.id === sceneId);
-  const [commentsOpenRequest, setCommentsOpenRequest] = useState(0);
   return (
     <div className="boardy-editor-shell">
       <header className="boardy-editor-header">
@@ -1448,23 +1492,13 @@ const BoardEditor = ({
         <div className="boardy-editor-title">
           <strong>{board?.title || "Whiteboard"}</strong>
         </div>
-        <div className="boardy-editor-actions">
-          <button
-            type="button"
-            className="boardy-button is-secondary"
-            onClick={() => setCommentsOpenRequest((value) => value + 1)}
-          >
-            <Icon name="comments" />
-            Comments
-          </button>
-        </div>
+        <span aria-hidden="true" />
       </header>
       <div className="boardy-editor-body">
         <WorkspaceCommentsContext.Provider
           value={{
             sceneId,
             members: data.members,
-            openRequest: commentsOpenRequest,
           }}
         >
           <main className="boardy-editor-canvas">
@@ -1499,10 +1533,6 @@ const ResourceShareDialog = ({
         aria-labelledby="collection-share-title"
       >
         <h2 id="collection-share-title">Share {resourceName}</h2>
-        <p>
-          People with this invitation can access every whiteboard in this
-          collection with the selected permission.
-        </p>
         <form
           onSubmit={async (event) => {
             event.preventDefault();
@@ -1524,17 +1554,49 @@ const ResourceShareDialog = ({
             );
           }}
         >
-          <label>
-            Email (optional for a reusable link)
+          <div className="boardy-field">
+            <div className="boardy-field-label">
+              <label htmlFor="collection-share-email">Email</label>
+              <InfoTooltip
+                id="collection-share-email-help"
+                label="Explain collection invitation email"
+              >
+                <span>
+                  Add an email for a one-person invitation, or leave it blank to
+                  create a reusable link.
+                </span>
+              </InfoTooltip>
+            </div>
             <input
+              id="collection-share-email"
+              aria-describedby="collection-share-email-help"
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
-          </label>
-          <label>
-            Permission
+          </div>
+          <div className="boardy-field">
+            <div className="boardy-field-label">
+              <label htmlFor="collection-share-permission">Permission</label>
+              <InfoTooltip
+                id="collection-share-permission-help"
+                label="Explain collection permissions"
+              >
+                <strong>Editor</strong>
+                <span>Can edit every whiteboard in this collection.</span>
+                <strong>Commenter</strong>
+                <span>Can view and comment without changing the canvases.</span>
+                <strong>Viewer</strong>
+                <span>Can view without editing or commenting.</span>
+                <span className="boardy-info-tooltip__note">
+                  Important: this permission applies to the collection and all
+                  whiteboards inside it. It does not transfer ownership.
+                </span>
+              </InfoTooltip>
+            </div>
             <select
+              id="collection-share-permission"
+              aria-describedby="collection-share-permission-help"
               value={role}
               onChange={(event) => setRole(event.target.value)}
             >
@@ -1542,7 +1604,7 @@ const ResourceShareDialog = ({
               <option value="commenter">Commenter</option>
               <option value="viewer">Viewer</option>
             </select>
-          </label>
+          </div>
           <button className="boardy-button is-primary" type="submit">
             Create collection link
           </button>

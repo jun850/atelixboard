@@ -5,7 +5,6 @@ import type { WorkspaceMember } from "./types";
 export type WorkspaceCommentsContextValue = {
   sceneId: string;
   members: WorkspaceMember[];
-  openRequest: number;
 };
 
 export const WorkspaceCommentsContext =

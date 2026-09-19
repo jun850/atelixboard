@@ -38,6 +38,10 @@ True form fields, such as rename, profile, invitation, and company-detail inputs
 
 Read-only metadata must never imitate an input. Slugs, identifiers, plan facts, timestamps, and similar system values are rendered as plain text inside a labeled metadata wrapper or definition list. Reserve field chrome for values the user can actually edit.
 
+Picker values and submenu labels stay short and literal. Explanations, role capabilities, consequences, and important access caveats belong in a small adjacent information tooltip that opens on hover and keyboard focus. Tooltips supplement a persistent label, never replace it, and must remain usable without color or pointer input.
+
+Menus, pickers, filters, and selects use transparent surfaces with no field border, filled background, or focus halo. A restrained current-color keyboard outline may indicate focus without turning the control into a form field. Bordered control chrome is reserved for editable text-entry fields.
+
 Whiteboard names are display-only inside the canvas editor and are renamed from the dashboard card menu. Comments open as a dedicated right-side panel so the canvas remains the primary workspace. Whiteboard access controls belong in the existing collaboration dialog; do not duplicate sharing actions in the editor header. Collection sharing remains a collection-level dashboard action.
 
 The workspace sidebar owns navigation, identity, and session actions. Profile surfaces always show the person's avatar, display name, and email when the data is available. On narrow screens, the workspace becomes a bottom navigation bar and the content stage retains independent vertical scrolling.

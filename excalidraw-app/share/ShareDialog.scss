@@ -16,7 +16,8 @@
         gap: 0.75rem;
       }
 
-      label {
+      label,
+      &__field {
         display: grid;
         gap: 0.35rem;
         color: var(--text-primary-color);
@@ -24,8 +25,18 @@
         font-weight: 600;
       }
 
-      input,
-      select {
+      &__label {
+        display: inline-flex;
+        width: fit-content;
+        align-items: center;
+        gap: 0.3rem;
+      }
+
+      &__label > label {
+        display: inline;
+      }
+
+      input {
         box-sizing: border-box;
         width: 100%;
         min-height: 2.75rem;
@@ -39,16 +50,40 @@
         transition: border-color 150ms ease, box-shadow 150ms ease;
       }
 
-      input:hover,
-      select:hover {
+      input:hover {
         border-color: #aeb6c6;
       }
 
-      input:focus,
-      select:focus {
+      input:focus {
         border-color: #9199aa;
         outline: 0;
         box-shadow: 0 0 0 3px rgba(24, 33, 61, 0.1);
+      }
+
+      select {
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 2.75rem;
+        padding: 0 0.375rem;
+        border: 0;
+        border-radius: 0.375rem;
+        color: var(--text-primary-color);
+        background: transparent;
+        font: inherit;
+        box-shadow: none;
+        cursor: pointer;
+      }
+
+      select:hover,
+      select:focus {
+        outline: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+
+      select:focus-visible {
+        outline: 1.5px solid currentColor;
+        outline-offset: 2px;
       }
 
       &__submit {

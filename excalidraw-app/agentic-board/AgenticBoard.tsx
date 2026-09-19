@@ -154,15 +154,6 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
   const [provider, setProvider] = useState<Provider>("openai");
   const [key, setKey] = useState("");
   const [replaceId, setReplaceId] = useState("");
-  useEffect(() => {
-    if (workspaceComments?.openRequest) {
-      void api.toggleSidebar({
-        name: "default",
-        tab: "boardy-comments",
-        force: true,
-      });
-    }
-  }, [api, workspaceComments?.openRequest]);
   const [connectingSubscription, setConnectingSubscription] = useState<
     "codex" | "claude-code" | ""
   >("");

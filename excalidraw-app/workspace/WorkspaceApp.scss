@@ -416,8 +416,7 @@
   box-shadow: none;
 }
 input,
-textarea,
-select {
+textarea {
   border: 1px solid var(--boardy-control-border);
   border-radius: 10px;
   background: #fff;
@@ -428,16 +427,34 @@ select {
     background-color 0.15s ease;
 }
 input:hover,
-textarea:hover,
-select:hover {
+textarea:hover {
   border-color: var(--boardy-control-border-hover);
 }
 input:focus,
-textarea:focus,
-select:focus {
+textarea:focus {
   border-color: #9199aa;
   outline: 0;
   box-shadow: 0 0 0 3px var(--boardy-control-focus);
+}
+select {
+  border: 0;
+  border-radius: 6px;
+  color: var(--boardy-ink);
+  background-color: transparent;
+  font: inherit;
+  box-shadow: none;
+  cursor: pointer;
+}
+select:hover,
+select:focus {
+  border-color: transparent;
+  outline: 0;
+  background-color: transparent;
+  box-shadow: none;
+}
+select:focus-visible {
+  outline: 1.5px solid currentColor;
+  outline-offset: 2px;
 }
 button:focus-visible,
 a:focus-visible {
@@ -480,10 +497,10 @@ a:focus-visible {
   height: 100%;
   padding: 0 32px 0 38px;
   color: var(--boardy-ink);
-  background-color: #fff;
+  background-color: transparent;
   cursor: pointer;
   appearance: none;
-  box-shadow: var(--boardy-control-shadow);
+  box-shadow: none;
 }
 .boardy-board-grid {
   display: grid;
@@ -750,10 +767,20 @@ a:focus-visible {
   gap: 16px;
 }
 .boardy-dialog label,
+.boardy-dialog .boardy-field,
 .boardy-settings-panel label {
   display: grid;
   gap: 7px;
   font-weight: 650;
+}
+.boardy-field-label {
+  display: inline-flex !important;
+  width: fit-content;
+  align-items: center;
+  gap: 5px !important;
+}
+.boardy-field-label > label {
+  display: inline;
 }
 .boardy-dialog input,
 .boardy-dialog select,
@@ -808,6 +835,11 @@ a:focus-visible {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.boardy-member-role {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 .boardy-member-actions > button {
   border: 0;
