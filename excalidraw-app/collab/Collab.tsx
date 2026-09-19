@@ -522,7 +522,12 @@ class Collab extends PureComponent<CollabProps, CollabState> {
     if (existingRoomLinkData) {
       ({ roomId, roomKey } = existingRoomLinkData);
     } else {
-      ({ roomId, roomKey } = await generateCollaborationLinkData());
+      const generatedRoom = await generateCollaborationLinkData();
+      const boardSceneId = window.location.pathname.match(
+        /^\/app\/boards\/([0-9a-f-]{36})$/i,
+      )?.[1];
+      roomId = boardSceneId || generatedRoom.roomId;
+      roomKey = generatedRoom.roomKey;
       window.history.pushState(
         {},
         APP_NAME,

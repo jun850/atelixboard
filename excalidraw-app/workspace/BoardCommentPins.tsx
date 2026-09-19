@@ -61,6 +61,19 @@ export const BoardCommentPins = ({ api }: { api: ExcalidrawImperativeAPI }) => {
 
   useEffect(() => void refresh(), [refresh]);
   useEffect(() => {
+    const ownerDocument = rootRef.current?.ownerDocument;
+    if (!ownerDocument) {
+      return;
+    }
+    const cancelDraft = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setDraft(null);
+      }
+    };
+    ownerDocument.addEventListener("keydown", cancelDraft);
+    return () => ownerDocument.removeEventListener("keydown", cancelDraft);
+  }, []);
+  useEffect(() => {
     const win = rootRef.current?.ownerDocument.defaultView;
     if (!win || !sceneId) {
       return;
@@ -144,7 +157,7 @@ export const BoardCommentPins = ({ api }: { api: ExcalidrawImperativeAPI }) => {
       ref={rootRef}
       data-revision={revision}
       onPointerDown={(event) => {
-        if (!active || draft || event.button !== 0) {
+        if (!active || event.button !== 0) {
           return;
         }
         const target = event.target as HTMLElement;
