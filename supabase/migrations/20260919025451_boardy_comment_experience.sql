@@ -51,7 +51,7 @@ create index boardy_comment_email_outbox_queue_idx
   where status in ('pending', 'failed');
 
 create table public.boardy_email_suppressions (
-  email citext primary key,
+  email extensions.citext primary key,
   reason text not null check (reason in ('bounced', 'complained', 'suppressed')),
   provider_event_id text,
   created_at timestamptz not null default now(),
