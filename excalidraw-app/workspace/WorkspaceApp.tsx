@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { cloudApi, localApi } from "../agentic-board/client";
 import { supabase } from "../supabase/client";
@@ -959,7 +959,21 @@ const CollectionDialog = ({
   const [name, setName] = useState("");
   const [visibility, setVisibility] =
     useState<WorkspaceCollection["visibility"]>("private");
+  const [accessOpen, setAccessOpen] = useState(false);
   const [error, setError] = useState("");
+  const accessTriggerRef = useRef<HTMLButtonElement>(null);
+  const accessOptions: Array<{
+    value: WorkspaceCollection["visibility"];
+    label: string;
+  }> = [
+    { value: "private", label: "Private" },
+    { value: "workspace", label: "Workspace staff" },
+    { value: "selected", label: "Selected people" },
+  ];
+  const selectedAccess =
+    accessOptions.find((option) => option.value === visibility) ??
+    accessOptions[0];
+
   return (
     <div
       className="boardy-dialog-backdrop"
@@ -967,15 +981,13 @@ const CollectionDialog = ({
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
       <section
-        className="boardy-dialog"
+        className="boardy-dialog boardy-collection-dialog"
         role="dialog"
         aria-modal="true"
         aria-labelledby="collection-dialog-title"
       >
         <h2 id="collection-dialog-title">New collection</h2>
-        <p>
-          Collections keep related whiteboards and their shared access together.
-        </p>
+        <p>Group related whiteboards and manage their access together.</p>
         <form
           onSubmit={async (event) => {
             event.preventDefault();
@@ -1003,9 +1015,13 @@ const CollectionDialog = ({
               onChange={(event) => setName(event.target.value)}
             />
           </label>
-          <div className="boardy-field">
+          <div
+            className={`boardy-field boardy-access-field${
+              accessOpen ? " is-open" : ""
+            }`}
+          >
             <div className="boardy-field-label">
-              <label htmlFor="collection-access">Access</label>
+              <span id="collection-access-label">Access</span>
               <InfoTooltip
                 id="collection-access-help"
                 label="Explain collection access options"
@@ -1022,20 +1038,56 @@ const CollectionDialog = ({
                 </span>
               </InfoTooltip>
             </div>
-            <select
-              id="collection-access"
+            <button
+              ref={accessTriggerRef}
+              type="button"
+              className="boardy-access-trigger"
+              aria-label={`Access: ${selectedAccess.label}`}
               aria-describedby="collection-access-help"
-              value={visibility}
-              onChange={(event) =>
-                setVisibility(
-                  event.target.value as WorkspaceCollection["visibility"],
-                )
-              }
+              aria-haspopup="listbox"
+              aria-expanded={accessOpen}
+              aria-controls="collection-access-menu"
+              onClick={() => setAccessOpen((open) => !open)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  setAccessOpen(false);
+                }
+              }}
             >
-              <option value="private">Private</option>
-              <option value="workspace">Workspace staff</option>
-              <option value="selected">Selected people</option>
-            </select>
+              <span>{selectedAccess.label}</span>
+              <svg aria-hidden="true" viewBox="0 0 20 20">
+                <path d="m5.5 7.5 4.5 4.5 4.5-4.5" />
+              </svg>
+            </button>
+            {accessOpen && (
+              <div
+                id="collection-access-menu"
+                className="boardy-access-menu"
+                role="listbox"
+                aria-labelledby="collection-access-label"
+              >
+                {accessOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="option"
+                    aria-selected={visibility === option.value}
+                    onClick={() => {
+                      setVisibility(option.value);
+                      setAccessOpen(false);
+                      accessTriggerRef.current?.focus();
+                    }}
+                  >
+                    <span>{option.label}</span>
+                    {visibility === option.value && (
+                      <svg aria-hidden="true" viewBox="0 0 20 20">
+                        <path d="m4.5 10 3.5 3.5 7.5-7.5" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           {error && (
             <p className="boardy-form-error" role="alert">
