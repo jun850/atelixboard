@@ -1,15 +1,12 @@
 import { useEffect, useRef } from "react";
 
+import { IconButton } from "@excalidraw/excalidraw/components/IconButton";
+import { messageCircleIcon } from "@excalidraw/excalidraw/components/icons";
+
 import type {
   ExcalidrawImperativeAPI,
   UIAppState,
 } from "@excalidraw/excalidraw/types";
-
-const CommentIcon = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M5.5 18.5H4V12a8 8 0 1 1 8 8H7.5l-2 1.5v-3Z" />
-  </svg>
-);
 
 export const BoardCommentTool = ({
   appState,
@@ -29,14 +26,15 @@ export const BoardCommentTool = ({
     if (!ownerDocument || !ownerWindow) {
       return;
     }
-    const onKeyDown = (event: globalThis.KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target;
       if (
         event.defaultPrevented ||
         event.metaKey ||
         event.ctrlKey ||
         event.altKey ||
-        target?.matches("input, textarea, select, [contenteditable='true']")
+        (target instanceof ownerWindow.HTMLElement &&
+          target.matches("input, textarea, select, [contenteditable='true']"))
       ) {
         return;
       }
@@ -55,25 +53,23 @@ export const BoardCommentTool = ({
   }, [api]);
 
   return (
-    <button
+    <IconButton
       ref={buttonRef}
-      type="button"
-      className={`boardy-comment-tool${selected ? " is-selected" : ""}`}
+      type="toggle"
+      icon={messageCircleIcon}
+      checked={selected}
       aria-label="Comment"
-      aria-pressed={selected}
+      aria-keyshortcuts="C"
+      data-testid="toolbar-comment"
       title="Comment — C"
-      onClick={() =>
+      keyBindingLabel="C"
+      onSelect={() =>
         api.setActiveTool(
           selected
             ? { type: "selection" }
             : { type: "custom", customType: "comment" },
         )
       }
-    >
-      <CommentIcon />
-      <span className="boardy-comment-tool__tooltip" role="tooltip">
-        Comment <kbd>C</kbd>
-      </span>
-    </button>
+    />
   );
 };

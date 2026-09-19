@@ -1759,57 +1759,6 @@
   background: var(--boardy-accent);
   box-shadow: 0 4px 12px rgba(24, 33, 61, 0.2);
 }
-.boardy-comment-tool {
-  position: relative;
-  display: grid;
-  width: 36px;
-  height: 36px;
-  place-items: center;
-  border: 0;
-  border-radius: 9px;
-  color: var(--color-on-surface);
-  background: transparent;
-  cursor: pointer;
-}
-.boardy-comment-tool:hover {
-  background: var(--button-hover-bg);
-}
-.boardy-comment-tool.is-selected {
-  color: #fff;
-  background: var(--boardy-accent);
-}
-.boardy-comment-tool svg {
-  width: 23px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.7;
-}
-.boardy-comment-tool__tooltip {
-  position: absolute;
-  bottom: calc(100% + 9px);
-  left: 50%;
-  display: flex;
-  gap: 8px;
-  padding: 7px 10px;
-  transform: translateX(-50%);
-  border-radius: 7px;
-  color: #fff;
-  background: #252a34;
-  box-shadow: 0 6px 18px rgba(17, 24, 39, 0.2);
-  font-size: 12px;
-  font-weight: 500;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 120ms ease;
-}
-.boardy-comment-tool__tooltip kbd {
-  color: #c6ccd7;
-  font: inherit;
-}
-.boardy-comment-tool:hover .boardy-comment-tool__tooltip,
-.boardy-comment-tool:focus-visible .boardy-comment-tool__tooltip {
-  opacity: 1;
-}
 .boardy-skip-link {
   position: fixed;
   z-index: 4000;
