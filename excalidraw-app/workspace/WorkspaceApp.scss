@@ -1717,9 +1717,7 @@
   pointer-events: none;
 }
 .boardy-comment-pins.is-placing {
-  pointer-events: auto;
-  cursor: crosshair;
-  background: rgba(47, 108, 229, 0.025);
+  pointer-events: none;
 }
 .boardy-comment-pin {
   position: fixed;

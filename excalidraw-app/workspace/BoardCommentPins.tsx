@@ -66,13 +66,48 @@ export const BoardCommentPins = ({ api }: { api: ExcalidrawImperativeAPI }) => {
       return;
     }
     const cancelDraft = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && draft) {
         setDraft(null);
+        api.setActiveTool({ type: "selection" });
       }
     };
     ownerDocument.addEventListener("keydown", cancelDraft);
     return () => ownerDocument.removeEventListener("keydown", cancelDraft);
-  }, []);
+  }, [api, draft]);
+  useEffect(() => {
+    const ownerDocument = rootRef.current?.ownerDocument;
+    const ownerWindow = ownerDocument?.defaultView;
+    if (!active || !ownerDocument || !ownerWindow) {
+      return;
+    }
+    const placeDraft = (event: PointerEvent) => {
+      if (event.button !== 0) {
+        return;
+      }
+      const target = event.target;
+      if (
+        !(target instanceof ownerWindow.HTMLCanvasElement) ||
+        !target.matches("canvas.excalidraw__canvas.interactive")
+      ) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      const anchor = viewportCoordsToSceneCoords(
+        { clientX: event.clientX, clientY: event.clientY },
+        api.getAppState(),
+      );
+      setDraft({
+        sceneX: anchor.x,
+        sceneY: anchor.y,
+        clientX: event.clientX,
+        clientY: event.clientY,
+      });
+    };
+    ownerDocument.addEventListener("pointerdown", placeDraft, true);
+    return () =>
+      ownerDocument.removeEventListener("pointerdown", placeDraft, true);
+  }, [active, api]);
   useEffect(() => {
     const win = rootRef.current?.ownerDocument.defaultView;
     if (!win || !sceneId) {
@@ -156,27 +191,6 @@ export const BoardCommentPins = ({ api }: { api: ExcalidrawImperativeAPI }) => {
       className={`boardy-comment-pins${active ? " is-placing" : ""}`}
       ref={rootRef}
       data-revision={revision}
-      onPointerDown={(event) => {
-        if (!active || event.button !== 0) {
-          return;
-        }
-        const target = event.target as HTMLElement;
-        if (target.closest("button, textarea, input, .boardy-comment-draft")) {
-          return;
-        }
-        event.preventDefault();
-        event.stopPropagation();
-        const anchor = viewportCoordsToSceneCoords(
-          { clientX: event.clientX, clientY: event.clientY },
-          api.getAppState(),
-        );
-        setDraft({
-          sceneX: anchor.x,
-          sceneY: anchor.y,
-          clientX: event.clientX,
-          clientY: event.clientY,
-        });
-      }}
     >
       {threads
         .filter(
