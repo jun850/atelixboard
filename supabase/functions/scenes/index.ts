@@ -80,9 +80,16 @@ Deno.serve(async (request) => {
       if (uploadError && !uploadError.message.toLowerCase().includes("exist")) {
         throw uploadError;
       }
-      const { data, error } = await client.rpc("cloud_create_scene", {
+      const createSceneRpc =
+        workspaceId && collectionId
+          ? "boardy_create_scene"
+          : "cloud_create_scene";
+      const { data, error } = await client.rpc(createSceneRpc, {
         scene_title:
           typeof body.title === "string" ? body.title : "Untitled scene",
+        ...(workspaceId && collectionId
+          ? { workspace_id: workspaceId, collection_id: collectionId }
+          : {}),
         blob_sha256: encoded.sha256,
         blob_storage_path: storagePath,
         blob_byte_size: encoded.compressed.byteLength,
@@ -92,17 +99,6 @@ Deno.serve(async (request) => {
       });
       if (error) {
         throw error;
-      }
-      const sceneId = (data as { sceneId: string }).sceneId;
-      if (workspaceId && collectionId) {
-        const { error: assignmentError } = await admin
-          .from("scenes")
-          .update({ workspace_id: workspaceId, collection_id: collectionId })
-          .eq("id", sceneId)
-          .eq("owner_id", user.id);
-        if (assignmentError) {
-          throw assignmentError;
-        }
       }
       return response(request, 201, data);
     }

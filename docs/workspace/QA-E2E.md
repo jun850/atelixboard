@@ -12,7 +12,7 @@ Use distinct browser profiles for Owner/Admin, Staff, External Editor, Commenter
 
 ## 2. Whiteboards and collections
 
-1. Admin and Staff create a collection and a whiteboard; refresh confirms cloud persistence.
+1. Admin and Staff create multiple whiteboards in the same collection; generated titles remain unique, every scene is assigned atomically, and refresh confirms cloud persistence.
 2. Open the card, navigate back, rename the whiteboard, and move it to another collection.
 3. Attempt duplicate collection names and duplicate active whiteboard names with casing/whitespace changes; both fail clearly.
 4. Share collection privately to one External user and by reusable link; only redeemed users can open its URL.
@@ -28,6 +28,7 @@ Use distinct browser profiles for Owner/Admin, Staff, External Editor, Commenter
 5. Editor can change canvas content but cannot reshare, rename, move, or delete.
 6. Commenter can comment but cannot publish canvas updates. Viewer can only read.
 7. Removed users immediately lose dashboard, API, signed-asset, and Realtime access while historical author identity remains.
+8. Owner starts live collaboration and copies the generated `/invite/:token#room=...` link. An authenticated user in an isolated browser redeems it, lands on the same encrypted room, and both clients see Presence and bidirectional canvas updates after reload.
 
 ## 4. Figma-style comments
 

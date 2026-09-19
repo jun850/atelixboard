@@ -75,6 +75,7 @@ import {
 } from "../data/FileManager";
 import { FileStatusStore } from "../data/fileStatusStore";
 import { LocalData } from "../data/LocalData";
+import { loadWorkspace, workspaceApi } from "../workspace/api";
 import {
   isSavedToFirebase,
   loadFilesFromFirebase,
@@ -518,6 +519,7 @@ class Collab extends PureComponent<CollabProps, CollabState> {
 
     let roomId;
     let roomKey;
+    let shareRoomLink: string | null = null;
 
     if (existingRoomLinkData) {
       ({ roomId, roomKey } = existingRoomLinkData);
@@ -528,11 +530,31 @@ class Collab extends PureComponent<CollabProps, CollabState> {
       )?.[1];
       roomId = boardSceneId || generatedRoom.roomId;
       roomKey = generatedRoom.roomKey;
-      window.history.pushState(
-        {},
-        APP_NAME,
-        getCollaborationLink({ roomId, roomKey }),
-      );
+      const directRoomLink = getCollaborationLink({ roomId, roomKey });
+      window.history.pushState({}, APP_NAME, directRoomLink);
+      shareRoomLink = directRoomLink;
+
+      if (isSupabaseConfigured && boardSceneId) {
+        const dashboard = await loadWorkspace();
+        const invitation = await workspaceApi<{ token: string }>(
+          "invitations",
+          "POST",
+          {
+            workspaceId: dashboard.workspace.id,
+            sceneId: boardSceneId,
+            workspaceRole: "external",
+            resourceRole: "editor",
+            maxUses: 1000,
+            expiresInDays: 30,
+          },
+        );
+        const invitationLink = new URL(
+          `/invite/${invitation.token}`,
+          directRoomLink,
+        );
+        invitationLink.hash = new URL(directRoomLink).hash;
+        shareRoomLink = invitationLink.href;
+      }
     }
 
     // TODO: `ImportedDataState` type here seems abused
@@ -747,7 +769,7 @@ class Collab extends PureComponent<CollabProps, CollabState> {
 
     this.initializeIdleDetector();
 
-    this.setActiveRoomLink(window.location.href);
+    this.setActiveRoomLink(shareRoomLink || window.location.href);
 
     return scenePromise;
   };

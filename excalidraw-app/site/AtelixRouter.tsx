@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import { cloudApi } from "../agentic-board/client";
 import {
@@ -583,8 +583,11 @@ const AuthPage = ({ mode }: { mode: AuthMode }) => {
 
 const InviteAcceptance = ({ token }: { token: string }) => {
   const [error, setError] = useState("");
+  const rootRef = useRef<HTMLElement>(null);
   useEffect(() => {
     let current = true;
+    const ownerWindow = rootRef.current?.ownerDocument.defaultView;
+    const collaborationHash = ownerWindow?.location.hash || "";
     void cloudApi<{
       sceneId: string | null;
       collectionId: string | null;
@@ -594,7 +597,7 @@ const InviteAcceptance = ({ token }: { token: string }) => {
           return;
         }
         if (result.sceneId) {
-          navigate(`/app/boards/${result.sceneId}`);
+          navigate(`/app/boards/${result.sceneId}${collaborationHash}`);
         } else if (result.collectionId) {
           navigate(`/app/collections/${result.collectionId}`);
         } else {
@@ -615,7 +618,11 @@ const InviteAcceptance = ({ token }: { token: string }) => {
     };
   }, [token]);
   return (
-    <main className="atelix-page atelix-loading-page" aria-live="polite">
+    <main
+      ref={rootRef}
+      className="atelix-page atelix-loading-page"
+      aria-live="polite"
+    >
       {error || "Joining your Boardy workspace…"}
     </main>
   );
@@ -811,7 +818,9 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
   if (path.startsWith("/invite/")) {
     const token = path.slice("/invite/".length);
     if (!session) {
-      navigate(`/signup?next=${encodeURIComponent(path)}`);
+      navigate(
+        `/signup?next=${encodeURIComponent(`${path}${currentUrl.hash}`)}`,
+      );
       return null;
     }
     return <InviteAcceptance token={token} />;
