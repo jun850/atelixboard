@@ -4,7 +4,7 @@ import { cloudApi, localApi } from "../agentic-board/client";
 import { supabase } from "../supabase/client";
 
 import { createCollection, loadWorkspace, workspaceApi } from "./api";
-import { BoardCommentsPanel } from "./BoardCommentsPanel";
+import { WorkspaceCommentsContext } from "./WorkspaceCommentsContext";
 
 import "./WorkspaceApp.scss";
 
@@ -45,7 +45,11 @@ const Icon = ({
     | "back"
     | "comments"
     | "share"
-    | "profile";
+    | "profile"
+    | "more"
+    | "sort"
+    | "edit"
+    | "move";
 }) => {
   const paths: Record<typeof name, ReactNode> = {
     boards: (
@@ -110,6 +114,26 @@ const Icon = ({
         <path d="M4 22c.5-5.5 3.5-8 8-8s7.5 2.5 8 8" />
       </>
     ),
+    more: (
+      <>
+        <circle cx="5" cy="12" r="1.25" fill="currentColor" stroke="none" />
+        <circle cx="12" cy="12" r="1.25" fill="currentColor" stroke="none" />
+        <circle cx="19" cy="12" r="1.25" fill="currentColor" stroke="none" />
+      </>
+    ),
+    sort: <path d="M8 5v14m0 0-4-4m4 4 4-4M16 19V5m0 0-4 4m4-4 4 4" />,
+    edit: (
+      <>
+        <path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10z" />
+        <path d="m14.5 7.5 3 3" />
+      </>
+    ),
+    move: (
+      <>
+        <path d="M12 3v18M3 12h18" />
+        <path d="m8 7 4-4 4 4M8 17l4 4 4-4M7 8l-4 4 4 4M17 8l4 4-4 4" />
+      </>
+    ),
   };
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -140,16 +164,187 @@ export const UserIdentity = ({
   </span>
 );
 
-const WhiteboardPreview = ({ board }: { board: WhiteboardSummary }) => (
-  <div className="boardy-preview" aria-hidden="true">
-    <span className="boardy-preview__line is-long" />
-    <span className="boardy-preview__note is-blue" />
-    <span className="boardy-preview__note is-yellow" />
-    <span className="boardy-preview__connector" />
-    <span className="boardy-preview__line" />
-    <small>v{board.current_revision_number}</small>
-  </div>
-);
+type ThumbnailElement = {
+  id: string;
+  type: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  angle?: number;
+  strokeColor?: string;
+  backgroundColor?: string;
+  strokeWidth?: number;
+  opacity?: number;
+  points?: readonly (readonly [number, number])[];
+  text?: string;
+  fontSize?: number;
+  fileId?: string | null;
+  isDeleted?: boolean;
+};
+
+type ThumbnailDocument = {
+  elements: ThumbnailElement[];
+  files?: Record<string, { dataURL?: string }>;
+};
+
+const WhiteboardPreview = ({
+  board,
+  document,
+}: {
+  board: WhiteboardSummary;
+  document: ThumbnailDocument | null | undefined;
+}) => {
+  const elements = (document?.elements || []).filter(
+    (element) => !element.isDeleted,
+  );
+  const bounds = elements.reduce(
+    (value, element) => ({
+      minX: Math.min(value.minX, element.x),
+      minY: Math.min(value.minY, element.y),
+      maxX: Math.max(value.maxX, element.x + Math.max(element.width, 1)),
+      maxY: Math.max(value.maxY, element.y + Math.max(element.height, 1)),
+    }),
+    {
+      minX: Number.POSITIVE_INFINITY,
+      minY: Number.POSITIVE_INFINITY,
+      maxX: Number.NEGATIVE_INFINITY,
+      maxY: Number.NEGATIVE_INFINITY,
+    },
+  );
+  const padding = 24;
+  const viewBox = elements.length
+    ? `${bounds.minX - padding} ${bounds.minY - padding} ${Math.max(
+        bounds.maxX - bounds.minX + padding * 2,
+        1,
+      )} ${Math.max(bounds.maxY - bounds.minY + padding * 2, 1)}`
+    : "0 0 320 180";
+  return (
+    <div className="boardy-preview" aria-hidden="true">
+      {document && !elements.length ? (
+        <img
+          className="boardy-preview__empty"
+          src="/brand/empty-whiteboard-thumbnail.png"
+          alt=""
+        />
+      ) : document ? (
+        <svg viewBox={viewBox} preserveAspectRatio="xMidYMid meet">
+          {elements.map((element) => {
+            const stroke = element.strokeColor || "#1b243d";
+            const fill =
+              element.backgroundColor &&
+              element.backgroundColor !== "transparent"
+                ? element.backgroundColor
+                : "none";
+            const transform = element.angle
+              ? `rotate(${(element.angle * 180) / Math.PI} ${
+                  element.x + element.width / 2
+                } ${element.y + element.height / 2})`
+              : undefined;
+            const common = {
+              key: element.id,
+              opacity: (element.opacity ?? 100) / 100,
+              stroke,
+              strokeWidth: element.strokeWidth || 2,
+              fill,
+              transform,
+            };
+            if (element.type === "ellipse") {
+              return (
+                <ellipse
+                  {...common}
+                  cx={element.x + element.width / 2}
+                  cy={element.y + element.height / 2}
+                  rx={Math.abs(element.width / 2)}
+                  ry={Math.abs(element.height / 2)}
+                />
+              );
+            }
+            if (element.type === "diamond") {
+              return (
+                <polygon
+                  {...common}
+                  points={`${element.x + element.width / 2},${element.y} ${
+                    element.x + element.width
+                  },${element.y + element.height / 2} ${
+                    element.x + element.width / 2
+                  },${element.y + element.height} ${element.x},${
+                    element.y + element.height / 2
+                  }`}
+                />
+              );
+            }
+            if (
+              ["line", "arrow", "freedraw"].includes(element.type) &&
+              element.points?.length
+            ) {
+              return (
+                <polyline
+                  {...common}
+                  points={element.points
+                    .map(
+                      (point) =>
+                        `${element.x + point[0]},${element.y + point[1]}`,
+                    )
+                    .join(" ")}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              );
+            }
+            if (element.type === "text") {
+              return (
+                <text
+                  {...common}
+                  x={element.x}
+                  y={element.y + (element.fontSize || 20)}
+                  fill={stroke}
+                  stroke="none"
+                  fontSize={element.fontSize || 20}
+                  fontFamily="Assistant, sans-serif"
+                >
+                  {(element.text || "").slice(0, 120)}
+                </text>
+              );
+            }
+            if (
+              element.type === "image" &&
+              element.fileId &&
+              document.files?.[element.fileId]?.dataURL
+            ) {
+              return (
+                <image
+                  key={element.id}
+                  href={document.files[element.fileId].dataURL}
+                  x={element.x}
+                  y={element.y}
+                  width={element.width}
+                  height={element.height}
+                  opacity={(element.opacity ?? 100) / 100}
+                  transform={transform}
+                  preserveAspectRatio="xMidYMid slice"
+                />
+              );
+            }
+            return (
+              <rect
+                {...common}
+                x={element.x}
+                y={element.y}
+                width={Math.abs(element.width)}
+                height={Math.abs(element.height)}
+                rx={Math.min(8, Math.abs(element.width) / 8)}
+              />
+            );
+          })}
+        </svg>
+      ) : (
+        <span className="boardy-preview__loading" />
+      )}
+      <small>v{board.current_revision_number}</small>
+    </div>
+  );
+};
 
 const relativeTime = (value: string) => {
   const seconds = Math.max(
@@ -185,6 +380,7 @@ const SidebarButton = ({
   <button
     className={active ? "is-active" : undefined}
     type="button"
+    aria-label={typeof children === "string" ? children : undefined}
     onClick={onClick}
   >
     <Icon name={icon} />
@@ -196,29 +392,45 @@ const WorkspaceSidebar = ({
   data,
   activeCollection,
   pathname,
+  onSignOut,
+  localDemo,
+  query,
+  setQuery,
 }: {
   data: WorkspaceDashboard;
   activeCollection: string | null;
   pathname: string;
+  onSignOut: () => Promise<void>;
+  localDemo: boolean;
+  query: string;
+  setQuery: (value: string) => void;
 }) => (
   <aside className="boardy-workspace-sidebar">
-    <a
-      className="boardy-workspace-brand"
-      href="/app"
-      aria-label="Boardy whiteboards"
-    >
-      <span>Boardy</span>
-      <small>By Atelix</small>
-    </a>
-    <button className="boardy-workspace-switcher" type="button">
-      <span className="boardy-avatar">
+    <div className="boardy-workspace-switcher">
+      <span className="boardy-workspace-mark" aria-hidden="true">
         {data.workspace.name.slice(0, 1).toUpperCase()}
       </span>
       <span>
         <strong>{data.workspace.name}</strong>
-        <small>{data.membership.role}</small>
+        <small>Boardy Pro</small>
       </span>
-    </button>
+      <span className="boardy-switcher-chevron" aria-hidden="true" />
+    </div>
+    <label className="boardy-sidebar-search">
+      <Icon name="search" />
+      <span className="sr-only">Quick search</span>
+      <input
+        type="search"
+        value={query}
+        onFocus={(event) =>
+          pathname === "/app" ||
+          routeTo(event.currentTarget.ownerDocument.defaultView, "/app")
+        }
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Quick search"
+      />
+      <kbd>⌘P</kbd>
+    </label>
     <nav aria-label="Workspace navigation">
       <SidebarButton
         active={!activeCollection && pathname === "/app"}
@@ -227,8 +439,34 @@ const WorkspaceSidebar = ({
           routeTo(event.currentTarget.ownerDocument.defaultView, "/app")
         }
       >
-        Whiteboards
+        Dashboard
       </SidebarButton>
+      {data.membership.role === "admin" && (
+        <>
+          <SidebarButton
+            icon="members"
+            onClick={(event) =>
+              routeTo(
+                event.currentTarget.ownerDocument.defaultView,
+                "/app/members",
+              )
+            }
+          >
+            Team members
+          </SidebarButton>
+          <SidebarButton
+            icon="settings"
+            onClick={(event) =>
+              routeTo(
+                event.currentTarget.ownerDocument.defaultView,
+                "/app/settings",
+              )
+            }
+          >
+            Workspace settings
+          </SidebarButton>
+        </>
+      )}
       <SidebarButton
         icon="shared"
         onClick={(event) =>
@@ -248,35 +486,21 @@ const WorkspaceSidebar = ({
       >
         Trash
       </SidebarButton>
-      {data.membership.role === "admin" && (
-        <>
-          <SidebarButton
-            icon="members"
-            onClick={(event) =>
-              routeTo(
-                event.currentTarget.ownerDocument.defaultView,
-                "/app/members",
-              )
-            }
-          >
-            Members
-          </SidebarButton>
-          <SidebarButton
-            icon="settings"
-            onClick={(event) =>
-              routeTo(
-                event.currentTarget.ownerDocument.defaultView,
-                "/app/settings",
-              )
-            }
-          >
-            Workspace settings
-          </SidebarButton>
-        </>
-      )}
     </nav>
     <div className="boardy-collection-heading">
       <span>Collections</span>
+      <button
+        type="button"
+        aria-label="Create collection"
+        onClick={(event) =>
+          routeTo(
+            event.currentTarget.ownerDocument.defaultView,
+            "/app?new=collection",
+          )
+        }
+      >
+        <Icon name="plus" />
+      </button>
     </div>
     <nav aria-label="Collections">
       {data.collections.map((collection) => (
@@ -295,41 +519,290 @@ const WorkspaceSidebar = ({
         </SidebarButton>
       ))}
     </nav>
-    <button
-      className="boardy-profile-button"
-      type="button"
-      onClick={(event) =>
-        routeTo(event.currentTarget.ownerDocument.defaultView, "/app/profile")
-      }
-    >
-      <UserIdentity profile={data.profile} />
-    </button>
+    <div className="boardy-sidebar-account">
+      <button
+        className="boardy-profile-button"
+        type="button"
+        onClick={(event) =>
+          routeTo(event.currentTarget.ownerDocument.defaultView, "/app/profile")
+        }
+      >
+        <UserIdentity profile={data.profile} />
+      </button>
+      <button
+        type="button"
+        className="boardy-sign-out"
+        onClick={async (event) => {
+          const ownerWindow = event.currentTarget.ownerDocument.defaultView;
+          if (import.meta.env.DEV && ownerWindow && localDemo) {
+            await localApi(ownerWindow, "session", "DELETE").catch(
+              () => undefined,
+            );
+          }
+          await supabase.auth.signOut();
+          await onSignOut();
+        }}
+      >
+        Sign out
+      </button>
+    </div>
   </aside>
 );
+
+const WhiteboardCard = ({
+  board,
+  collections,
+  workspaceId,
+  refresh,
+  preview,
+}: {
+  board: WhiteboardSummary;
+  collections: WorkspaceCollection[];
+  workspaceId: string;
+  refresh: () => Promise<void>;
+  preview: ThumbnailDocument | null | undefined;
+}) => {
+  const [title, setTitle] = useState(board.title);
+  const [renaming, setRenaming] = useState(false);
+  const [renameError, setRenameError] = useState("");
+  const [action, setAction] = useState<"rename" | "move" | null>(null);
+  const [collectionId, setCollectionId] = useState(board.collection_id);
+  const rename = async (event: FormEvent) => {
+    event.preventDefault();
+    const nextTitle = title.trim();
+    if (!nextTitle || nextTitle === board.title) {
+      return;
+    }
+    setRenaming(true);
+    setRenameError("");
+    try {
+      await workspaceApi(`whiteboards/${board.id}`, "PATCH", {
+        workspaceId,
+        title: nextTitle,
+      });
+      setAction(null);
+      await refresh();
+    } catch (caught) {
+      setRenameError(
+        caught instanceof Error
+          ? caught.message
+          : "Whiteboard could not be renamed.",
+      );
+    } finally {
+      setRenaming(false);
+    }
+  };
+  return (
+    <article className="boardy-board-card">
+      <button
+        className="boardy-board-card__open"
+        type="button"
+        onClick={(event) =>
+          routeTo(
+            event.currentTarget.ownerDocument.defaultView,
+            `/app/boards/${board.id}`,
+          )
+        }
+        aria-label={`Open ${board.title}`}
+      >
+        <WhiteboardPreview board={board} document={preview} />
+        <span className="boardy-board-card__copy">
+          <strong>{board.title}</strong>
+          <small>Updated {relativeTime(board.updated_at)}</small>
+        </span>
+      </button>
+      <details className="boardy-board-menu">
+        <summary aria-label={`Board options for ${board.title}`}>
+          <Icon name="more" />
+        </summary>
+        <div className="boardy-board-menu__list">
+          <button
+            type="button"
+            onClick={(event) => {
+              event.currentTarget.closest("details")?.removeAttribute("open");
+              setTitle(board.title);
+              setRenameError("");
+              setAction("rename");
+            }}
+          >
+            <Icon name="edit" />
+            Rename
+          </button>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.currentTarget.closest("details")?.removeAttribute("open");
+              setCollectionId(board.collection_id);
+              setAction("move");
+            }}
+          >
+            <Icon name="move" />
+            Move to collection
+          </button>
+        </div>
+      </details>
+      {action && (
+        <div className="boardy-dialog-backdrop" role="presentation">
+          <section
+            className="boardy-dialog boardy-board-action-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`board-action-${board.id}`}
+          >
+            <h2 id={`board-action-${board.id}`}>
+              {action === "rename" ? "Rename whiteboard" : "Move whiteboard"}
+            </h2>
+            <p>
+              {action === "rename"
+                ? "Choose a clear name your team can recognize quickly."
+                : `Choose a collection for ${board.title}.`}
+            </p>
+            {action === "rename" ? (
+              <form onSubmit={(event) => void rename(event)}>
+                <label>
+                  Whiteboard name
+                  <input
+                    autoFocus
+                    value={title}
+                    maxLength={160}
+                    required
+                    onChange={(event) => setTitle(event.target.value)}
+                  />
+                </label>
+                {renameError && <small role="alert">{renameError}</small>}
+                <div className="boardy-dialog-actions">
+                  <button
+                    className="boardy-button is-secondary"
+                    type="button"
+                    onClick={() => setAction(null)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="boardy-button is-primary"
+                    type="submit"
+                    disabled={renaming || title.trim() === board.title}
+                  >
+                    {renaming ? "Saving…" : "Save name"}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form
+                onSubmit={async (event) => {
+                  event.preventDefault();
+                  await workspaceApi(`whiteboards/${board.id}`, "PATCH", {
+                    workspaceId,
+                    collectionId,
+                  });
+                  setAction(null);
+                  await refresh();
+                }}
+              >
+                <label>
+                  Collection
+                  <select
+                    autoFocus
+                    value={collectionId}
+                    onChange={(event) => setCollectionId(event.target.value)}
+                  >
+                    {collections.map((collection) => (
+                      <option key={collection.id} value={collection.id}>
+                        {collection.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="boardy-dialog-actions">
+                  <button
+                    className="boardy-button is-secondary"
+                    type="button"
+                    onClick={() => setAction(null)}
+                  >
+                    Cancel
+                  </button>
+                  <button className="boardy-button is-primary" type="submit">
+                    Move whiteboard
+                  </button>
+                </div>
+              </form>
+            )}
+          </section>
+        </div>
+      )}
+    </article>
+  );
+};
 
 const DashboardContent = ({
   data,
   activeCollection,
   refresh,
+  query,
+  openNewCollection,
 }: {
   data: WorkspaceDashboard;
   activeCollection: string | null;
   refresh: () => Promise<void>;
+  query: string;
+  openNewCollection: boolean;
 }) => {
-  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<"updated" | "name-asc" | "name-desc">(
+    "updated",
+  );
   const [creating, setCreating] = useState(false);
   const [newCollection, setNewCollection] = useState(false);
   const [sharingCollection, setSharingCollection] = useState(false);
+  const [previews, setPreviews] = useState<
+    Record<string, ThumbnailDocument | null>
+  >({});
   const collection = data.collections.find(
     (item) => item.id === activeCollection,
   );
-  const boards = data.whiteboards.filter(
-    (board) =>
-      board.status === "active" &&
-      (!activeCollection || board.collection_id === activeCollection) &&
-      board.title.toLowerCase().includes(query.toLowerCase()),
-  );
+  const boards = data.whiteboards
+    .filter(
+      (board) =>
+        board.status === "active" &&
+        (!activeCollection || board.collection_id === activeCollection) &&
+        board.title.toLowerCase().includes(query.toLowerCase()),
+    )
+    .sort((left, right) => {
+      if (sort === "name-asc") {
+        return left.title.localeCompare(right.title);
+      }
+      if (sort === "name-desc") {
+        return right.title.localeCompare(left.title);
+      }
+      return (
+        new Date(right.updated_at).getTime() -
+        new Date(left.updated_at).getTime()
+      );
+    });
   const defaultCollection = collection || data.collections[0];
+  useEffect(() => {
+    let active = true;
+    void workspaceApi<{
+      previews: Record<string, ThumbnailDocument | null>;
+    }>("previews", "GET", { workspaceId: data.workspace.id })
+      .then((result) => {
+        if (active) {
+          setPreviews(result.previews);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setPreviews({});
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [data.workspace.id, data.whiteboards]);
+  useEffect(() => {
+    if (openNewCollection) {
+      setNewCollection(true);
+    }
+  }, [openNewCollection]);
 
   const createBoard = async (ownerWindow: Window | null) => {
     if (!defaultCollection) {
@@ -360,8 +833,10 @@ const DashboardContent = ({
   return (
     <main className="boardy-dashboard-main" id="main-content">
       <header className="boardy-dashboard-header">
-        <div>
-          <p>{collection ? "Collection" : "Workspace"}</p>
+        <div className="boardy-dashboard-heading">
+          <span aria-hidden="true">
+            <Icon name={collection ? "collection" : "boards"} />
+          </span>
           <h1>{collection?.name || "Whiteboards"}</h1>
         </div>
         <div className="boardy-dashboard-actions">
@@ -394,62 +869,35 @@ const DashboardContent = ({
         </div>
       </header>
       <div className="boardy-dashboard-toolbar">
-        <label className="boardy-search">
-          <Icon name="search" />
-          <span className="sr-only">Search whiteboards</span>
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search whiteboards"
-          />
+        <label className="boardy-sort-control">
+          <Icon name="sort" />
+          <span className="sr-only">Sort whiteboards</span>
+          <select
+            aria-label="Sort whiteboards"
+            value={sort}
+            onChange={(event) =>
+              setSort(
+                event.target.value as "updated" | "name-asc" | "name-desc",
+              )
+            }
+          >
+            <option value="updated">Recently updated</option>
+            <option value="name-asc">Name A–Z</option>
+            <option value="name-desc">Name Z–A</option>
+          </select>
         </label>
-        <select aria-label="Sort whiteboards" defaultValue="updated">
-          <option value="updated">Recently updated</option>
-          <option value="name">Name</option>
-        </select>
       </div>
       {boards.length ? (
         <section className="boardy-board-grid" aria-label="Whiteboards">
           {boards.map((board) => (
-            <article className="boardy-board-card" key={board.id}>
-              <button
-                type="button"
-                onClick={(event) =>
-                  routeTo(
-                    event.currentTarget.ownerDocument.defaultView,
-                    `/app/boards/${board.id}`,
-                  )
-                }
-                aria-label={`Open ${board.title}`}
-              >
-                <WhiteboardPreview board={board} />
-                <span className="boardy-board-card__copy">
-                  <strong>{board.title}</strong>
-                  <small>Updated {relativeTime(board.updated_at)}</small>
-                </span>
-              </button>
-              <label className="boardy-board-move">
-                <span className="sr-only">
-                  Move {board.title} to collection
-                </span>
-                <select
-                  value={board.collection_id}
-                  onChange={async (event) => {
-                    await workspaceApi(`whiteboards/${board.id}`, "PATCH", {
-                      workspaceId: data.workspace.id,
-                      collectionId: event.target.value,
-                    });
-                    await refresh();
-                  }}
-                >
-                  {data.collections.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      Move to {item.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </article>
+            <WhiteboardCard
+              board={board}
+              collections={data.collections}
+              key={board.id}
+              refresh={refresh}
+              workspaceId={data.workspace.id}
+              preview={previews[board.id]}
+            />
           ))}
         </section>
       ) : (
@@ -619,10 +1067,7 @@ const MembersView = ({
   return (
     <main className="boardy-dashboard-main" id="main-content">
       <header className="boardy-dashboard-header">
-        <div>
-          <p>Administration</p>
-          <h1>Members</h1>
-        </div>
+        <h1>Members</h1>
         <button
           className="boardy-button is-primary"
           type="button"
@@ -715,63 +1160,258 @@ const ProfileView = ({
     <main className="boardy-dashboard-main" id="main-content">
       <header className="boardy-dashboard-header">
         <div>
-          <p>Account</p>
           <h1>Your profile</h1>
+          <p className="boardy-page-description">
+            Keep your identity recognizable across whiteboards, comments, and
+            mentions.
+          </p>
         </div>
       </header>
-      <section className="boardy-settings-panel">
-        <UserIdentity profile={data.profile} />
-        <form onSubmit={(event) => void submit(event)}>
-          <label>
-            Profile photo
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={async (event) => {
-                const file = event.target.files?.[0];
-                if (!file) {
-                  return;
+      <div className="boardy-profile-layout">
+        <section className="boardy-profile-summary">
+          <UserIdentity profile={data.profile} />
+          <dl>
+            <div>
+              <dt>Workspace role</dt>
+              <dd>{data.membership.role}</dd>
+            </div>
+            <div>
+              <dt>Workspace</dt>
+              <dd>{data.workspace.name}</dd>
+            </div>
+          </dl>
+        </section>
+        <section className="boardy-settings-panel">
+          <header>
+            <h2>Profile details</h2>
+            <p>Shown to people you collaborate with.</p>
+          </header>
+          <form onSubmit={(event) => void submit(event)}>
+            <label className="boardy-upload-control">
+              <span>Profile photo</span>
+              <span className="boardy-upload-button">Choose image</span>
+              <small>JPG, PNG, or WebP.</small>
+              <input
+                className="boardy-file-input"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={async (event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) {
+                    return;
+                  }
+                  const extension =
+                    file.name.split(".").pop()?.toLowerCase() || "jpg";
+                  const path = `${data.profile.userId}/avatar.${extension}`;
+                  const { error } = await supabase.storage
+                    .from("boardy-avatars")
+                    .upload(path, file, {
+                      upsert: true,
+                      contentType: file.type,
+                    });
+                  if (error) {
+                    setStatus(error.message);
+                    return;
+                  }
+                  await workspaceApi("profile", "PATCH", {
+                    displayName: name,
+                    avatarPath: path,
+                  });
+                  setStatus("Profile photo saved.");
+                  await refresh();
+                }}
+              />
+            </label>
+            <label>
+              Display name
+              <input
+                value={name}
+                maxLength={120}
+                required
+                onChange={(event) => setName(event.target.value)}
+              />
+            </label>
+            <label>
+              Email
+              <input value={data.profile.email} readOnly />
+              <small>
+                Email changes require verification through your account.
+              </small>
+            </label>
+            <div className="boardy-form-footer">
+              {status && <p role="status">{status}</p>}
+              <button className="boardy-button is-primary" type="submit">
+                Save changes
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </main>
+  );
+};
+
+const WorkspaceSettingsView = ({
+  data,
+  refresh,
+}: {
+  data: WorkspaceDashboard;
+  refresh: () => Promise<void>;
+}) => {
+  const [name, setName] = useState(data.workspace.name);
+  const [status, setStatus] = useState("");
+  const isAdmin = data.membership.role === "admin";
+  const saveWorkspace = async (event: FormEvent) => {
+    event.preventDefault();
+    await workspaceApi("settings", "PATCH", {
+      workspaceId: data.workspace.id,
+      name,
+    });
+    setStatus("Workspace details saved.");
+    await refresh();
+  };
+  const roles = [
+    {
+      name: "Admin",
+      summary: "Owns workspace governance and billing.",
+      capabilities: "Manage members, roles, settings, collections, and boards",
+    },
+    {
+      name: "Staff",
+      summary: "Creates and organizes team work.",
+      capabilities: "Create boards and collections; manage owned resources",
+    },
+    {
+      name: "External",
+      summary: "Collaborates only where access is granted.",
+      capabilities: "View, comment, or edit according to each share permission",
+    },
+  ];
+  return (
+    <main className="boardy-dashboard-main" id="main-content">
+      <header className="boardy-dashboard-header">
+        <div>
+          <h1>Workspace settings</h1>
+          <p className="boardy-page-description">
+            Manage company identity, subscription access, and workspace roles.
+          </p>
+        </div>
+      </header>
+      <div className="boardy-settings-grid">
+        <section className="boardy-settings-panel">
+          <header>
+            <h2>Company details</h2>
+            <p>Used throughout the shared workspace.</p>
+          </header>
+          <form onSubmit={(event) => void saveWorkspace(event)}>
+            <label>
+              Company or workspace name
+              <input
+                value={name}
+                maxLength={120}
+                required
+                disabled={!isAdmin}
+                onChange={(event) => setName(event.target.value)}
+              />
+            </label>
+            <label>
+              Workspace slug
+              <input value={data.workspace.slug} readOnly />
+            </label>
+            <label>
+              Workspace ID
+              <input value={data.workspace.id} readOnly />
+            </label>
+            {isAdmin && (
+              <div className="boardy-form-footer">
+                {status && <p role="status">{status}</p>}
+                <button
+                  className="boardy-button is-primary"
+                  type="submit"
+                  disabled={!name.trim() || name.trim() === data.workspace.name}
+                >
+                  Save workspace
+                </button>
+              </div>
+            )}
+          </form>
+        </section>
+        <section className="boardy-settings-panel boardy-billing-card">
+          <header>
+            <h2>Plan and billing</h2>
+            <span className="boardy-status-badge">
+              {data.workspace.subscription_status}
+            </span>
+          </header>
+          <div className="boardy-plan-summary">
+            <strong>Boardy Pro</strong>
+            <span>Cloud whiteboards and team collaboration</span>
+          </div>
+          <dl>
+            <div>
+              <dt>Active members</dt>
+              <dd>
+                {
+                  data.members.filter((member) => member.status === "active")
+                    .length
                 }
-                const extension =
-                  file.name.split(".").pop()?.toLowerCase() || "jpg";
-                const path = `${data.profile.userId}/avatar.${extension}`;
-                const { error } = await supabase.storage
-                  .from("boardy-avatars")
-                  .upload(path, file, { upsert: true, contentType: file.type });
-                if (error) {
-                  setStatus(error.message);
-                  return;
-                }
-                await workspaceApi("profile", "PATCH", {
-                  displayName: name,
-                  avatarPath: path,
-                });
-                setStatus("Profile photo saved.");
-                await refresh();
-              }}
-            />
-          </label>
-          <label>
-            Display name
-            <input
-              value={name}
-              maxLength={120}
-              required
-              onChange={(event) => setName(event.target.value)}
-            />
-          </label>
-          <label>
-            Email
-            <input value={data.profile.email} readOnly />
-            <small>
-              Email changes require verification through your account.
-            </small>
-          </label>
-          <button className="boardy-button is-primary" type="submit">
-            Save profile
-          </button>
-          {status && <p role="status">{status}</p>}
-        </form>
+              </dd>
+            </div>
+            <div>
+              <dt>Billing access</dt>
+              <dd>Workspace admins</dd>
+            </div>
+          </dl>
+          {isAdmin && (
+            <button
+              className="boardy-button is-secondary"
+              type="button"
+              onClick={(event) =>
+                routeTo(
+                  event.currentTarget.ownerDocument.defaultView,
+                  "/app/subscription",
+                )
+              }
+            >
+              Manage plan and billing
+            </button>
+          )}
+        </section>
+      </div>
+      <section className="boardy-role-panel">
+        <header>
+          <div>
+            <h2>Roles and capabilities</h2>
+            <p>
+              Workspace roles set the ceiling; each share can narrow access.
+            </p>
+          </div>
+          {isAdmin && (
+            <button
+              type="button"
+              className="boardy-button is-secondary"
+              onClick={(event) =>
+                routeTo(
+                  event.currentTarget.ownerDocument.defaultView,
+                  "/app/members",
+                )
+              }
+            >
+              Manage members
+            </button>
+          )}
+        </header>
+        <div className="boardy-role-list">
+          {roles.map((role) => (
+            <article key={role.name}>
+              <div>
+                <strong>{role.name}</strong>
+                <p>{role.summary}</p>
+              </div>
+              <span>{role.capabilities}</span>
+            </article>
+          ))}
+        </div>
       </section>
     </main>
   );
@@ -787,9 +1427,7 @@ const BoardEditor = ({
   sceneId: string;
 }) => {
   const board = data.whiteboards.find((item) => item.id === sceneId);
-  const [title, setTitle] = useState(board?.title || "Whiteboard");
-  const [commentsOpen, setCommentsOpen] = useState(false);
-  const [sharing, setSharing] = useState(false);
+  const [commentsOpenRequest, setCommentsOpenRequest] = useState(0);
   return (
     <div className="boardy-editor-shell">
       <header className="boardy-editor-header">
@@ -809,160 +1447,32 @@ const BoardEditor = ({
           Whiteboards
         </button>
         <div className="boardy-editor-title">
-          <input
-            aria-label="Whiteboard name"
-            value={title}
-            maxLength={160}
-            onChange={(event) => setTitle(event.target.value)}
-            onBlur={async () => {
-              const next = title.trim() || "Untitled whiteboard";
-              setTitle(next);
-              await workspaceApi(`whiteboards/${sceneId}`, "PATCH", {
-                workspaceId: data.workspace.id,
-                title: next,
-              });
-            }}
-          />
-          <small>Saved to Boardy cloud</small>
+          <strong>{board?.title || "Whiteboard"}</strong>
         </div>
         <div className="boardy-editor-actions">
           <button
             type="button"
             className="boardy-button is-secondary"
-            onClick={() => setCommentsOpen((value) => !value)}
-            aria-pressed={commentsOpen}
+            onClick={() => setCommentsOpenRequest((value) => value + 1)}
           >
             <Icon name="comments" />
             Comments
           </button>
-          <button
-            type="button"
-            className="boardy-button is-primary"
-            onClick={() => setSharing(true)}
-          >
-            <Icon name="share" />
-            Share
-          </button>
         </div>
       </header>
       <div className="boardy-editor-body">
-        <main className="boardy-editor-canvas">
-          <BoardApp />
-        </main>
-        {commentsOpen && (
-          <BoardCommentsPanel
-            sceneId={sceneId}
-            members={data.members}
-            onClose={() => setCommentsOpen(false)}
-          />
-        )}
-      </div>
-      {sharing && (
-        <ShareDialog
-          data={data}
-          sceneId={sceneId}
-          onClose={() => setSharing(false)}
-        />
-      )}
-    </div>
-  );
-};
-
-const ShareDialog = ({
-  data,
-  sceneId,
-  onClose,
-}: {
-  data: WorkspaceDashboard;
-  sceneId: string;
-  onClose: () => void;
-}) => {
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState("editor");
-  const [link, setLink] = useState("");
-  return (
-    <div className="boardy-dialog-backdrop" role="presentation">
-      <section
-        className="boardy-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="share-title"
-      >
-        <h2 id="share-title">Share whiteboard</h2>
-        <p>
-          Invite collaborators by email. A copied whiteboard URL only works for
-          people who already have access.
-        </p>
-        <form
-          onSubmit={async (event) => {
-            event.preventDefault();
-            const ownerWindow = event.currentTarget.ownerDocument.defaultView;
-            const result = await workspaceApi<{ token: string }>(
-              "invitations",
-              "POST",
-              {
-                workspaceId: data.workspace.id,
-                sceneId,
-                recipientEmail: email,
-                workspaceRole: "external",
-                resourceRole: role,
-                maxUses: 1,
-              },
-            );
-            setLink(
-              `${ownerWindow?.location.origin || ""}/invite/${result.token}`,
-            );
+        <WorkspaceCommentsContext.Provider
+          value={{
+            sceneId,
+            members: data.members,
+            openRequest: commentsOpenRequest,
           }}
         >
-          <label>
-            Email
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-          </label>
-          <label>
-            Permission
-            <select
-              value={role}
-              onChange={(event) => setRole(event.target.value)}
-            >
-              <option value="editor">Editor</option>
-              <option value="commenter">Commenter</option>
-              <option value="viewer">Viewer</option>
-            </select>
-          </label>
-          <button className="boardy-button is-primary" type="submit">
-            Create invitation
-          </button>
-        </form>
-        {link && (
-          <div className="boardy-invite-result">
-            <input readOnly value={link} />
-            <button
-              type="button"
-              onClick={(event) =>
-                void event.currentTarget.ownerDocument.defaultView?.navigator.clipboard.writeText(
-                  link,
-                )
-              }
-            >
-              Copy
-            </button>
-          </div>
-        )}
-        <div className="boardy-dialog-actions">
-          <button
-            className="boardy-button is-secondary"
-            type="button"
-            onClick={onClose}
-          >
-            Done
-          </button>
-        </div>
-      </section>
+          <main className="boardy-editor-canvas">
+            <BoardApp />
+          </main>
+        </WorkspaceCommentsContext.Provider>
+      </div>
     </div>
   );
 };
@@ -1081,6 +1591,7 @@ export const WorkspaceApp = ({
 }) => {
   const [data, setData] = useState<WorkspaceDashboard | null>(null);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
   const refresh = async () => {
     try {
       setData(await loadWorkspace());
@@ -1114,6 +1625,8 @@ export const WorkspaceApp = ({
   const content =
     pathname === "/app/members" ? (
       <MembersView data={data} refresh={refresh} />
+    ) : pathname === "/app/settings" ? (
+      <WorkspaceSettingsView data={data} refresh={refresh} />
     ) : pathname === "/app/profile" ? (
       <ProfileView data={data} refresh={refresh} />
     ) : (
@@ -1121,6 +1634,8 @@ export const WorkspaceApp = ({
         data={data}
         activeCollection={collectionId}
         refresh={refresh}
+        query={query}
+        openNewCollection={locationHref.includes("new=collection")}
       />
     );
   return (
@@ -1132,26 +1647,12 @@ export const WorkspaceApp = ({
         data={data}
         activeCollection={collectionId}
         pathname={pathname}
+        onSignOut={onSignOut}
+        localDemo={localDemo}
+        query={query}
+        setQuery={setQuery}
       />
-      <div className="boardy-workspace-stage">
-        {content}
-        <button
-          type="button"
-          className="boardy-sign-out"
-          onClick={async (event) => {
-            const ownerWindow = event.currentTarget.ownerDocument.defaultView;
-            if (import.meta.env.DEV && ownerWindow && localDemo) {
-              await localApi(ownerWindow, "session", "DELETE").catch(
-                () => undefined,
-              );
-            }
-            await supabase.auth.signOut();
-            await onSignOut();
-          }}
-        >
-          Sign out
-        </button>
-      </div>
+      <div className="boardy-workspace-stage">{content}</div>
     </div>
   );
 };

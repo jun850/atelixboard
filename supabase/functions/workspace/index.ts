@@ -1,6 +1,10 @@
 import { authenticate, response } from "../_shared/agentic.ts";
 
-import { cloudErrorResponse, requireUuid } from "../_shared/cloud.ts";
+import {
+  cloudErrorResponse,
+  decodeScene,
+  requireUuid,
+} from "../_shared/cloud.ts";
 
 type AdminClient = Awaited<ReturnType<typeof authenticate>>["admin"];
 
@@ -366,6 +370,55 @@ Deno.serve(async (request) => {
       );
     }
 
+    if (parts[0] === "previews" && method === "GET") {
+      await requireWorkspaceRole(admin, workspaceId, user.id, [
+        "admin",
+        "staff",
+        "external",
+      ]);
+      const { data: scenes, error: scenesError } = await client
+        .from("scenes")
+        .select("id,current_revision_id")
+        .eq("workspace_id", workspaceId)
+        .eq("status", "active")
+        .limit(100);
+      if (scenesError) {
+        throw scenesError;
+      }
+      const revisionIds = (scenes || [])
+        .map((scene) => scene.current_revision_id)
+        .filter(Boolean);
+      const { data: revisions, error: revisionsError } = revisionIds.length
+        ? await client
+            .from("scene_revisions")
+            .select(
+              "id,scene_id,scene_content_blobs(storage_path,byte_size,uncompressed_byte_size)",
+            )
+            .in("id", revisionIds)
+        : { data: [], error: null };
+      if (revisionsError) {
+        throw revisionsError;
+      }
+      const entries = await Promise.all(
+        (revisions || []).map(async (revision) => {
+          const blobInfo = Array.isArray(revision.scene_content_blobs)
+            ? revision.scene_content_blobs[0]
+            : revision.scene_content_blobs;
+          if (!blobInfo?.storage_path) {
+            return [revision.scene_id, null] as const;
+          }
+          const { data: stored, error } = await admin.storage
+            .from("scene-content")
+            .download(blobInfo.storage_path);
+          if (error || !stored) {
+            return [revision.scene_id, null] as const;
+          }
+          return [revision.scene_id, await decodeScene(stored)] as const;
+        }),
+      );
+      return response(request, 200, { previews: Object.fromEntries(entries) });
+    }
+
     if (parts[0] === "profile" && method === "PATCH") {
       const displayName = String(body.displayName || "").trim();
       if (!displayName || displayName.length > 120) {
@@ -383,6 +436,22 @@ Deno.serve(async (request) => {
         .from("boardy_profiles")
         .update(patch)
         .eq("user_id", user.id);
+      if (error) {
+        throw error;
+      }
+      return response(request, 200, { ok: true });
+    }
+
+    if (parts[0] === "settings" && method === "PATCH") {
+      await requireWorkspaceRole(admin, workspaceId, user.id, ["admin"]);
+      const name = String(body.name || "").trim();
+      if (!name || name.length > 120) {
+        throw new Error("limit");
+      }
+      const { error } = await admin
+        .from("boardy_workspaces")
+        .update({ name, updated_at: new Date().toISOString() })
+        .eq("id", workspaceId);
       if (error) {
         throw error;
       }

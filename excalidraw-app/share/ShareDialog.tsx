@@ -20,14 +20,144 @@ import { useEffect, useRef, useState } from "react";
 
 import { atom, useAtom, useAtomValue } from "../app-jotai";
 import { activeRoomLinkAtom } from "../collab/Collab";
+import { loadWorkspace, workspaceApi } from "../workspace/api";
 
 import "./ShareDialog.scss";
 import { QRCode } from "./QRCode";
 
 import type { CollabAPI } from "../collab/Collab";
+import type { FormEvent } from "react";
 
 type OnExportToBackend = () => void;
 type ShareDialogType = "share" | "collaborationOnly";
+
+const BoardyBoardShare = () => {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [context, setContext] = useState<{
+    workspaceId: string;
+    sceneId: string;
+  } | null>(null);
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<"editor" | "commenter" | "viewer">("editor");
+  const [link, setLink] = useState("");
+  const [error, setError] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  useEffect(() => {
+    const ownerWindow = rootRef.current?.ownerDocument.defaultView;
+    const sceneId = ownerWindow?.location.pathname.match(
+      /^\/app\/boards\/([0-9a-f-]+)$/i,
+    )?.[1];
+    if (!sceneId) {
+      return;
+    }
+    void loadWorkspace()
+      .then((dashboard) =>
+        setContext({ workspaceId: dashboard.workspace.id, sceneId }),
+      )
+      .catch(() => setContext(null));
+  }, []);
+
+  if (!context) {
+    return <div ref={rootRef} />;
+  }
+
+  const createInvite = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setCreating(true);
+    setError("");
+    try {
+      const result = await workspaceApi<{ token: string }>(
+        "invitations",
+        "POST",
+        {
+          workspaceId: context.workspaceId,
+          sceneId: context.sceneId,
+          recipientEmail: email,
+          workspaceRole: "external",
+          resourceRole: role,
+          maxUses: 1,
+        },
+      );
+      const ownerWindow = event.currentTarget.ownerDocument.defaultView;
+      setLink(`${ownerWindow?.location.origin || ""}/invite/${result.token}`);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Invitation could not be created.",
+      );
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  return (
+    <div className="ShareDialog__boardy" ref={rootRef}>
+      <div className="ShareDialog__separator">
+        <span>Board access</span>
+      </div>
+      <div className="ShareDialog__picker__header">
+        Invite to this whiteboard
+      </div>
+      <div className="ShareDialog__picker__description">
+        Choose exactly what this person can do. They can register from the
+        invitation without purchasing a subscription.
+      </div>
+      <form onSubmit={(event) => void createInvite(event)}>
+        <label>
+          <span>Email</span>
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+        </label>
+        <label>
+          <span>Permission</span>
+          <select
+            value={role}
+            onChange={(event) =>
+              setRole(event.target.value as "editor" | "commenter" | "viewer")
+            }
+          >
+            <option value="editor">Editor</option>
+            <option value="commenter">Commenter</option>
+            <option value="viewer">Viewer</option>
+          </select>
+        </label>
+        <button
+          className="ShareDialog__boardy__submit"
+          type="submit"
+          disabled={creating}
+        >
+          {creating ? "Creating invitation…" : "Create invitation"}
+        </button>
+      </form>
+      {error && (
+        <p className="ShareDialog__boardy__error" role="alert">
+          {error}
+        </p>
+      )}
+      {link && (
+        <div className="ShareDialog__boardy__link">
+          <input aria-label="Invitation link" readOnly value={link} />
+          <button
+            type="button"
+            onClick={(event) =>
+              void event.currentTarget.ownerDocument.defaultView?.navigator.clipboard.writeText(
+                link,
+              )
+            }
+          >
+            Copy link
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const shareDialogStateAtom = atom<
   { isOpen: false } | { isOpen: true; type: ShareDialogType }
@@ -259,6 +389,7 @@ const ShareDialogInner = (props: ShareDialogProps) => {
         ) : (
           <ShareDialogPicker {...props} />
         )}
+        <BoardyBoardShare />
       </div>
     </Dialog>
   );

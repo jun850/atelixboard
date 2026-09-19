@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { DefaultSidebar, Sidebar } from "@excalidraw/excalidraw";
 import { Button } from "@excalidraw/excalidraw/components/Button";
 import { Dialog } from "@excalidraw/excalidraw/components/Dialog";
@@ -27,6 +34,8 @@ import type {
 } from "@excalidraw/excalidraw/types";
 
 import { supabase } from "../supabase/client";
+import { BoardCommentsPanel } from "../workspace/BoardCommentsPanel";
+import { WorkspaceCommentsContext } from "../workspace/WorkspaceCommentsContext";
 
 import { CATEGORIES, defaultContent, templates } from "./catalog";
 import {
@@ -54,6 +63,18 @@ import type {
   GenerateRequest,
   Provider,
 } from "./protocol";
+
+const CommentsIcon = (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path
+      d="M4 5h16v11H9l-5 4z"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 type Personal = {
   id: string;
@@ -86,6 +107,7 @@ const formatPlan = (plan: string) =>
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
+  const workspaceComments = useContext(WorkspaceCommentsContext);
   const root = useRef<HTMLDivElement>(null);
   const [mountedNode, setMountedNode] = useState<HTMLDivElement | null>(null);
   const [ownerWindow, setOwnerWindow] = useState<Window | null>(null);
@@ -132,6 +154,15 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
   const [provider, setProvider] = useState<Provider>("openai");
   const [key, setKey] = useState("");
   const [replaceId, setReplaceId] = useState("");
+  useEffect(() => {
+    if (workspaceComments?.openRequest) {
+      void api.toggleSidebar({
+        name: "default",
+        tab: "boardy-comments",
+        force: true,
+      });
+    }
+  }, [api, workspaceComments?.openRequest]);
   const [connectingSubscription, setConnectingSubscription] = useState<
     "codex" | "claude-code" | ""
   >("");
@@ -745,6 +776,11 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
         <Sidebar.TabTrigger tab="agentic-assistant" title="Assistant">
           {MagicIcon}
         </Sidebar.TabTrigger>
+        {workspaceComments && (
+          <Sidebar.TabTrigger tab="boardy-comments" title="Comments">
+            {CommentsIcon}
+          </Sidebar.TabTrigger>
+        )}
       </DefaultSidebar.TabTriggers>
       <Sidebar.Tab tab="agentic-templates" className="agentic-sidebar-tab">
         <div className="agentic-board pen-sidebar-body" ref={bindRoot}>
@@ -1658,6 +1694,15 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
           )}
         </div>
       </Sidebar.Tab>
+      {workspaceComments && (
+        <Sidebar.Tab tab="boardy-comments" className="boardy-comments-tab">
+          <BoardCommentsPanel
+            sceneId={workspaceComments.sceneId}
+            members={workspaceComments.members}
+            embedded
+          />
+        </Sidebar.Tab>
+      )}
       {review && draft && (
         <Dialog
           title="Review your draft"

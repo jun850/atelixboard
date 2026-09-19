@@ -29,3 +29,13 @@ The hero artwork is anchored while the page begins moving, with bounded scroll-l
 ## Interaction
 
 Primary actions are cobalt filled buttons; secondary actions are quiet text links or white controls. Every interactive element has a visible focus ring. Anchor links use smooth scrolling only when motion preferences allow it.
+
+## Application workspace
+
+The authenticated `/app` workspace uses quiet white surfaces on a soft-gray stage. Cobalt is reserved for the primary action, selected navigation, and spatial collaboration markers; it is not used as decorative chrome. Whiteboard grids stay compact and scannable, with actions grouped in the page header and contextual board operations kept in each card menu.
+
+True form fields, such as rename, profile, invitation, and company-detail inputs, use neutral gray borders, subtle elevation, and a monochrome focus halo. Do not introduce a colored outline, underline, or glow when text is entered or edited. Search is a navigation aid rather than a form: it stays borderless and transparent in every state, including focus. Filters and sort controls remain compact, quiet, single-row controls rather than oversized form fields.
+
+Whiteboard names are display-only inside the canvas editor and are renamed from the dashboard card menu. Comments open as a dedicated right-side panel so the canvas remains the primary workspace. Whiteboard access controls belong in the existing collaboration dialog; do not duplicate sharing actions in the editor header. Collection sharing remains a collection-level dashboard action.
+
+The workspace sidebar owns navigation, identity, and session actions. Profile surfaces always show the person's avatar, display name, and email when the data is available. On narrow screens, the workspace becomes a bottom navigation bar and the content stage retains independent vertical scrolling.

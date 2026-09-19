@@ -169,10 +169,12 @@ export const BoardCommentsPanel = ({
   sceneId,
   onClose,
   members,
+  embedded = false,
 }: {
   sceneId: string;
-  onClose: () => void;
+  onClose?: () => void;
   members: WorkspaceMember[];
+  embedded?: boolean;
 }) => {
   const rootRef = useRef<HTMLElement>(null);
   const [data, setData] = useState<CommentsResponse | null>(null);
@@ -248,19 +250,18 @@ export const BoardCommentsPanel = ({
   };
   return (
     <aside
-      className="boardy-comments-panel"
+      className={`boardy-comments-panel${embedded ? " is-embedded" : ""}`}
       aria-label="Comments"
       ref={rootRef}
     >
-      <header>
-        <div>
-          <small>Whiteboard feedback</small>
+      {!embedded && (
+        <header>
           <h2>Comments</h2>
-        </div>
-        <button type="button" aria-label="Close comments" onClick={onClose}>
-          ×
-        </button>
-      </header>
+          <button type="button" aria-label="Close comments" onClick={onClose}>
+            ×
+          </button>
+        </header>
+      )}
       <div className="boardy-comment-compose">
         <label>
           <span className="sr-only">New comment</span>

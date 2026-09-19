@@ -6,6 +6,106 @@
     flex-direction: column;
     gap: 1.5rem;
 
+    &__boardy {
+      display: grid;
+      gap: 1rem;
+
+      form {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 9rem;
+        gap: 0.75rem;
+      }
+
+      label {
+        display: grid;
+        gap: 0.35rem;
+        color: var(--text-primary-color);
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+
+      input,
+      select {
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 2.75rem;
+        padding: 0 0.75rem;
+        border: 1px solid var(--dialog-border-color);
+        border-radius: 0.5rem;
+        color: var(--text-primary-color);
+        background: var(--island-bg-color);
+        font: inherit;
+        box-shadow: 0 1px 2px rgba(24, 33, 61, 0.04);
+        transition: border-color 150ms ease, box-shadow 150ms ease;
+      }
+
+      input:hover,
+      select:hover {
+        border-color: #aeb6c6;
+      }
+
+      input:focus,
+      select:focus {
+        border-color: #9199aa;
+        outline: 0;
+        box-shadow: 0 0 0 3px rgba(24, 33, 61, 0.1);
+      }
+
+      &__submit {
+        grid-column: 1 / -1;
+        min-height: 2.75rem;
+        border: 0;
+        border-radius: 0.625rem;
+        color: #fff;
+        background: #2f6ce5;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+
+        &:hover {
+          background: #2456bd;
+        }
+
+        &:disabled {
+          cursor: wait;
+          opacity: 0.58;
+        }
+      }
+
+      &__link {
+        display: flex;
+        gap: 0.5rem;
+
+        input {
+          min-width: 0;
+        }
+
+        button {
+          flex: none;
+          padding: 0 0.875rem;
+          border: 1px solid var(--dialog-border-color);
+          border-radius: 0.5rem;
+          color: var(--text-primary-color);
+          background: var(--island-bg-color);
+          font: inherit;
+          font-weight: 600;
+          cursor: pointer;
+        }
+      }
+
+      &__error {
+        margin: 0;
+        color: var(--color-danger);
+        font-size: 0.8125rem;
+      }
+
+      @include isMobile {
+        form {
+          grid-template-columns: 1fr;
+        }
+      }
+    }
+
     @include isMobile {
       height: calc(100vh - 5rem);
     }

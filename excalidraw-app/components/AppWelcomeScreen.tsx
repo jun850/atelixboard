@@ -8,16 +8,6 @@ export const AppWelcomeScreen: React.FC<{
   isCollabEnabled: boolean;
 }> = React.memo((props) => {
   const { t } = useI18n();
-  const headingContent = (
-    <>
-      {t("welcomeScreen.app.center_heading")}
-      <br />
-      {t("welcomeScreen.app.center_heading_line2")}
-      <br />
-      {t("welcomeScreen.app.center_heading_line3")}
-    </>
-  );
-
   return (
     <WelcomeScreen>
       <WelcomeScreen.Hints.MenuHint>
@@ -40,9 +30,6 @@ export const AppWelcomeScreen: React.FC<{
             </span>
           </span>
         </WelcomeScreen.Center.Logo>
-        <WelcomeScreen.Center.Heading>
-          {headingContent}
-        </WelcomeScreen.Center.Heading>
         <WelcomeScreen.Center.Menu>
           <WelcomeScreen.Center.MenuItem onSelect={props.onTemplatesOpen}>
             Explore templates

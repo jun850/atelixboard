@@ -602,9 +602,9 @@
   },
   "welcomeScreen": {
     "app": {
-      "center_heading": "Saved to your private Boardy workspace.",
-      "center_heading_line2": "Every edit is versioned in the cloud.",
-      "center_heading_line3": "Your work follows your account across devices.",
+      "center_heading": "Create, explain, and collaborate.",
+      "center_heading_line2": "Use the toolbar to begin.",
+      "center_heading_line3": "Invite your team when you are ready.",
       "center_heading_plus": "Did you want to go to Atelix+ instead?",
       "menuHint": "Export, preferences, languages, ..."
     },
