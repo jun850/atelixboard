@@ -834,9 +834,6 @@ const DashboardContent = ({
     <main className="boardy-dashboard-main" id="main-content">
       <header className="boardy-dashboard-header">
         <div className="boardy-dashboard-heading">
-          <span aria-hidden="true">
-            <Icon name={collection ? "collection" : "boards"} />
-          </span>
           <h1>{collection?.name || "Whiteboards"}</h1>
         </div>
         <div className="boardy-dashboard-actions">

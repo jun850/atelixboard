@@ -335,23 +335,6 @@
 .boardy-dashboard-heading {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-.boardy-dashboard-heading > span {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  place-items: center;
-  color: var(--boardy-accent);
-  border-radius: 11px;
-  background: var(--boardy-accent-soft);
-}
-.boardy-dashboard-heading svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
 }
 .boardy-dashboard-actions,
 .boardy-editor-actions {
