@@ -883,6 +883,37 @@ a:focus-visible {
   margin: 0 auto 0 0;
   color: var(--boardy-muted);
 }
+.boardy-workspace-metadata {
+  display: grid;
+  gap: 0;
+  margin: 22px 0 0;
+  padding: 4px 16px;
+  border: 1px solid var(--boardy-line);
+  border-radius: 14px;
+  background: #f8f9fb;
+}
+.boardy-workspace-metadata > div {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.38fr) minmax(0, 1fr);
+  gap: 18px;
+  padding: 13px 0;
+}
+.boardy-workspace-metadata > div + div {
+  border-top: 1px solid var(--boardy-line);
+}
+.boardy-workspace-metadata dt {
+  color: var(--boardy-muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+.boardy-workspace-metadata dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--boardy-ink);
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
 .boardy-status-badge {
   padding: 5px 9px;
   border-radius: 999px;
@@ -1469,6 +1500,10 @@ a:focus-visible {
   .boardy-member-row {
     align-items: flex-start;
     flex-direction: column;
+  }
+  .boardy-workspace-metadata > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
 }
 

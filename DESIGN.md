@@ -36,6 +36,8 @@ The authenticated `/app` workspace uses quiet white surfaces on a soft-gray stag
 
 True form fields, such as rename, profile, invitation, and company-detail inputs, use neutral gray borders, subtle elevation, and a monochrome focus halo. Do not introduce a colored outline, underline, or glow when text is entered or edited. Search is a navigation aid rather than a form: it stays borderless and transparent in every state, including focus. Filters and sort controls remain compact, quiet, single-row controls rather than oversized form fields.
 
+Read-only metadata must never imitate an input. Slugs, identifiers, plan facts, timestamps, and similar system values are rendered as plain text inside a labeled metadata wrapper or definition list. Reserve field chrome for values the user can actually edit.
+
 Whiteboard names are display-only inside the canvas editor and are renamed from the dashboard card menu. Comments open as a dedicated right-side panel so the canvas remains the primary workspace. Whiteboard access controls belong in the existing collaboration dialog; do not duplicate sharing actions in the editor header. Collection sharing remains a collection-level dashboard action.
 
 The workspace sidebar owns navigation, identity, and session actions. Profile surfaces always show the person's avatar, display name, and email when the data is available. On narrow screens, the workspace becomes a bottom navigation bar and the content stage retains independent vertical scrolling.

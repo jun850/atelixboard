@@ -1314,14 +1314,6 @@ const WorkspaceSettingsView = ({
                 onChange={(event) => setName(event.target.value)}
               />
             </label>
-            <label>
-              Workspace slug
-              <input value={data.workspace.slug} readOnly />
-            </label>
-            <label>
-              Workspace ID
-              <input value={data.workspace.id} readOnly />
-            </label>
             {isAdmin && (
               <div className="boardy-form-footer">
                 {status && <p role="status">{status}</p>}
@@ -1335,6 +1327,16 @@ const WorkspaceSettingsView = ({
               </div>
             )}
           </form>
+          <dl className="boardy-workspace-metadata">
+            <div>
+              <dt>Workspace slug</dt>
+              <dd>{data.workspace.slug}</dd>
+            </div>
+            <div>
+              <dt>Workspace ID</dt>
+              <dd>{data.workspace.id}</dd>
+            </div>
+          </dl>
         </section>
         <section className="boardy-settings-panel boardy-billing-card">
           <header>
