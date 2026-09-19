@@ -317,6 +317,7 @@ export const Toolbar = ({
         )}
         <TextToolButton {...toolProps} />
         <StickyNoteToolButton {...toolProps} />
+        {app.props.renderToolbarUI?.(appState, app.api)}
         <EraserToolButton {...toolProps} />
 
         <div

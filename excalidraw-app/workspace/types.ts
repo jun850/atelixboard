@@ -72,7 +72,18 @@ export type CommentMessage = {
   deleted_at: string | null;
   created_at: string;
   author: BoardyProfile;
-  mentions?: BoardyProfile[];
+  mentions?: Array<{
+    profile: BoardyProfile;
+    displayText: string;
+  }>;
+  attachment?: {
+    id: string;
+    name: string;
+    mediaType: string;
+    byteSize: number;
+    status: string;
+    url: string | null;
+  } | null;
   reactions?: Array<{ emoji: string; count: number; reacted: boolean }>;
 };
 
@@ -96,9 +107,21 @@ export type CommentThread = {
   last_activity_at: string;
   created_at: string;
   messages: CommentMessage[];
+  unread: boolean;
 };
 
 export type CommentsResponse = {
   capabilities: CommentCapabilities;
+  notificationPreference: CommentNotificationPreference;
   threads: CommentThread[];
+};
+
+export type CommentNotificationPreference =
+  | "everything"
+  | "mentions_replies"
+  | "nothing";
+
+export type CommentMention = {
+  userId: string;
+  displayText: string;
 };

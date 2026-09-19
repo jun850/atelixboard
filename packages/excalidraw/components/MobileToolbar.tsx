@@ -229,6 +229,8 @@ export const MobileToolbar = ({ app, setAppState }: MobileToolbarProps) => {
       {/* Frame Tool */}
       {showFrameToolOutside && <FrameToolButton {...toolProps} hideShortcut />}
 
+      {app.props.renderToolbarUI?.(app.state, app.api)}
+
       {/* Other Shapes */}
       <DropdownMenu open={isOtherShapesMenuOpen}>
         <DropdownMenu.Trigger

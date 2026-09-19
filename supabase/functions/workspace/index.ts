@@ -8,6 +8,10 @@ import {
 
 type AdminClient = Awaited<ReturnType<typeof authenticate>>["admin"];
 
+declare const EdgeRuntime:
+  | { waitUntil: (promise: Promise<unknown>) => void }
+  | undefined;
+
 const slugify = (value: string) =>
   value
     .toLowerCase()
@@ -216,6 +220,206 @@ const validatedMentionIds = async (
     throw new Error("forbidden");
   }
   return allowed;
+};
+
+const mentionDisplayText = (input: unknown, userId: string) => {
+  if (!Array.isArray(input)) {
+    return null;
+  }
+  const match = input.find(
+    (item) =>
+      item &&
+      typeof item === "object" &&
+      String((item as Record<string, unknown>).userId || "") === userId,
+  ) as Record<string, unknown> | undefined;
+  const value = String(match?.displayText || "").trim();
+  return value.startsWith("@") && value.length <= 121 ? value : null;
+};
+
+const validateAttachment = async (
+  admin: AdminClient,
+  sceneId: string,
+  assetId: unknown,
+  userId: string,
+) => {
+  if (!assetId) {
+    return null;
+  }
+  const id = requireUuid(assetId);
+  const { data, error } = await admin
+    .from("scene_assets")
+    .select(
+      "id,scene_id,owner_id,media_type,byte_size,storage_path,status,original_name",
+    )
+    .eq("id", id)
+    .eq("scene_id", sceneId)
+    .eq("owner_id", userId)
+    .is("deleted_at", null)
+    .single();
+  if (
+    error ||
+    !data ||
+    !/^image\/(png|jpeg|gif|webp)$/.test(data.media_type) ||
+    !data.byte_size ||
+    data.byte_size > 5 * 1024 * 1024 ||
+    !data.storage_path ||
+    !["processing", "ready"].includes(data.status)
+  ) {
+    throw error || new Error("limit");
+  }
+  return data;
+};
+
+const createCommentNotifications = async ({
+  admin,
+  sceneId,
+  threadId,
+  messageId,
+  actorId,
+  mentionIds,
+  isReply,
+  bodyText,
+  hasAttachment,
+}: {
+  admin: AdminClient;
+  sceneId: string;
+  threadId: string;
+  messageId: string;
+  actorId: string;
+  mentionIds: string[];
+  isReply: boolean;
+  bodyText: string;
+  hasAttachment: boolean;
+}) => {
+  const { data: allRecipientIds } = await admin.rpc(
+    "boardy_comment_recipient_ids",
+    { target_scene_id: sceneId },
+  );
+  const allIds = Array.isArray(allRecipientIds)
+    ? allRecipientIds.map(String).filter((id) => id !== actorId)
+    : [];
+  if (!allIds.length) {
+    return;
+  }
+
+  const [
+    { data: preferences },
+    { data: participantMessages },
+    { data: thread },
+  ] = await Promise.all([
+    admin
+      .from("boardy_comment_notification_preferences")
+      .select("user_id,mode")
+      .eq("scene_id", sceneId)
+      .in("user_id", allIds),
+    isReply
+      ? admin
+          .from("boardy_comment_messages")
+          .select("author_id")
+          .eq("thread_id", threadId)
+          .is("deleted_at", null)
+      : Promise.resolve({ data: [] as Array<{ author_id: string }> }),
+    admin
+      .from("boardy_comment_threads")
+      .select("created_by")
+      .eq("id", threadId)
+      .single(),
+  ]);
+  const modeByUser = new Map(
+    (preferences || []).map((item) => [item.user_id, item.mode] as const),
+  );
+  const replyRecipients = new Set([
+    ...mentionIds,
+    ...(participantMessages || []).map((item) => item.author_id),
+    ...(thread?.created_by ? [thread.created_by] : []),
+  ]);
+  const recipients = allIds.filter((id) => {
+    const mode = modeByUser.get(id) || "mentions_replies";
+    if (mode === "nothing") {
+      return false;
+    }
+    return mode === "everything" || replyRecipients.has(id);
+  });
+  if (!recipients.length) {
+    return;
+  }
+
+  const { data: notifications, error: notificationError } = await admin
+    .from("boardy_notifications")
+    .insert(
+      recipients.map((recipientId) => ({
+        user_id: recipientId,
+        scene_id: sceneId,
+        thread_id: threadId,
+        actor_id: actorId,
+        kind: mentionIds.includes(recipientId) ? "mention" : "reply",
+      })),
+    )
+    .select("id,user_id");
+  if (notificationError) {
+    throw notificationError;
+  }
+  const [{ data: profiles }, { data: scene }, { data: actor }] =
+    await Promise.all([
+      admin
+        .from("boardy_profiles")
+        .select("user_id,email")
+        .in("user_id", recipients),
+      admin.from("scenes").select("title").eq("id", sceneId).single(),
+      admin
+        .from("boardy_profiles")
+        .select("display_name")
+        .eq("user_id", actorId)
+        .single(),
+    ]);
+  const emailByUser = new Map(
+    (profiles || []).map((item) => [item.user_id, item.email] as const),
+  );
+  const notificationByUser = new Map(
+    (notifications || []).map((item) => [item.user_id, item.id] as const),
+  );
+  const rows = recipients
+    .map((recipientId) => {
+      const email = emailByUser.get(recipientId);
+      if (!email) {
+        return null;
+      }
+      return {
+        notification_id: notificationByUser.get(recipientId),
+        scene_id: sceneId,
+        thread_id: threadId,
+        message_id: messageId,
+        recipient_user_id: recipientId,
+        recipient_email: email,
+        payload: {
+          actorName: actor?.display_name || "A teammate",
+          sceneTitle: scene?.title || "Whiteboard",
+          excerpt: bodyText.slice(0, 280),
+          hasAttachment,
+        },
+      };
+    })
+    .filter((row): row is NonNullable<typeof row> => Boolean(row));
+  if (rows.length) {
+    const { error } = await admin
+      .from("boardy_comment_email_outbox")
+      .upsert(rows, { onConflict: "message_id,recipient_user_id" });
+    if (error) {
+      throw error;
+    }
+    const secret = Deno.env.get("COMMENT_EMAIL_WORKER_SECRET");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    if (secret && supabaseUrl && typeof EdgeRuntime !== "undefined") {
+      EdgeRuntime.waitUntil(
+        fetch(`${supabaseUrl}/functions/v1/comment-email`, {
+          method: "POST",
+          headers: { "x-boardy-worker-secret": secret },
+        }).catch((wakeError) =>
+          console.error("comment email wake failed", wakeError),
+        ),
+      );
+    }
+  }
 };
 
 const dashboard = async (
@@ -684,7 +888,7 @@ Deno.serve(async (request) => {
 
     if (parts[0] === "comments" && parts.length === 2 && method === "GET") {
       const sceneId = requireUuid(parts[1]);
-      await sceneRole(client, sceneId);
+      const capabilities = await sceneRole(client, sceneId);
       const { data: threads, error } = await admin
         .from("boardy_comment_threads")
         .select("*")
@@ -707,18 +911,61 @@ Deno.serve(async (request) => {
         throw messageError;
       }
       const messageIds = (messages || []).map((message) => message.id);
-      const [{ data: reactions }, { data: mentions }] = messageIds.length
-        ? await Promise.all([
-            admin
-              .from("boardy_comment_reactions")
-              .select("message_id,user_id,emoji")
-              .in("message_id", messageIds),
-            admin
-              .from("boardy_comment_mentions")
-              .select("message_id,user_id")
-              .in("message_id", messageIds),
-          ])
-        : [{ data: [] }, { data: [] }];
+      const [{ data: reactions }, { data: mentions }, { data: attachments }] =
+        messageIds.length
+          ? await Promise.all([
+              admin
+                .from("boardy_comment_reactions")
+                .select("message_id,user_id,emoji")
+                .in("message_id", messageIds),
+              admin
+                .from("boardy_comment_mentions")
+                .select("message_id,user_id,display_text")
+                .in("message_id", messageIds),
+              admin
+                .from("boardy_comment_attachments")
+                .select("message_id,asset_id")
+                .in("message_id", messageIds),
+            ])
+          : [{ data: [] }, { data: [] }, { data: [] }];
+      const assetIds = (attachments || []).map((item) => item.asset_id);
+      const { data: assets } = assetIds.length
+        ? await admin
+            .from("scene_assets")
+            .select("id,original_name,media_type,byte_size,storage_path,status")
+            .in("id", assetIds)
+            .is("deleted_at", null)
+        : { data: [] };
+      const paths = (assets || [])
+        .map((asset) => asset.storage_path)
+        .filter((path): path is string => typeof path === "string");
+      const { data: signedAssets } = paths.length
+        ? await admin.storage.from("scene-assets").createSignedUrls(paths, 900)
+        : { data: [] };
+      const assetUrlByPath = new Map(
+        (signedAssets || []).map(
+          (item) => [item.path, item.signedUrl] as const,
+        ),
+      );
+      const assetById = new Map(
+        (assets || []).map(
+          (asset) =>
+            [
+              asset.id,
+              {
+                id: asset.id,
+                name: asset.original_name || "Image",
+                mediaType: asset.media_type,
+                byteSize: asset.byte_size,
+                status: asset.status,
+                url:
+                  typeof asset.storage_path === "string"
+                    ? assetUrlByPath.get(asset.storage_path) || null
+                    : null,
+              },
+            ] as const,
+        ),
+      );
       const profileIds = [
         ...new Set([
           ...(messages || []).map((message) => message.author_id),
@@ -735,10 +982,38 @@ Deno.serve(async (request) => {
       const byUser = Object.fromEntries(
         profiles.map((profile) => [profile.user_id, publicProfile(profile)]),
       );
+      const [{ data: reads }, { data: preference }] = await Promise.all([
+        threadIds.length
+          ? admin
+              .from("boardy_comment_reads")
+              .select("thread_id,read_through,manual_unread")
+              .eq("user_id", user.id)
+              .in("thread_id", threadIds)
+          : Promise.resolve({ data: [] }),
+        admin
+          .from("boardy_comment_notification_preferences")
+          .select("mode")
+          .eq("scene_id", sceneId)
+          .eq("user_id", user.id)
+          .maybeSingle(),
+      ]);
+      const readByThread = new Map(
+        (reads || []).map((item) => [item.thread_id, item] as const),
+      );
       return response(request, 200, {
-        capabilities: await sceneRole(client, sceneId),
+        capabilities,
+        notificationPreference: preference?.mode || "mentions_replies",
         threads: (threads || []).map((thread) => ({
           ...thread,
+          unread: (() => {
+            const read = readByThread.get(thread.id);
+            return (
+              !read ||
+              read.manual_unread ||
+              new Date(thread.last_activity_at).getTime() >
+                new Date(read.read_through).getTime()
+            );
+          })(),
           messages: (messages || [])
             .filter((message) => message.thread_id === thread.id)
             .map((message) => ({
@@ -746,8 +1021,21 @@ Deno.serve(async (request) => {
               author: byUser[message.author_id],
               mentions: (mentions || [])
                 .filter((item) => item.message_id === message.id)
-                .map((item) => byUser[item.user_id])
+                .map((item) => ({
+                  profile: byUser[item.user_id],
+                  displayText:
+                    item.display_text ||
+                    (byUser[item.user_id]
+                      ? `@${byUser[item.user_id].displayName}`
+                      : ""),
+                }))
                 .filter(Boolean),
+              attachment: (() => {
+                const match = (attachments || []).find(
+                  (item) => item.message_id === message.id,
+                );
+                return match ? assetById.get(match.asset_id) || null : null;
+              })(),
               reactions: Object.entries(
                 (reactions || [])
                   .filter((item) => item.message_id === message.id)
@@ -774,7 +1062,13 @@ Deno.serve(async (request) => {
         throw new Error("forbidden");
       }
       const bodyText = String(body.message || "").trim();
-      if (!bodyText || bodyText.length > 10000) {
+      const attachment = await validateAttachment(
+        admin,
+        sceneId,
+        body.attachmentAssetId,
+        user.id,
+      );
+      if ((!bodyText && !attachment) || bodyText.length > 10000) {
         throw new Error("limit");
       }
       const anchorKind = ["point", "region", "element", "general"].includes(
@@ -808,10 +1102,21 @@ Deno.serve(async (request) => {
       if (messageError) {
         throw messageError;
       }
+      if (attachment) {
+        const { error: attachmentError } = await admin
+          .from("boardy_comment_attachments")
+          .insert({ message_id: message.id, asset_id: attachment.id });
+        if (attachmentError) {
+          throw attachmentError;
+        }
+      }
+      const requestedMentionIds = Array.isArray(body.mentions)
+        ? body.mentions.map((item: Record<string, unknown>) => item?.userId)
+        : body.mentionUserIds;
       const mentionIds = await validatedMentionIds(
         client,
         sceneId,
-        body.mentionUserIds,
+        requestedMentionIds,
         user.id,
       );
       if (mentionIds.length) {
@@ -819,19 +1124,120 @@ Deno.serve(async (request) => {
           mentionIds.map((mentionedUserId) => ({
             message_id: message.id,
             user_id: mentionedUserId,
-          })),
-        );
-        await admin.from("boardy_notifications").insert(
-          mentionIds.map((mentionedUserId) => ({
-            user_id: mentionedUserId,
-            scene_id: sceneId,
-            thread_id: thread.id,
-            actor_id: user.id,
-            kind: "mention",
+            display_text: mentionDisplayText(body.mentions, mentionedUserId),
           })),
         );
       }
+      await createCommentNotifications({
+        admin,
+        sceneId,
+        threadId: thread.id,
+        messageId: message.id,
+        actorId: user.id,
+        mentionIds,
+        isReply: false,
+        bodyText,
+        hasAttachment: Boolean(attachment),
+      });
       return response(request, 201, { thread, message });
+    }
+
+    if (
+      parts[0] === "comments" &&
+      parts[2] === "preference" &&
+      parts.length === 3 &&
+      method === "PUT"
+    ) {
+      const sceneId = requireUuid(parts[1]);
+      await sceneRole(client, sceneId);
+      const mode = String(body.mode || "");
+      if (!["everything", "mentions_replies", "nothing"].includes(mode)) {
+        throw new Error("limit");
+      }
+      const { error } = await admin
+        .from("boardy_comment_notification_preferences")
+        .upsert(
+          {
+            scene_id: sceneId,
+            user_id: user.id,
+            mode,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "scene_id,user_id" },
+        );
+      if (error) {
+        throw error;
+      }
+      return response(request, 200, { mode });
+    }
+
+    if (
+      parts[0] === "comments" &&
+      parts[2] === "read" &&
+      parts.length === 3 &&
+      method === "POST"
+    ) {
+      const sceneId = requireUuid(parts[1]);
+      await sceneRole(client, sceneId);
+      const { data: threads, error: threadError } = await admin
+        .from("boardy_comment_threads")
+        .select("id,last_activity_at")
+        .eq("scene_id", sceneId)
+        .is("deleted_at", null);
+      if (threadError) {
+        throw threadError;
+      }
+      if (threads?.length) {
+        const { error } = await admin.from("boardy_comment_reads").upsert(
+          threads.map((thread) => ({
+            thread_id: thread.id,
+            user_id: user.id,
+            read_through: thread.last_activity_at,
+            manual_unread: false,
+          })),
+          { onConflict: "thread_id,user_id" },
+        );
+        if (error) {
+          throw error;
+        }
+      }
+      return response(request, 200, { ok: true });
+    }
+
+    if (
+      parts[0] === "comments" &&
+      parts[1] === "threads" &&
+      parts[2] &&
+      parts[3] === "read" &&
+      method === "POST"
+    ) {
+      const threadId = requireUuid(parts[2]);
+      const { data: thread, error: threadError } = await admin
+        .from("boardy_comment_threads")
+        .select("scene_id,last_activity_at")
+        .eq("id", threadId)
+        .is("deleted_at", null)
+        .single();
+      if (threadError || !thread) {
+        throw threadError || new Error("not_found");
+      }
+      await sceneRole(client, thread.scene_id);
+      const unread = Boolean(body.unread);
+      const { error } = await admin.from("boardy_comment_reads").upsert(
+        {
+          thread_id: threadId,
+          user_id: user.id,
+          read_through: unread
+            ? new Date(0).toISOString()
+            : thread.last_activity_at,
+          manual_unread: unread,
+        },
+        { onConflict: "thread_id,user_id" },
+      );
+      if (error) {
+        throw error;
+      }
+      return response(request, 200, { unread });
     }
 
     if (
@@ -854,7 +1260,13 @@ Deno.serve(async (request) => {
         throw new Error("forbidden");
       }
       const messageText = String(body.message || "").trim();
-      if (!messageText || messageText.length > 10000) {
+      const attachment = await validateAttachment(
+        admin,
+        thread.scene_id,
+        body.attachmentAssetId,
+        user.id,
+      );
+      if ((!messageText && !attachment) || messageText.length > 10000) {
         throw new Error("limit");
       }
       const { data: message, error } = await admin
@@ -870,10 +1282,21 @@ Deno.serve(async (request) => {
       if (error) {
         throw error;
       }
+      if (attachment) {
+        const { error: attachmentError } = await admin
+          .from("boardy_comment_attachments")
+          .insert({ message_id: message.id, asset_id: attachment.id });
+        if (attachmentError) {
+          throw attachmentError;
+        }
+      }
+      const requestedMentionIds = Array.isArray(body.mentions)
+        ? body.mentions.map((item: Record<string, unknown>) => item?.userId)
+        : body.mentionUserIds;
       const mentionIds = await validatedMentionIds(
         client,
         thread.scene_id,
-        body.mentionUserIds,
+        requestedMentionIds,
         user.id,
       );
       if (mentionIds.length) {
@@ -881,15 +1304,7 @@ Deno.serve(async (request) => {
           mentionIds.map((mentionedUserId) => ({
             message_id: message.id,
             user_id: mentionedUserId,
-          })),
-        );
-        await admin.from("boardy_notifications").insert(
-          mentionIds.map((mentionedUserId) => ({
-            user_id: mentionedUserId,
-            scene_id: thread.scene_id,
-            thread_id: threadId,
-            actor_id: user.id,
-            kind: "mention",
+            display_text: mentionDisplayText(body.mentions, mentionedUserId),
           })),
         );
       }
@@ -900,6 +1315,17 @@ Deno.serve(async (request) => {
           updated_at: new Date().toISOString(),
         })
         .eq("id", threadId);
+      await createCommentNotifications({
+        admin,
+        sceneId: thread.scene_id,
+        threadId,
+        messageId: message.id,
+        actorId: user.id,
+        mentionIds,
+        isReply: true,
+        bodyText: messageText,
+        hasAttachment: Boolean(attachment),
+      });
       return response(request, 201, { message });
     }
 

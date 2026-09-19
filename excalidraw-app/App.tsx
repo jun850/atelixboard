@@ -122,6 +122,7 @@ import { useSimulatedCollaborators } from "./debugCollaborators";
 import { AIComponents } from "./components/AI";
 import { AgenticBoard } from "./agentic-board/AgenticBoard";
 import { BoardCommentPins } from "./workspace/BoardCommentPins";
+import { BoardCommentTool } from "./workspace/BoardCommentTool";
 import { DocumentEmbed } from "./documents/DocumentEmbed";
 import { getDocument, uploadDocument } from "./documents/api";
 import { DOCUMENT_LINK_PREFIX, getBoardyDocumentData } from "./documents/types";
@@ -1001,6 +1002,9 @@ const ExcalidrawWrapper = () => {
         autoFocus={true}
         theme={editorTheme}
         onThemeChange={setAppTheme}
+        renderToolbarUI={(appState, api) => (
+          <BoardCommentTool appState={appState} api={api} />
+        )}
         renderTopRightUI={(isMobile) => {
           if (isMobile || !collabAPI || isCollabDisabled) {
             return null;

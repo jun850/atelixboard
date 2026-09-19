@@ -1,7 +1,10 @@
 import { cloudApi } from "../agentic-board/client";
+import { requireSupabase } from "../supabase/client";
 
 import type {
   CommentsResponse,
+  CommentMention,
+  CommentNotificationPreference,
   WorkspaceCollection,
   WorkspaceDashboard,
 } from "./types";
@@ -36,23 +39,27 @@ export const createComment = (
   message: string,
   anchorKind: "point" | "region" | "element" | "general",
   anchor: Record<string, unknown>,
-  mentionUserIds: string[] = [],
+  mentions: CommentMention[] = [],
+  attachmentAssetId?: string,
 ) =>
   workspaceApi(`comments/${sceneId}`, "POST", {
     message,
     anchorKind,
     anchor,
-    mentionUserIds,
+    mentions,
+    ...(attachmentAssetId ? { attachmentAssetId } : {}),
   });
 
 export const replyToThread = (
   threadId: string,
   message: string,
-  mentionUserIds: string[] = [],
+  mentions: CommentMention[] = [],
+  attachmentAssetId?: string,
 ) =>
   workspaceApi(`comments/threads/${threadId}`, "POST", {
     message,
-    mentionUserIds,
+    mentions,
+    ...(attachmentAssetId ? { attachmentAssetId } : {}),
   });
 
 export const updateThread = (
@@ -63,3 +70,44 @@ export const updateThread = (
 
 export const reactToMessage = (messageId: string, emoji: string) =>
   workspaceApi(`comments/messages/${messageId}/reactions`, "POST", { emoji });
+
+export const setCommentPreference = (
+  sceneId: string,
+  mode: CommentNotificationPreference,
+) => workspaceApi(`comments/${sceneId}/preference`, "PUT", { mode });
+
+export const markAllCommentsRead = (sceneId: string) =>
+  workspaceApi(`comments/${sceneId}/read`, "POST");
+
+export const setThreadUnread = (threadId: string, unread: boolean) =>
+  workspaceApi(`comments/threads/${threadId}/read`, "POST", { unread });
+
+export const uploadCommentImage = async (sceneId: string, file: File) => {
+  if (
+    file.size < 1 ||
+    file.size > 5 * 1024 * 1024 ||
+    !["image/png", "image/jpeg", "image/webp", "image/gif"].includes(file.type)
+  ) {
+    throw new Error("Choose a PNG, JPEG, WebP, or GIF up to 5 MB.");
+  }
+  const intent = await cloudApi<{
+    assetId: string;
+    storagePath: string;
+    token: string;
+  }>("scene-assets", "assets/intent", "POST", {
+    sceneId,
+    fileName: file.name,
+    mediaType: file.type,
+    byteSize: file.size,
+  });
+  const { error } = await requireSupabase()
+    .storage.from("scene-staging")
+    .uploadToSignedUrl(intent.storagePath, intent.token, file, {
+      contentType: file.type,
+    });
+  if (error) {
+    throw error;
+  }
+  await cloudApi("scene-assets", `assets/${intent.assetId}/finalize`, "POST");
+  return intent.assetId;
+};

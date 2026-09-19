@@ -2,38 +2,47 @@ import {
   sceneCoordsToViewportCoords,
   viewportCoordsToSceneCoords,
 } from "@excalidraw/common";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 
-import { createComment, loadComments } from "./api";
-import {
-  COMMENT_PLACEMENT_EVENT,
-  COMMENTS_CHANGED_EVENT,
-} from "./commentEvents";
+import { requireSupabase } from "../supabase/client";
 
-import type { CommentPlacementDetail } from "./commentEvents";
+import { createComment, loadComments } from "./api";
+import { CommentComposer } from "./CommentComposer";
+import {
+  COMMENTS_CHANGED_EVENT,
+  COMMENT_SIDEBAR_CLOSE_EVENT,
+  COMMENT_THREAD_SELECT_EVENT,
+} from "./commentEvents";
+import { WorkspaceCommentsContext } from "./WorkspaceCommentsContext";
+
 import type { CommentThread } from "./types";
 
 const sceneIdFromPath = (pathname: string) =>
   pathname.match(/^\/app\/boards\/([0-9a-f-]{36})$/i)?.[1] || null;
 
 export const BoardCommentPins = ({ api }: { api: ExcalidrawImperativeAPI }) => {
+  const workspace = useContext(WorkspaceCommentsContext);
   const rootRef = useRef<HTMLDivElement>(null);
-  const placement = useRef<CommentPlacementDetail | null>(null);
-  const dragStart = useRef<{ x: number; y: number } | null>(null);
-  const [draftRegion, setDraftRegion] = useState<{
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  } | null>(null);
+  const refreshTimer = useRef<number | null>(null);
   const [threads, setThreads] = useState<CommentThread[]>([]);
   const [revision, setRevision] = useState(0);
-  const ownerWindow = rootRef.current?.ownerDocument.defaultView;
-  const sceneId = ownerWindow
-    ? sceneIdFromPath(ownerWindow.location.pathname)
-    : null;
+  const [active, setActive] = useState(false);
+  const [draft, setDraft] = useState<{
+    sceneX: number;
+    sceneY: number;
+    clientX: number;
+    clientY: number;
+  } | null>(null);
+  const sceneId =
+    workspace?.sceneId ||
+    (rootRef.current?.ownerDocument.defaultView
+      ? sceneIdFromPath(
+          rootRef.current.ownerDocument.defaultView.location.pathname,
+        )
+      : null);
+
   const refresh = useCallback(async () => {
     if (!sceneId) {
       return;
@@ -41,8 +50,14 @@ export const BoardCommentPins = ({ api }: { api: ExcalidrawImperativeAPI }) => {
     const result = await loadComments(sceneId).catch(() => null);
     if (result) {
       setThreads(result.threads);
+      if (
+        !result.capabilities.can_comment &&
+        api.getAppState().activeTool.type === "custom"
+      ) {
+        api.setActiveTool({ type: "selection" });
+      }
     }
-  }, [sceneId]);
+  }, [api, sceneId]);
 
   useEffect(() => void refresh(), [refresh]);
   useEffect(() => {
@@ -50,25 +65,55 @@ export const BoardCommentPins = ({ api }: { api: ExcalidrawImperativeAPI }) => {
     if (!win || !sceneId) {
       return;
     }
-    const place = (event: Event) => {
-      placement.current = (event as CustomEvent<CommentPlacementDetail>).detail;
-      rootRef.current?.classList.add("is-placing");
-      api.setToast({ message: "Click the canvas to place your comment pin." });
-    };
     const changed = () => void refresh();
-    win.addEventListener(COMMENT_PLACEMENT_EVENT, place);
+    const closeSidebar = () =>
+      api.toggleSidebar({ name: "default", force: false });
     win.addEventListener(COMMENTS_CHANGED_EVENT, changed);
+    win.addEventListener(COMMENT_SIDEBAR_CLOSE_EVENT, closeSidebar);
     const unsubscribeScroll = api.onScrollChange(() =>
       setRevision((value) => value + 1),
     );
-    const unsubscribeChange = api.onChange(() =>
-      setRevision((value) => value + 1),
-    );
+    const unsubscribeChange = api.onChange((_elements, appState) => {
+      const nextActive =
+        appState.activeTool.type === "custom" &&
+        appState.activeTool.customType === "comment";
+      setActive(nextActive);
+      if (!nextActive) {
+        setDraft(null);
+      }
+      setRevision((value) => value + 1);
+    });
+    let channel: ReturnType<
+      ReturnType<typeof requireSupabase>["channel"]
+    > | null = null;
+    void (async () => {
+      const client = requireSupabase();
+      const { data } = await client.auth.getSession();
+      if (!data.session) {
+        return;
+      }
+      await client.realtime.setAuth(data.session.access_token);
+      channel = client
+        .channel(`board:${sceneId}:comments`, { config: { private: true } })
+        .on("broadcast", { event: "comments-changed" }, () => {
+          if (refreshTimer.current !== null) {
+            win.clearTimeout(refreshTimer.current);
+          }
+          refreshTimer.current = win.setTimeout(() => void refresh(), 120);
+        })
+        .subscribe();
+    })();
     return () => {
-      win.removeEventListener(COMMENT_PLACEMENT_EVENT, place);
       win.removeEventListener(COMMENTS_CHANGED_EVENT, changed);
+      win.removeEventListener(COMMENT_SIDEBAR_CLOSE_EVENT, closeSidebar);
       unsubscribeScroll();
       unsubscribeChange();
+      if (refreshTimer.current !== null) {
+        win.clearTimeout(refreshTimer.current);
+      }
+      if (channel) {
+        void requireSupabase().removeChannel(channel);
+      }
     };
   }, [api, refresh, sceneId]);
 
@@ -76,13 +121,34 @@ export const BoardCommentPins = ({ api }: { api: ExcalidrawImperativeAPI }) => {
     return null;
   }
   const appState = api.getAppState();
+  const ownerWindow = rootRef.current?.ownerDocument.defaultView;
+  const draftWidth = Math.min(410, (ownerWindow?.innerWidth || 442) - 32);
+  const draftLeft = draft
+    ? Math.max(
+        16,
+        Math.min(
+          draft.clientX + 14,
+          (ownerWindow?.innerWidth || 1024) - draftWidth - 16,
+        ),
+      )
+    : 0;
+  const draftTop = draft
+    ? Math.max(
+        16,
+        Math.min(draft.clientY + 14, (ownerWindow?.innerHeight || 768) - 230),
+      )
+    : 0;
   return (
     <div
-      className="boardy-comment-pins"
+      className={`boardy-comment-pins${active ? " is-placing" : ""}`}
       ref={rootRef}
       data-revision={revision}
-      onPointerDown={async (event) => {
-        if (!placement.current || event.button !== 0) {
+      onPointerDown={(event) => {
+        if (!active || draft || event.button !== 0) {
+          return;
+        }
+        const target = event.target as HTMLElement;
+        if (target.closest("button, textarea, input, .boardy-comment-draft")) {
           return;
         }
         event.preventDefault();
@@ -91,111 +157,14 @@ export const BoardCommentPins = ({ api }: { api: ExcalidrawImperativeAPI }) => {
           { clientX: event.clientX, clientY: event.clientY },
           api.getAppState(),
         );
-        const pending = placement.current;
-        if (pending.anchorKind === "region") {
-          dragStart.current = anchor;
-          event.currentTarget.setPointerCapture(event.pointerId);
-          setDraftRegion({ x: anchor.x, y: anchor.y, width: 0, height: 0 });
-          return;
-        }
-        placement.current = null;
-        rootRef.current?.classList.remove("is-placing");
-        await createComment(
-          sceneId,
-          pending.message,
-          pending.anchorKind,
-          anchor,
-          pending.mentionUserIds,
-        );
-        rootRef.current?.ownerDocument.defaultView?.dispatchEvent(
-          new CustomEvent(COMMENTS_CHANGED_EVENT),
-        );
-        await refresh();
-      }}
-      onPointerMove={(event) => {
-        if (!dragStart.current || placement.current?.anchorKind !== "region") {
-          return;
-        }
-        const current = viewportCoordsToSceneCoords(
-          { clientX: event.clientX, clientY: event.clientY },
-          api.getAppState(),
-        );
-        setDraftRegion({
-          x: Math.min(dragStart.current.x, current.x),
-          y: Math.min(dragStart.current.y, current.y),
-          width: Math.abs(current.x - dragStart.current.x),
-          height: Math.abs(current.y - dragStart.current.y),
+        setDraft({
+          sceneX: anchor.x,
+          sceneY: anchor.y,
+          clientX: event.clientX,
+          clientY: event.clientY,
         });
       }}
-      onPointerUp={async (event) => {
-        const pending = placement.current;
-        const region = draftRegion;
-        if (!pending || pending.anchorKind !== "region" || !region) {
-          return;
-        }
-        event.preventDefault();
-        event.stopPropagation();
-        placement.current = null;
-        dragStart.current = null;
-        setDraftRegion(null);
-        rootRef.current?.classList.remove("is-placing");
-        await createComment(
-          sceneId,
-          pending.message,
-          "region",
-          region,
-          pending.mentionUserIds,
-        );
-        rootRef.current?.ownerDocument.defaultView?.dispatchEvent(
-          new CustomEvent(COMMENTS_CHANGED_EVENT),
-        );
-        await refresh();
-      }}
     >
-      {draftRegion &&
-        (() => {
-          const start = sceneCoordsToViewportCoords(
-            { sceneX: draftRegion.x, sceneY: draftRegion.y },
-            appState,
-          );
-          return (
-            <span
-              className="boardy-comment-region is-draft"
-              style={{
-                left: start.x,
-                top: start.y,
-                width: draftRegion.width * appState.zoom.value,
-                height: draftRegion.height * appState.zoom.value,
-              }}
-            />
-          );
-        })()}
-      {threads
-        .filter(
-          (thread) =>
-            !thread.resolved_at &&
-            thread.anchor_kind === "region" &&
-            typeof thread.anchor.x === "number" &&
-            typeof thread.anchor.y === "number",
-        )
-        .map((thread) => {
-          const start = sceneCoordsToViewportCoords(
-            { sceneX: thread.anchor.x!, sceneY: thread.anchor.y! },
-            appState,
-          );
-          return (
-            <span
-              className="boardy-comment-region"
-              key={`region-${thread.id}`}
-              style={{
-                left: start.x,
-                top: start.y,
-                width: (thread.anchor.width || 0) * appState.zoom.value,
-                height: (thread.anchor.height || 0) * appState.zoom.value,
-              }}
-            />
-          );
-        })}
       {threads
         .filter(
           (thread) =>
@@ -209,23 +178,88 @@ export const BoardCommentPins = ({ api }: { api: ExcalidrawImperativeAPI }) => {
             { sceneX: thread.anchor.x!, sceneY: thread.anchor.y! },
             appState,
           );
+          const author = thread.messages[0]?.author;
           return (
             <button
               key={thread.id}
               type="button"
-              className="boardy-comment-pin"
+              className={`boardy-comment-pin${
+                thread.unread ? " is-unread" : ""
+              }`}
               style={{ left: position.x, top: position.y }}
               title={thread.messages[0]?.body || "Comment"}
-              onClick={() =>
-                rootRef.current?.ownerDocument
-                  .getElementById(`comment-${thread.id}`)
-                  ?.scrollIntoView({ behavior: "smooth", block: "center" })
-              }
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={() => {
+                const ownerWindow = rootRef.current?.ownerDocument.defaultView;
+                if (!ownerWindow) {
+                  return;
+                }
+                const url = new ownerWindow.URL(ownerWindow.location.href);
+                url.searchParams.set("comment", thread.id);
+                ownerWindow.history.replaceState(
+                  ownerWindow.history.state,
+                  "",
+                  url,
+                );
+                api.toggleSidebar({
+                  name: "default",
+                  tab: "boardy-comments",
+                  force: true,
+                });
+                ownerWindow.dispatchEvent(
+                  new ownerWindow.CustomEvent(COMMENT_THREAD_SELECT_EVENT, {
+                    detail: { threadId: thread.id },
+                  }),
+                );
+              }}
             >
-              {thread.thread_number}
+              {author?.avatarUrl ? (
+                <img src={author.avatarUrl} alt="" />
+              ) : (
+                author?.displayName.slice(0, 1).toUpperCase() || "C"
+              )}
             </button>
           );
         })}
+      {draft && (
+        <div
+          className="boardy-comment-draft"
+          style={{ left: draftLeft, top: draftTop, width: draftWidth }}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <span
+            className="boardy-comment-draft__pin"
+            style={{
+              left: draft.clientX - draftLeft,
+              top: draft.clientY - draftTop,
+            }}
+            aria-hidden="true"
+          />
+          <CommentComposer
+            sceneId={sceneId}
+            members={workspace?.members || []}
+            placeholder="Add a comment"
+            autoFocus
+            onSubmit={async (message, mentions, attachmentAssetId) => {
+              await createComment(
+                sceneId,
+                message,
+                "point",
+                { x: draft.sceneX, y: draft.sceneY },
+                mentions,
+                attachmentAssetId,
+              );
+              setDraft(null);
+              api.setActiveTool({ type: "selection" });
+              const ownerWindow = rootRef.current?.ownerDocument.defaultView;
+              ownerWindow?.dispatchEvent(
+                new ownerWindow.CustomEvent(COMMENTS_CHANGED_EVENT),
+              );
+              await refresh();
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };

@@ -875,6 +875,10 @@ export interface ExcalidrawProps {
     isMobile: boolean,
     appState: UIAppState,
   ) => JSX.Element | null;
+  renderToolbarUI?: (
+    appState: UIAppState,
+    api: ExcalidrawImperativeAPI,
+  ) => React.ReactNode;
   langCode?: Language["code"];
   viewModeEnabled?: boolean;
   /**
