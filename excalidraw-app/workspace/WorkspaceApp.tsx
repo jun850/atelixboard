@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
+import { getFormFactor } from "@excalidraw/common";
+
 import { cloudApi, localApi } from "../agentic-board/client";
 import { supabase } from "../supabase/client";
 
@@ -1523,6 +1525,64 @@ const BoardEditor = ({
   sceneId: string;
 }) => {
   const board = data.whiteboards.find((item) => item.id === sceneId);
+  const editorCanvasRef = useRef<HTMLElement>(null);
+  const [editorReady, setEditorReady] = useState(false);
+
+  useEffect(() => {
+    setEditorReady(false);
+    const canvas = editorCanvasRef.current;
+    const ownerWindow = canvas?.ownerDocument.defaultView;
+    if (!canvas || !ownerWindow) {
+      return;
+    }
+
+    let firstFrame = 0;
+    let secondFrame = 0;
+    let settling = false;
+    const reveal = () => {
+      if (settling) {
+        return;
+      }
+      settling = true;
+      firstFrame = ownerWindow.requestAnimationFrame(() => {
+        secondFrame = ownerWindow.requestAnimationFrame(() => {
+          setEditorReady(true);
+        });
+      });
+    };
+    const inspectLayout = () => {
+      const editor = canvas.querySelector<HTMLElement>(".excalidraw");
+      if (!editor) {
+        return;
+      }
+      const canvasBounds = canvas.getBoundingClientRect();
+      const needsMobileLayout =
+        getFormFactor(canvasBounds.width, canvasBounds.height) === "phone";
+      if (
+        !needsMobileLayout ||
+        editor.classList.contains("excalidraw--mobile")
+      ) {
+        reveal();
+      }
+    };
+    const observer = new ownerWindow.MutationObserver(inspectLayout);
+    observer.observe(canvas, {
+      attributes: true,
+      attributeFilter: ["class"],
+      childList: true,
+      subtree: true,
+    });
+    const fallback = ownerWindow.setTimeout(reveal, 1000);
+    inspectLayout();
+
+    return () => {
+      observer.disconnect();
+      ownerWindow.clearTimeout(fallback);
+      ownerWindow.cancelAnimationFrame(firstFrame);
+      ownerWindow.cancelAnimationFrame(secondFrame);
+    };
+  }, [sceneId]);
+
   return (
     <div className="boardy-editor-shell">
       <header className="boardy-editor-header">
@@ -1553,8 +1613,25 @@ const BoardEditor = ({
             members: data.members,
           }}
         >
-          <main className="boardy-editor-canvas">
-            <BoardApp />
+          <main
+            ref={editorCanvasRef}
+            className={`boardy-editor-canvas ${
+              editorReady ? "is-ready" : "is-preparing"
+            }`}
+          >
+            <div className="boardy-editor-surface" aria-hidden={!editorReady}>
+              <BoardApp />
+            </div>
+            {!editorReady && (
+              <div
+                className="boardy-editor-loading"
+                role="status"
+                aria-live="polite"
+              >
+                <img src="/brand/boardy-loader.png" alt="" />
+                <span>Opening whiteboard…</span>
+              </div>
+            )}
           </main>
         </WorkspaceCommentsContext.Provider>
       </div>

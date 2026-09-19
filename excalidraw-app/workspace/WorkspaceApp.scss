@@ -1241,8 +1241,47 @@
   flex: 1;
   min-width: 0;
 }
-.boardy-editor-canvas > * {
+.boardy-editor-surface {
   height: 100%;
+}
+.boardy-editor-canvas.is-preparing .boardy-editor-surface {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+.boardy-editor-canvas.is-ready .boardy-editor-surface {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 160ms ease-out;
+}
+.boardy-editor-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 10px;
+  color: var(--boardy-muted);
+  background: #fff;
+  font-size: 13px;
+}
+.boardy-editor-loading img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  animation: boardy-editor-loader 1.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes boardy-editor-loader {
+  0% {
+    transform: rotate(0deg) scale(0.94);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.02);
+  }
+  100% {
+    transform: rotate(360deg) scale(0.94);
+  }
 }
 
 .boardy-comments-panel {
@@ -1259,10 +1298,15 @@
   min-height: 0;
   overflow: hidden;
 }
-.boardy-comments-panel.is-embedded {
+.excalidraw .boardy-comments-panel.is-embedded {
+  position: relative;
+  inset: auto;
+  display: flex;
   width: 100%;
   min-width: 0;
   height: 100%;
+  max-height: 100%;
+  overflow: hidden;
   border-left: 0;
   box-shadow: none;
 }
@@ -1655,5 +1699,8 @@
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
+  }
+  .boardy-editor-loading img {
+    animation: none;
   }
 }
