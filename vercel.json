@@ -80,11 +80,11 @@
   "rewrites": [
     {
       "source": "/learn",
-      "destination": "/api/discovery?path=/learn"
+      "destination": "https://atelix-prime-dune.shadowdocument.com/learn"
     },
     {
-      "source": "/learn/:slug",
-      "destination": "/api/discovery?path=/learn/:slug"
+      "source": "/learn/:path*",
+      "destination": "https://atelix-prime-dune.shadowdocument.com/learn/:path*"
     },
     {
       "source": "/ai",
