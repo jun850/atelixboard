@@ -51,11 +51,7 @@
                       "const": 200
                     }
                   },
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ]
+                  "required": ["data", "success", "status"]
                 }
               }
             }
@@ -167,11 +163,7 @@
                       "const": 200
                     }
                   },
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ]
+                  "required": ["data", "success", "status"]
                 }
               }
             }
@@ -283,11 +275,7 @@
                       "const": 200
                     }
                   },
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ]
+                  "required": ["data", "success", "status"]
                 }
               }
             }
@@ -399,11 +387,7 @@
                       "const": 200
                     }
                   },
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ]
+                  "required": ["data", "success", "status"]
                 }
               }
             }
@@ -505,10 +489,7 @@
             "format": "uuid"
           }
         },
-        "required": [
-          "actorId",
-          "projectId"
-        ]
+        "required": ["actorId", "projectId"]
       },
       "PageCreate": {
         "type": "object",
@@ -540,14 +521,7 @@
             "maxLength": 200000
           }
         },
-        "required": [
-          "actorId",
-          "projectId",
-          "handoffVersionId",
-          "correlationId",
-          "title",
-          "markdown"
-        ]
+        "required": ["actorId", "projectId", "handoffVersionId", "correlationId", "title", "markdown"]
       },
       "PageLookup": {
         "type": "object",
@@ -566,11 +540,7 @@
             "format": "uuid"
           }
         },
-        "required": [
-          "actorId",
-          "projectId",
-          "pageId"
-        ]
+        "required": ["actorId", "projectId", "pageId"]
       },
       "ReconcileInput": {
         "type": "object",
@@ -589,11 +559,7 @@
             "format": "uuid"
           }
         },
-        "required": [
-          "actorId",
-          "projectId",
-          "correlationId"
-        ]
+        "required": ["actorId", "projectId", "correlationId"]
       },
       "Page": {
         "type": "object",
@@ -616,20 +582,11 @@
             "format": "uri"
           },
           "correlationId": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "format": "uuid"
           }
         },
-        "required": [
-          "pageId",
-          "workspaceId",
-          "spaceId",
-          "url",
-          "correlationId"
-        ]
+        "required": ["pageId", "workspaceId", "spaceId", "url", "correlationId"]
       },
       "Access": {
         "type": "object",
@@ -653,13 +610,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "projectId",
-          "spaceId",
-          "canRead",
-          "canCreate",
-          "parityVerified"
-        ]
+        "required": ["projectId", "spaceId", "canRead", "canCreate", "parityVerified"]
       },
       "Reconciliation": {
         "type": "object",
@@ -667,11 +618,7 @@
         "properties": {
           "state": {
             "type": "string",
-            "enum": [
-              "found",
-              "pending",
-              "absent"
-            ]
+            "enum": ["found", "pending", "absent"]
           },
           "page": {
             "oneOf": [
@@ -687,11 +634,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "state",
-          "page",
-          "safeToRetry"
-        ]
+        "required": ["state", "page", "safeToRetry"]
       },
       "Error": {
         "type": "object",
@@ -722,19 +665,10 @@
                 "type": "string"
               }
             },
-            "required": [
-              "code",
-              "message",
-              "requestId"
-            ]
+            "required": ["code", "message", "requestId"]
           }
         },
-        "required": [
-          "data",
-          "success",
-          "status",
-          "error"
-        ]
+        "required": ["data", "success", "status", "error"]
       }
     }
   }

@@ -46,6 +46,19 @@
           "value": "*"
         }
       ]
+    },
+    {
+      "source": "/app/visibility",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
     }
   ],
   "redirects": [
@@ -66,7 +79,35 @@
   ],
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/learn",
+      "destination": "/api/discovery?path=/learn"
+    },
+    {
+      "source": "/learn/:slug",
+      "destination": "/api/discovery?path=/learn/:slug"
+    },
+    {
+      "source": "/ai",
+      "destination": "/api/discovery?path=/ai"
+    },
+    {
+      "source": "/mcp",
+      "destination": "/api/discovery?path=/mcp"
+    },
+    {
+      "source": "/llms.txt",
+      "destination": "/api/discovery?path=/llms.txt"
+    },
+    {
+      "source": "/llms-full.txt",
+      "destination": "/api/discovery?path=/llms-full.txt"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/discovery?path=/sitemap.xml"
+    },
+    {
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ],

@@ -527,6 +527,20 @@ const WorkspaceSidebar = ({
       ))}
     </nav>
     <div className="boardy-sidebar-account">
+      {data.profile.email?.toLowerCase() === "junarcana263@gmail.com" && (
+        <button
+          className="boardy-sign-out"
+          type="button"
+          onClick={(event) =>
+            routeTo(
+              event.currentTarget.ownerDocument.defaultView,
+              "/app/visibility",
+            )
+          }
+        >
+          AI visibility
+        </button>
+      )}
       <button
         className="boardy-profile-button"
         type="button"

@@ -1,13 +1,11 @@
-User-agent: Twitterbot
-Disallow:
-
-User-agent: facebookexternalhit
-Disallow:
-
 User-agent: *
-Allow: /$
 Allow: /
-Allow: /sitemap.xml
-Disallow: /
+Disallow: /app
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /invite/
+Disallow: /api/
 
-Sitemap: https://excalidraw.com/sitemap.xml
+Sitemap: https://boardy.sbs/sitemap.xml

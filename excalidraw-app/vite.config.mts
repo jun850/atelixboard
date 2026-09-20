@@ -6,7 +6,6 @@ import { ViteEjsPlugin } from "vite-plugin-ejs";
 import { VitePWA } from "vite-plugin-pwa";
 import checker from "vite-plugin-checker";
 import { createHtmlPlugin } from "vite-plugin-html";
-import Sitemap from "vite-plugin-sitemap";
 import { woff2BrowserPlugin } from "../scripts/woff2/woff2-vite-plugins";
 import { agenticBoardDevApi } from "../scripts/agentic-board/dev-api";
 import { documentDevApi } from "../scripts/documents/dev-api";
@@ -136,13 +135,6 @@ export default defineConfig(({ mode }) => {
     plugins: [
       agenticBoardDevApi(envVars),
       documentDevApi(envVars),
-      Sitemap({
-        hostname: "https://atelixboard.vercel.app",
-        outDir: "build",
-        changefreq: "monthly",
-        // its static in public folder
-        generateRobotsTxt: false,
-      }),
       woff2BrowserPlugin(),
       react(),
       checker({
@@ -166,6 +158,11 @@ export default defineConfig(({ mode }) => {
         },
 
         workbox: {
+          navigateFallbackDenylist: [
+            /^\/learn(?:\/|$)/,
+            /^\/(?:ai|mcp|llms\.txt|llms-full\.txt|sitemap\.xml)(?:[/?]|$)/,
+            /^\/api\//,
+          ],
           // don't precache fonts, locales and separate chunks
           globIgnores: [
             "fonts.css",

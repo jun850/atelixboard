@@ -260,8 +260,9 @@ export class LocalRuntime {
     readonly kind: Subscription,
     private binary: string,
     private root: string,
+    private persistent = false,
   ) {}
-  static async create(kind: Subscription) {
+  static async create(kind: Subscription, persistentRoot?: string) {
     const candidates =
       kind === "codex"
         ? [
@@ -278,33 +279,38 @@ export class LocalRuntime {
     for (const candidate of candidates) {
       try {
         await access(candidate);
-        binary = candidate;
+        const resolved = await realpath(candidate);
+        const { stdout } = await execute(resolved, ["--version"], {
+          timeout: 10000,
+          env: {
+            HOME: homedir(),
+            PATH: "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+          },
+        });
+        const expected =
+          kind === "codex"
+            ? `codex-cli ${runtimeVersions.codex}`
+            : `${runtimeVersions["claude-code"]} (Claude Code)`;
+        if (stdout.trim() !== expected) continue;
+        binary = resolved;
         break;
       } catch {}
     }
-    if (!binary) {
-      throw unavailable();
-    }
-    binary = await realpath(binary);
-    const { stdout } = await execute(binary, ["--version"], {
-      timeout: 10000,
-      env: { HOME: homedir(), PATH: "/usr/bin:/bin" },
-    });
-    if (
-      stdout.trim() !==
-      (kind === "codex"
-        ? `codex-cli ${runtimeVersions.codex}`
-        : `${runtimeVersions["claude-code"]} (Claude Code)`)
-    ) {
-      throw unavailable();
-    }
-    const root = await mkdtemp(join(tmpdir(), "boardy-runtime-"));
+    if (!binary)
+      throw new Error(
+        `RUNTIME_UNAVAILABLE: install ${kind} ${
+          runtimeVersions[kind === "codex" ? "codex" : "claude-code"]
+        }`,
+      );
+    const root =
+      persistentRoot || (await mkdtemp(join(tmpdir(), "boardy-runtime-")));
+    await mkdir(root, { recursive: true, mode: 0o700 });
     await Promise.all(
       ["work", "codex", "claude"].map((dir) =>
-        mkdir(join(root, dir), { mode: 0o700 }),
+        mkdir(join(root, dir), { recursive: true, mode: 0o700 }),
       ),
     );
-    return new LocalRuntime(kind, binary, root);
+    return new LocalRuntime(kind, binary, root, !!persistentRoot);
   }
   private async codex() {
     if (this.disposed) {
@@ -566,6 +572,8 @@ export class LocalRuntime {
     prompt: string,
     signal: AbortSignal,
     reasoningEffort?: string,
+    search = false,
+    onArtifact?: (artifact: unknown) => void,
   ): Promise<string> {
     if (signal.aborted || this.disposed) {
       throw new Error("CANCELLED");
@@ -582,7 +590,7 @@ export class LocalRuntime {
         approvalPolicy: "never",
         sandbox: "read-only",
         baseInstructions: instructions,
-        config: codexConfig,
+        config: { ...codexConfig, web_search: search ? "live" : "disabled" },
       });
       if (
         thread.model !== model ||
@@ -593,10 +601,11 @@ export class LocalRuntime {
       }
       return new Promise((resolve, reject) => {
         let text = "";
+        let finalText = "";
         const finish = (error?: Error) => {
           signal.removeEventListener("abort", abort);
           process.onEvent = undefined;
-          error ? reject(error) : resolve(text);
+          error ? reject(error) : resolve(finalText || text);
         };
         const abort = () => {
           process.close();
@@ -613,6 +622,12 @@ export class LocalRuntime {
           }
           if (event.params?.threadId !== thread.thread.id) {
             return;
+          }
+          if (event.method === "item/completed") {
+            const item = event.params.item;
+            if (item?.type === "agentMessage" && typeof item.text === "string")
+              finalText = item.text;
+            if (item?.type === "webSearch") onArtifact?.(item);
           }
           if (event.method === "item/agentMessage/delta") {
             text += event.params.delta;
@@ -703,7 +718,17 @@ export class LocalRuntime {
       process.close();
     }
   }
+  async limits() {
+    if (this.kind !== "codex") return null;
+    return (await this.codex()).request("account/rateLimits/read");
+  }
   async dispose() {
+    if (this.persistent) {
+      this.disposed = true;
+      this.process?.close();
+      this.process = undefined;
+      return;
+    }
     this.disposed = true;
     await this.cancelLogin();
     if (this.kind === "codex") {

@@ -13,6 +13,7 @@ import { WorkspaceApp } from "../workspace/WorkspaceApp";
 import { BoardArtwork, LandingIcon } from "./LandingArtwork";
 import { EditorArtwork } from "./EditorArtwork";
 import { BillingPage } from "./BillingPage";
+import { VisibilityPage } from "./VisibilityPage";
 
 import "./AtelixRouter.scss";
 
@@ -335,6 +336,7 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
             <div className="atelix-site-footer__brand">
               <BoardyBrand />
               <p>A calmer canvas for clearer thinking and stronger teamwork.</p>
+              <a href="/learn">Boardy guides</a>
             </div>
             <nav
               className="atelix-site-footer__links"
@@ -737,7 +739,7 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
       const next = new URLSearchParams(window.location.search).get("next");
       if (next?.startsWith("/app")) {
         navigate(next);
-      } else if (hasProAccess === false) {
+      } else if (hasProAccess === false && path !== "/app/visibility") {
         navigate(`/app/subscription${localDemo ? "?localDemo=1" : ""}`);
       }
     } else if (
@@ -764,6 +766,10 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
     await supabase.auth.signOut();
     navigate("/");
   };
+
+  if (path === "/app/visibility" && session) {
+    return <VisibilityPage session={session} />;
+  }
 
   if (path === "/app/subscription") {
     if (!session) {

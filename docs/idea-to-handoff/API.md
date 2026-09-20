@@ -80,7 +80,10 @@ interface DocumentAdapter {
     title: string;
     markdown: string;
   }): Promise<CanonicalDocument>;
-  resolvePage(projectId: string, externalPageId: string): Promise<CanonicalDocument>;
+  resolvePage(
+    projectId: string,
+    externalPageId: string,
+  ): Promise<CanonicalDocument>;
   reconcileCreate(correlationId: string): Promise<ReconciliationResult>;
 }
 ```
@@ -95,10 +98,16 @@ The official API specification reports version `1.1.0`; retrieved from the URL l
 
 ```json
 {
-  "data": { "items": [], "meta": {
-    "limit": 20, "hasNextPage": false, "hasPrevPage": false,
-    "nextCursor": null, "prevCursor": null
-  } },
+  "data": {
+    "items": [],
+    "meta": {
+      "limit": 20,
+      "hasNextPage": false,
+      "hasPrevPage": false,
+      "nextCursor": null,
+      "prevCursor": null
+    }
+  },
   "success": true,
   "status": 200
 }

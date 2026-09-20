@@ -1,0 +1,31 @@
+[
+  {
+    "repository": "https://github.com/promptingcompany/agent-skills",
+    "commit": "0b25c543cf2503ddd379f672ad4124dc66a175a8",
+    "license": "MIT",
+    "use": "adapt GEO and benchmark methods with attribution",
+    "files": ["skills/generative-engine-optimization/SKILL.md", "skills/setup-benchmark/SKILL.md", "LICENSE"],
+    "boardyEquivalents": ["scripts/discovery/skills/prompts.md", "scripts/discovery/skills/check.md", "supabase/functions/_shared/studio-core.ts", "supabase/migrations/20260920020815_discovery_studio.sql"]
+  },
+  {
+    "repository": "https://github.com/promptingcompany/sdk-typescript",
+    "commit": "37288de6ac3a7a22701c05a5c1bb235fe64d4662",
+    "license": "Apache-2.0",
+    "use": "architecture reference only; no runtime dependency",
+    "boardyEquivalents": ["supabase/functions/discovery-studio/index.ts"]
+  },
+  {
+    "repository": "https://github.com/promptingcompany/samples",
+    "commit": "f1853fce2ec7ccf613bd8fc97cbd9614b4742f1e",
+    "license": null,
+    "use": "architecture reference only; no runtime dependency",
+    "boardyEquivalents": ["middleware.ts"]
+  },
+  {
+    "repository": "https://github.com/promptingcompany/proxy",
+    "commit": "21c72c8723baf24c018564d46fe80eed5304facb",
+    "license": null,
+    "use": "architecture reference only; no runtime dependency",
+    "boardyEquivalents": ["api/discovery.ts"]
+  }
+]

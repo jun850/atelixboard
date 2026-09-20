@@ -50,11 +50,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ],
+                  "required": ["data", "success", "status"],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Project"
@@ -232,11 +228,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ],
+                  "required": ["data", "success", "status"],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/ProjectPage"
@@ -378,11 +370,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ],
+                  "required": ["data", "success", "status"],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Capabilities"
@@ -534,11 +522,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ],
+                  "required": ["data", "success", "status"],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Handoff"
@@ -724,11 +708,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ],
+                  "required": ["data", "success", "status"],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/HandoffPage"
@@ -879,11 +859,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ],
+                  "required": ["data", "success", "status"],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Handoff"
@@ -1051,11 +1027,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ],
+                  "required": ["data", "success", "status"],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Handoff"
@@ -1245,11 +1217,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ],
+                  "required": ["data", "success", "status"],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Handoff"
@@ -1439,11 +1407,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ],
+                  "required": ["data", "success", "status"],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Handoff"
@@ -1633,11 +1597,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ],
+                  "required": ["data", "success", "status"],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/DocumentJob"
@@ -1827,11 +1787,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ],
+                  "required": ["data", "success", "status"],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/DocumentLink"
@@ -2141,11 +2097,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ],
+                  "required": ["data", "success", "status"],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/UploadIntent"
@@ -2316,11 +2268,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ],
+                  "required": ["data", "success", "status"],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/UploadResult"
@@ -2481,11 +2429,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ],
+                  "required": ["data", "success", "status"],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/UploadResult"
@@ -2646,11 +2590,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ],
+                  "required": ["data", "success", "status"],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/FileDownload"
@@ -2801,11 +2741,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ],
+                  "required": ["data", "success", "status"],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/DocumentJob"
@@ -2956,11 +2892,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "data",
-                    "success",
-                    "status"
-                  ],
+                  "required": ["data", "success", "status"],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/SnapshotAccess"
@@ -3111,11 +3043,7 @@
                 "additionalProperties": true
               }
             },
-            "required": [
-              "code",
-              "message",
-              "requestId"
-            ]
+            "required": ["code", "message", "requestId"]
           },
           "data": {
             "type": "null"
@@ -3129,12 +3057,7 @@
             "maximum": 599
           }
         },
-        "required": [
-          "error",
-          "data",
-          "success",
-          "status"
-        ]
+        "required": ["error", "data", "success", "status"]
       },
       "Project": {
         "type": "object",
@@ -3156,12 +3079,7 @@
             "format": "date-time"
           }
         },
-        "required": [
-          "id",
-          "workspaceId",
-          "name",
-          "createdAt"
-        ]
+        "required": ["id", "workspaceId", "name", "createdAt"]
       },
       "CreateProject": {
         "type": "object",
@@ -3173,9 +3091,7 @@
             "maxLength": 120
           }
         },
-        "required": [
-          "name"
-        ]
+        "required": ["name"]
       },
       "HandoffInput": {
         "type": "object",
@@ -3230,13 +3146,7 @@
             "format": "uuid"
           }
         },
-        "required": [
-          "title",
-          "assigneeId",
-          "nextAction",
-          "successCriterion",
-          "snapshotId"
-        ]
+        "required": ["title", "assigneeId", "nextAction", "successCriterion", "snapshotId"]
       },
       "Handoff": {
         "type": "object",
@@ -3260,22 +3170,11 @@
           },
           "lifecycle": {
             "type": "string",
-            "enum": [
-              "draft",
-              "sent",
-              "changes_requested",
-              "accepted",
-              "cancelled"
-            ]
+            "enum": ["draft", "sent", "changes_requested", "accepted", "cancelled"]
           },
           "executionStatus": {
             "type": "string",
-            "enum": [
-              "not_started",
-              "in_progress",
-              "blocked",
-              "done"
-            ]
+            "enum": ["not_started", "in_progress", "blocked", "done"]
           },
           "revision": {
             "type": "integer",
@@ -3286,10 +3185,7 @@
             "format": "uuid"
           },
           "acceptedVersionId": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "format": "uuid"
           },
           "content": {
@@ -3304,20 +3200,7 @@
             "format": "date-time"
           }
         },
-        "required": [
-          "id",
-          "projectId",
-          "senderId",
-          "assigneeId",
-          "lifecycle",
-          "executionStatus",
-          "revision",
-          "currentVersionId",
-          "acceptedVersionId",
-          "content",
-          "createdAt",
-          "updatedAt"
-        ]
+        "required": ["id", "projectId", "senderId", "assigneeId", "lifecycle", "executionStatus", "revision", "currentVersionId", "acceptedVersionId", "content", "createdAt", "updatedAt"]
       },
       "HandoffPage": {
         "type": "object",
@@ -3333,10 +3216,7 @@
             "$ref": "#/components/schemas/PaginationMeta"
           }
         },
-        "required": [
-          "items",
-          "meta"
-        ]
+        "required": ["items", "meta"]
       },
       "ProjectPage": {
         "type": "object",
@@ -3352,10 +3232,7 @@
             "$ref": "#/components/schemas/PaginationMeta"
           }
         },
-        "required": [
-          "items",
-          "meta"
-        ]
+        "required": ["items", "meta"]
       },
       "Decision": {
         "type": "object",
@@ -3363,12 +3240,7 @@
         "properties": {
           "action": {
             "type": "string",
-            "enum": [
-              "send",
-              "accept",
-              "request_changes",
-              "cancel"
-            ]
+            "enum": ["send", "accept", "request_changes", "cancel"]
           },
           "reason": {
             "type": "string",
@@ -3376,9 +3248,7 @@
             "maxLength": 4000
           }
         },
-        "required": [
-          "action"
-        ]
+        "required": ["action"]
       },
       "ExecutionInput": {
         "type": "object",
@@ -3386,21 +3256,14 @@
         "properties": {
           "status": {
             "type": "string",
-            "enum": [
-              "not_started",
-              "in_progress",
-              "blocked",
-              "done"
-            ]
+            "enum": ["not_started", "in_progress", "blocked", "done"]
           },
           "note": {
             "type": "string",
             "maxLength": 4000
           }
         },
-        "required": [
-          "status"
-        ]
+        "required": ["status"]
       },
       "UploadInput": {
         "type": "object",
@@ -3408,10 +3271,7 @@
         "properties": {
           "purpose": {
             "type": "string",
-            "enum": [
-              "project_file",
-              "handoff_snapshot"
-            ]
+            "enum": ["project_file", "handoff_snapshot"]
           },
           "name": {
             "type": "string",
@@ -3435,13 +3295,7 @@
             "format": "uuid"
           }
         },
-        "required": [
-          "purpose",
-          "name",
-          "byteSize",
-          "mimeType",
-          "sha256"
-        ]
+        "required": ["purpose", "name", "byteSize", "mimeType", "sha256"]
       },
       "UploadIntent": {
         "type": "object",
@@ -3457,9 +3311,7 @@
           },
           "method": {
             "type": "string",
-            "enum": [
-              "PUT"
-            ]
+            "enum": ["PUT"]
           },
           "headers": {
             "type": "object",
@@ -3481,15 +3333,7 @@
             }
           }
         },
-        "required": [
-          "id",
-          "uploadUrl",
-          "method",
-          "headers",
-          "expiresAt",
-          "maxBytes",
-          "acceptedMimeTypes"
-        ]
+        "required": ["id", "uploadUrl", "method", "headers", "expiresAt", "maxBytes", "acceptedMimeTypes"]
       },
       "CompleteUpload": {
         "type": "object",
@@ -3500,9 +3344,7 @@
             "pattern": "^[a-f0-9]{64}$"
           }
         },
-        "required": [
-          "sha256"
-        ]
+        "required": ["sha256"]
       },
       "UploadResult": {
         "type": "object",
@@ -3514,40 +3356,21 @@
           },
           "state": {
             "type": "string",
-            "enum": [
-              "validating",
-              "ready",
-              "rejected"
-            ]
+            "enum": ["validating", "ready", "rejected"]
           },
           "resourceId": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "format": "uuid"
           },
           "resourceType": {
             "type": "string",
-            "enum": [
-              "file_version",
-              "snapshot"
-            ]
+            "enum": ["file_version", "snapshot"]
           },
           "errorCode": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         },
-        "required": [
-          "id",
-          "state",
-          "resourceId",
-          "resourceType",
-          "errorCode"
-        ]
+        "required": ["id", "state", "resourceId", "resourceType", "errorCode"]
       },
       "FileDownload": {
         "type": "object",
@@ -3562,10 +3385,7 @@
             "format": "date-time"
           }
         },
-        "required": [
-          "url",
-          "expiresAt"
-        ]
+        "required": ["url", "expiresAt"]
       },
       "DocumentRequest": {
         "type": "object",
@@ -3573,18 +3393,11 @@
         "properties": {
           "template": {
             "type": "string",
-            "enum": [
-              "implementation_brief",
-              "decision_note",
-              "proposal_outline"
-            ]
+            "enum": ["implementation_brief", "decision_note", "proposal_outline"]
           },
           "generationMode": {
             "type": "string",
-            "enum": [
-              "template",
-              "ai"
-            ]
+            "enum": ["template", "ai"]
           },
           "fileVersionIds": {
             "type": "array",
@@ -3596,10 +3409,7 @@
             "uniqueItems": true
           }
         },
-        "required": [
-          "template",
-          "generationMode"
-        ]
+        "required": ["template", "generationMode"]
       },
       "DocumentJob": {
         "type": "object",
@@ -3619,41 +3429,21 @@
           },
           "state": {
             "type": "string",
-            "enum": [
-              "queued",
-              "running",
-              "succeeded",
-              "failed",
-              "needs_reconciliation"
-            ]
+            "enum": ["queued", "running", "succeeded", "failed", "needs_reconciliation"]
           },
           "resultLinkId": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "format": "uuid"
           },
           "errorCode": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "createdAt": {
             "type": "string",
             "format": "date-time"
           }
         },
-        "required": [
-          "id",
-          "handoffId",
-          "acceptedVersionId",
-          "state",
-          "resultLinkId",
-          "errorCode",
-          "createdAt"
-        ]
+        "required": ["id", "handoffId", "acceptedVersionId", "state", "resultLinkId", "errorCode", "createdAt"]
       },
       "DocumentLinkInput": {
         "type": "object",
@@ -3669,10 +3459,7 @@
             "maxLength": 256
           }
         },
-        "required": [
-          "instanceId",
-          "externalPageId"
-        ]
+        "required": ["instanceId", "externalPageId"]
       },
       "DocumentLink": {
         "type": "object",
@@ -3702,21 +3489,10 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "active",
-              "unavailable"
-            ]
+            "enum": ["active", "unavailable"]
           }
         },
-        "required": [
-          "id",
-          "handoffVersionId",
-          "instanceId",
-          "spaceId",
-          "externalPageId",
-          "canonicalUrl",
-          "status"
-        ]
+        "required": ["id", "handoffVersionId", "instanceId", "spaceId", "externalPageId", "canonicalUrl", "status"]
       },
       "Capabilities": {
         "type": "object",
@@ -3741,13 +3517,7 @@
             }
           }
         },
-        "required": [
-          "documentGeneration",
-          "aiGeneration",
-          "verifiedDocumentLinks",
-          "markdownExport",
-          "reasonCodes"
-        ]
+        "required": ["documentGeneration", "aiGeneration", "verifiedDocumentLinks", "markdownExport", "reasonCodes"]
       },
       "SnapshotAccess": {
         "type": "object",
@@ -3785,26 +3555,12 @@
             }
           }
         },
-        "required": [
-          "id",
-          "previewUrl",
-          "sceneUrl",
-          "expiresAt",
-          "publishedAt",
-          "sha256",
-          "assetUrls"
-        ]
+        "required": ["id", "previewUrl", "sceneUrl", "expiresAt", "publishedAt", "sha256", "assetUrls"]
       },
       "PaginationMeta": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "limit",
-          "hasNextPage",
-          "hasPrevPage",
-          "nextCursor",
-          "prevCursor"
-        ],
+        "required": ["limit", "hasNextPage", "hasPrevPage", "nextCursor", "prevCursor"],
         "properties": {
           "limit": {
             "type": "integer",
@@ -3818,16 +3574,10 @@
             "type": "boolean"
           },
           "nextCursor": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "prevCursor": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         }
       }

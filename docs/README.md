@@ -10,6 +10,4 @@ Choose the implementation package for the task:
 
 Each package includes its own vision, PRD and implementation guidance. Agents should start at the package index and follow its reading order. Canvas PRD templates are visual artifacts; formal handoff document creation remains a separate workflow.
 
-Documents explicitly marked as plans remain proposed. The cloud-scenes package
-documents the implemented migration and Edge API contracts; deployment still
-requires the release order in its operations guide.
+Documents explicitly marked as plans remain proposed. The cloud-scenes package documents the implemented migration and Edge API contracts; deployment still requires the release order in its operations guide.
