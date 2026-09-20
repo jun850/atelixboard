@@ -9,3 +9,4 @@ Disallow: /invite/
 Disallow: /api/
 
 Sitemap: https://boardy.sbs/sitemap.xml
+Sitemap: https://boardy.sbs/learn/sitemap.xml

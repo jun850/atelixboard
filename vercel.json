@@ -79,6 +79,10 @@
   ],
   "rewrites": [
     {
+      "source": "/learn/sitemap.xml",
+      "destination": "https://atelix-prime-dune.shadowdocument.com/sitemap.xml"
+    },
+    {
       "source": "/learn",
       "destination": "https://atelix-prime-dune.shadowdocument.com/learn"
     },
