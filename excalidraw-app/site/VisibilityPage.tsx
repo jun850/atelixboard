@@ -10,34 +10,32 @@ import type { Session } from "@supabase/supabase-js";
 
 const navigation = [
   ["", "Overview", "overview"],
-  ["DISCOVER", "Prompts", "prompts"],
-  ["CREATE", "Knowledge", "knowledge"],
-  ["", "Content", "content"],
-  ["MEASURE", "Content analytics", "analytics"],
-  ["", "AI traffic", "traffic"],
-  ["OPERATIONS", "Generation queue", "queue"],
-  ["SETTINGS", "Product setup", "product"],
-  ["", "Prompt execution", "execution"],
-  ["", "Personas", "personas"],
+  ["Create", "Questions", "prompts"],
+  ["", "Knowledge", "knowledge"],
+  ["", "Articles", "content"],
+  ["Understand", "Performance", "analytics"],
+  ["", "AI visits", "traffic"],
+  ["Manage", "Activity", "queue"],
+  ["Settings", "Product", "product"],
+  ["", "Schedule", "execution"],
+  ["", "Audiences", "personas"],
   ["", "Website", "website"],
-  ["", "Codex connection", "connection"],
+  ["", "ChatGPT", "connection"],
 ];
 const descriptions: Record<string, string> = {
-  overview:
-    "Track how Boardy is discovered, cited, and visited across AI surfaces.",
-  prompts: "Discover the questions your future customers are asking.",
+  overview: "See how people and AI tools are finding Boardy.",
+  prompts: "Explore questions your future customers may be asking.",
   knowledge:
-    "Your product’s shared notes and facts, used whenever we need context to answer or write.",
-  content:
-    "Create, publish, and manage the content your audience and AI agents discover.",
-  analytics: "Monitor observed article links, tracked URLs, and AI traffic.",
-  traffic: "See which crawlers visit your website, and which pages they read.",
-  queue: "Follow generation, review, and monitoring work on your Mac.",
-  product: "Manage the product facts used in your visibility workspace.",
-  execution: "Choose how prompts run for this product.",
-  personas: "Manage the audiences used when creating prompts.",
-  website: "Publish original content on your own domain.",
-  connection: "Connect your ChatGPT subscription through Codex on your Mac.",
+    "Keep the trusted facts Boardy uses when it researches and writes.",
+  content: "Create, review, and publish helpful articles from one place.",
+  analytics: "See which articles are being found, visited, and referenced.",
+  traffic: "See when AI tools visit your website and what they read.",
+  queue: "Follow work that is waiting, running, or ready for review.",
+  product: "Review the core product details used across this workspace.",
+  execution: "Choose when Boardy checks questions and creates content.",
+  personas: "Describe the people you want your content to help.",
+  website: "Manage where your published content can be found.",
+  connection: "Use your ChatGPT plan to power Boardy from this Mac.",
 };
 function Icon({ kind }: { kind: string }) {
   const shapes: Record<string, React.ReactNode> = {
@@ -109,6 +107,8 @@ const formats = [
 ];
 export const VisibilityPage = ({ session }: { session: Session }) => {
   const root = useRef<HTMLDivElement>(null);
+  const main = useRef<HTMLElement>(null);
+  const nav = useRef<HTMLElement>(null);
   const [view, setView] = useState("overview");
   const [tab, setTab] = useState("library");
   const [days, setDays] = useState(30);
@@ -135,6 +135,12 @@ export const VisibilityPage = ({ session }: { session: Session }) => {
   const [topic, setTopic] = useState("");
   const [count, setCount] = useState(10);
   const [format, setFormat] = useState("explainer");
+  const profileName =
+    session.user.user_metadata.full_name ||
+    session.user.user_metadata.name ||
+    session.user.email?.split("@")[0] ||
+    "Boardy user";
+  const profileInitial = profileName.trim().charAt(0).toUpperCase() || "B";
   const owner =
     session.user.id === "702d5af6-4cd5-4b71-8f6c-210229068379" &&
     session.user.email?.toLowerCase() === "junarcana263@gmail.com";
@@ -175,6 +181,12 @@ export const VisibilityPage = ({ session }: { session: Session }) => {
         navigation.find((n) => n[2] === view)?.[1]
       } | Boardy`;
     }
+  }, [view]);
+  useEffect(() => {
+    main.current?.scrollTo({ top: 0 });
+    nav.current
+      ?.querySelector('[aria-current="page"]')
+      ?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [view]);
   useEffect(() => {
     const w = root.current?.ownerDocument.defaultView;
@@ -331,7 +343,7 @@ export const VisibilityPage = ({ session }: { session: Session }) => {
             Boardy by Atelix<small>boardy.sbs</small>
           </span>
         </a>
-        <nav aria-label="AI visibility">
+        <nav ref={nav} className="studio-nav" aria-label="AI visibility">
           {navigation.map(([group, label, key]) => (
             <React.Fragment key={key}>
               {group && <p className="studio-nav-group">{group}</p>}
@@ -350,9 +362,10 @@ export const VisibilityPage = ({ session }: { session: Session }) => {
           ))}
         </nav>
         <div className="studio-user">
-          <span className="studio-avatar">J</span>
+          <span className="studio-avatar">{profileInitial}</span>
           <span>
-            Jun<small>{session.user.email}</small>
+            {profileName}
+            <small>{session.user.email}</small>
           </span>
         </div>
       </aside>
@@ -360,29 +373,42 @@ export const VisibilityPage = ({ session }: { session: Session }) => {
         <header className="studio-topbar">
           <span>{navigation.find((n) => n[2] === view)?.[1]}</span>
           <div className="studio-actions">
-            <span className="studio-engine">Codex</span>
+            <span
+              className={`studio-connection-state ${
+                connected ? "is-connected" : ""
+              }`}
+            >
+              <i aria-hidden="true" />
+              {!boot
+                ? "Checking Mac"
+                : connected
+                ? "Mac connected"
+                : "Mac offline"}
+            </span>
             <button onClick={refresh} disabled={busy}>
-              Refresh
+              Update
             </button>
           </div>
         </header>
-        <main id="studio-main" className="studio-main">
+        <main ref={main} id="studio-main" className="studio-main">
           <div className="studio-page-heading">
             <div>
               <h1>{navigation.find((n) => n[2] === view)?.[1]}</h1>
               <p>{descriptions[view]}</p>
             </div>
-            <label className="studio-period">
-              Period
-              <select
-                value={days}
-                onChange={(e) => setDays(Number(e.target.value))}
-              >
-                <option value={7}>7 days</option>
-                <option value={30}>30 days</option>
-                <option value={90}>90 days</option>
-              </select>
-            </label>
+            {["overview", "analytics", "traffic"].includes(view) && (
+              <label className="studio-period">
+                Date range
+                <select
+                  value={days}
+                  onChange={(e) => setDays(Number(e.target.value))}
+                >
+                  <option value={7}>7 days</option>
+                  <option value={30}>30 days</option>
+                  <option value={90}>90 days</option>
+                </select>
+              </label>
+            )}
           </div>
           {!owner ? (
             <p role="alert">
@@ -418,10 +444,10 @@ export const VisibilityPage = ({ session }: { session: Session }) => {
                     <span>
                       Next:{" "}
                       {!connected
-                        ? "Connect Codex"
+                        ? "Connect ChatGPT"
                         : !stats.prompts
-                        ? "Create prompts"
-                        : "Review your content"}
+                        ? "Add customer questions"
+                        : "Review your articles"}
                     </span>
                     <button
                       onClick={() =>
@@ -434,15 +460,15 @@ export const VisibilityPage = ({ session }: { session: Session }) => {
                         )
                       }
                     >
-                      {!connected ? "Connect Codex" : "Open content"} →
+                      {!connected ? "Connect ChatGPT" : "Open articles"} →
                     </button>
                   </div>
                   <section className="studio-panel">
                     <div className="studio-panel-heading">
-                      <h2>Visibility & traffic</h2>
+                      <h2>Visibility at a glance</h2>
                       <p>
-                        Compare recorded Codex answers with requests reaching
-                        your site.
+                        Compare answers that mention Boardy with visits to your
+                        published content.
                       </p>
                     </div>
                     <div className="studio-metrics">
@@ -492,9 +518,9 @@ export const VisibilityPage = ({ session }: { session: Session }) => {
                   </section>
                   <div className="studio-two">
                     <section className="studio-panel">
-                      <h2>Content workspace</h2>
+                      <h2>Content library</h2>
                       <div className="studio-row">
-                        <span>Buyer prompts</span>
+                        <span>Customer questions</span>
                         <strong>{fmt(stats.prompts)}</strong>
                       </div>
                       <div className="studio-row">
@@ -502,26 +528,25 @@ export const VisibilityPage = ({ session }: { session: Session }) => {
                         <strong>{fmt(stats.articles)}</strong>
                       </div>
                       <button onClick={() => navigate("content")}>
-                        Open content →
+                        Open articles →
                       </button>
                     </section>
                     <section className="studio-panel">
-                      <h2>Generation queue</h2>
-                      <p>{fmt(stats.queued)} jobs waiting or running</p>
+                      <h2>Activity</h2>
+                      <p>{fmt(stats.queued)} tasks waiting or running</p>
                       <p>
                         {connected
                           ? "Your Mac is connected."
                           : "Your Mac is offline. Jobs stay safely queued."}
                       </p>
                       <button onClick={() => navigate("queue")}>
-                        View queue →
+                        View activity →
                       </button>
                     </section>
                   </div>
                   <p className="studio-note">
-                    Codex observations are not consumer ChatGPT rankings.
-                    Crawler identities are inferred from user agents; requests
-                    are not unique visitors.
+                    Results are directional and may differ from what people see
+                    in ChatGPT. Visits represent requests, not unique visitors.
                   </p>
                 </>
               )}
@@ -595,10 +620,10 @@ export const VisibilityPage = ({ session }: { session: Session }) => {
                   {view === "prompts" && (
                     <section className="studio-generate">
                       <div>
-                        <h2>Discover buyer questions</h2>
+                        <h2>Find customer questions</h2>
                         <p>
-                          Generate source-backed, unbranded questions in
-                          repeatable batches.
+                          Start with a topic and Boardy will suggest useful,
+                          research-backed questions.
                         </p>
                       </div>
                       <div className="studio-actions">
@@ -625,7 +650,7 @@ export const VisibilityPage = ({ session }: { session: Session }) => {
                           disabled={busy}
                           onClick={() => void enqueue("prompts")}
                         >
-                          Generate prompts
+                          Suggest questions
                         </button>
                         <button
                           onClick={() =>
@@ -639,7 +664,7 @@ export const VisibilityPage = ({ session }: { session: Session }) => {
                             })
                           }
                         >
-                          Add prompt
+                          Add question
                         </button>
                       </div>
                     </section>
@@ -849,7 +874,7 @@ export const VisibilityPage = ({ session }: { session: Session }) => {
                             )}
                             <th>
                               {entity === "prompts"
-                                ? "Prompt"
+                                ? "Question"
                                 : entity === "articles"
                                 ? "Article"
                                 : entity === "knowledge"
@@ -1129,13 +1154,23 @@ export const VisibilityPage = ({ session }: { session: Session }) => {
                       {!rows.length && (
                         <div className="studio-empty">
                           <Icon kind={view} />
-                          <h3>{loading ? "Loading…" : `No ${entity} found`}</h3>
+                          <h3>
+                            {loading
+                              ? "Loading…"
+                              : view === "prompts"
+                              ? "No questions found"
+                              : view === "content" || view === "analytics"
+                              ? "No articles found"
+                              : view === "knowledge"
+                              ? "No knowledge found"
+                              : "No activity found"}
+                          </h3>
                           <p>
                             {loading
                               ? "Fetching your workspace."
                               : view === "queue"
-                              ? "Generation jobs appear here when you create prompts or articles."
-                              : "Add content or change your search to get started."}
+                              ? "New tasks appear here when Boardy researches or creates content."
+                              : "Add something new or change your search to get started."}
                           </p>
                         </div>
                       )}
@@ -1164,81 +1199,105 @@ export const VisibilityPage = ({ session }: { session: Session }) => {
               )}
               {view === "connection" && (
                 <>
-                  <section className="studio-panel">
-                    <h2>ChatGPT subscription</h2>
-                    <p>
-                      Generate on your Mac with Codex. Your login stays on your
-                      Mac; publishing and analytics stay online.
-                    </p>
-                    <ol className="studio-steps">
-                      <li>
-                        <button
-                          className="primary"
-                          disabled={busy}
-                          onClick={async () => {
-                            const d = await act(
-                              { action: "pair-create" },
-                              "Pairing code expires in 10 minutes",
-                            );
-                            if (d) {
-                              setPairCode(d.code);
-                            }
-                          }}
-                        >
-                          Pair a Mac
-                        </button>
-                      </li>
-                      <li>
-                        <p>From the Boardy repository on your Mac:</p>
-                        <code>
-                          yarn discovery:worker pair{" "}
-                          {pairCode || "&lt;pairing-code&gt;"}
-                        </code>
-                      </li>
-                      <li>
-                        <code>yarn discovery:worker login</code>
+                  <section className="studio-panel studio-connection-card">
+                    <div className="studio-connection-intro">
+                      <div>
+                        <h2>Use your ChatGPT plan</h2>
                         <p>
-                          Complete the official ChatGPT sign-in in your browser.
+                          Boardy works through a small helper on this Mac. Your
+                          ChatGPT login stays here and is never stored online.
                         </p>
-                      </li>
-                      <li>
-                        <code>yarn discovery:worker start</code>
-                        <p>
-                          Leave the worker running while generation is queued.
-                        </p>
-                        <p>Or run automatically when you log into this Mac:</p>
-                        <code>yarn discovery:worker install</code>
-                      </li>
-                    </ol>
-                    <label>
-                      Model
-                      <select
-                        value={boot?.settings.model || ""}
-                        onChange={(e) =>
-                          void act(
-                            { action: "settings", model: e.target.value },
-                            "Model selected",
-                          )
-                        }
+                      </div>
+                      <span
+                        className={`studio-device-status ${
+                          connected ? "is-connected" : ""
+                        }`}
                       >
-                        <option value="">Select model</option>
-                        {Array.from(
-                          new Map(
-                            (boot?.workers || [])
-                              .filter((w: Row) => !w.revoked)
-                              .flatMap((w: Row) => w.status.models || [])
-                              .map((m: Row) => [m.id, m]),
-                          ).values(),
-                        ).map((m: any) => (
-                          <option key={m.id} value={m.id}>
-                            {m.name || m.id}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                        <i aria-hidden="true" />
+                        {!boot
+                          ? "Checking connection"
+                          : connected
+                          ? "Connected"
+                          : "Not connected"}
+                      </span>
+                    </div>
+                    <div className="studio-connection-actions">
+                      <button
+                        className="primary"
+                        disabled={busy}
+                        onClick={async () => {
+                          const d = await act(
+                            { action: "pair-create" },
+                            "Pairing code expires in 10 minutes",
+                          );
+                          if (d) {
+                            setPairCode(d.code);
+                          }
+                        }}
+                      >
+                        {connected ? "Connect another Mac" : "Connect this Mac"}
+                      </button>
+                      <label>
+                        AI model
+                        <select
+                          value={boot?.settings.model || ""}
+                          onChange={(e) =>
+                            void act(
+                              { action: "settings", model: e.target.value },
+                              "Model selected",
+                            )
+                          }
+                        >
+                          <option value="">Choose a model</option>
+                          {Array.from(
+                            new Map(
+                              (boot?.workers || [])
+                                .filter((w: Row) => !w.revoked)
+                                .flatMap((w: Row) => w.status.models || [])
+                                .map((m: Row) => [m.id, m]),
+                            ).values(),
+                          ).map((m: any) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name || m.id}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <details className="studio-setup-details" open={!!pairCode}>
+                      <summary>Set up the helper on this Mac</summary>
+                      <p>
+                        Open Terminal in the Boardy folder, then run these in
+                        order.
+                      </p>
+                      <ol className="studio-steps">
+                        <li>
+                          <span>Pair Boardy</span>
+                          <code>
+                            yarn discovery:worker pair{" "}
+                            {pairCode || "<pairing-code>"}
+                          </code>
+                        </li>
+                        <li>
+                          <span>Sign in to ChatGPT</span>
+                          <code>yarn discovery:worker login</code>
+                        </li>
+                        <li>
+                          <span>Start the helper</span>
+                          <code>yarn discovery:worker start</code>
+                        </li>
+                      </ol>
+                      <p className="studio-note">
+                        To start it automatically when you log in, run{" "}
+                        <code>yarn discovery:worker install</code>.
+                      </p>
+                    </details>
                   </section>
                   {boot?.workers.map((w: Row) => (
-                    <section className="studio-panel" key={w.id}>
+                    <section
+                      className="studio-panel studio-device-card"
+                      key={w.id}
+                    >
                       <div className="studio-row">
                         <h2>{w.name}</h2>
                         <span className="studio-badge">
@@ -1260,7 +1319,7 @@ export const VisibilityPage = ({ session }: { session: Session }) => {
                       <p>{w.status.message}</p>
                       {w.status.limits && (
                         <details>
-                          <summary>Subscription usage</summary>
+                          <summary>View plan usage</summary>
                           <pre>{JSON.stringify(w.status.limits, null, 2)}</pre>
                         </details>
                       )}
@@ -1281,11 +1340,11 @@ export const VisibilityPage = ({ session }: { session: Session }) => {
               )}
               {view === "execution" && (
                 <section className="studio-panel">
-                  <h2>Codex execution</h2>
+                  <h2>Automation schedule</h2>
                   <p>
-                    Selected prompts run weekly in a fresh session with search
-                    enabled. Writing jobs run first. Missed weeks are combined
-                    into one overdue check.
+                    Selected questions are checked weekly. Boardy creates any
+                    waiting drafts first and catches up once if your Mac was
+                    offline.
                   </p>
                   <label className="studio-check">
                     <input
@@ -1301,8 +1360,8 @@ export const VisibilityPage = ({ session }: { session: Session }) => {
                     Pause all jobs
                   </label>
                   <p>
-                    Results identify the actual Codex model. They do not
-                    represent consumer ChatGPT rankings.
+                    Results can vary from what people see in ChatGPT and should
+                    be used as a helpful signal, not a ranking.
                   </p>
                   <button onClick={() => navigate("connection")}>
                     Manage connection
@@ -1369,25 +1428,27 @@ export const VisibilityPage = ({ session }: { session: Session }) => {
                     </a>
                   </p>
                   <p>
-                    Vercel serves published articles through Boardy’s own
-                    reverse proxy. Each article has a canonical HTML page and
-                    Markdown version.
+                    Published articles live on Boardy’s own website and are
+                    prepared for search engines and AI tools.
                   </p>
-                  <div className="studio-row">
-                    <span>Sitemap</span>
-                    <a href="/sitemap.xml">Open sitemap ↗</a>
-                  </div>
-                  <div className="studio-row">
-                    <span>AI content index</span>
-                    <a href="/llms.txt">Open index ↗</a>
-                  </div>
-                  <div className="studio-row">
-                    <span>Public MCP</span>
-                    <code>https://boardy.sbs/mcp</code>
-                  </div>
-                  <p>
-                    Google Search Console is not connected. Verify the domain in
-                    your Google account and submit the sitemap.
+                  <details className="studio-technical-details">
+                    <summary>Technical links</summary>
+                    <div className="studio-row">
+                      <span>Sitemap</span>
+                      <a href="/sitemap.xml">Open sitemap ↗</a>
+                    </div>
+                    <div className="studio-row">
+                      <span>AI content index</span>
+                      <a href="/llms.txt">Open index ↗</a>
+                    </div>
+                    <div className="studio-row">
+                      <span>Integration endpoint</span>
+                      <code>https://boardy.sbs/mcp</code>
+                    </div>
+                  </details>
+                  <p className="studio-note">
+                    Search Console is not connected yet. Connect it in your
+                    Google account when you want search reporting.
                   </p>
                 </section>
               )}
