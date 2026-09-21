@@ -21,13 +21,21 @@ import { useEffect, useRef, useState } from "react";
 import { atom, useAtom, useAtomValue } from "../app-jotai";
 import { activeRoomLinkAtom } from "../collab/Collab";
 import { InfoTooltip } from "../workspace/InfoTooltip";
-import { loadWorkspace, workspaceApi } from "../workspace/api";
+import {
+  loadWorkspace,
+  retryInvitationEmail,
+  workspaceApi,
+} from "../workspace/api";
 
 import "./ShareDialog.scss";
 import { QRCode } from "./QRCode";
 
 import type { CollabAPI } from "../collab/Collab";
 import type { FormEvent } from "react";
+import type {
+  InvitationEmailDelivery,
+  InvitationResponse,
+} from "../workspace/api";
 
 type OnExportToBackend = () => void;
 type ShareDialogType = "share" | "collaborationOnly";
@@ -41,8 +49,15 @@ const BoardyBoardShare = () => {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"editor" | "commenter" | "viewer">("editor");
   const [link, setLink] = useState("");
+  const [invitationId, setInvitationId] = useState("");
+  const [inviteToken, setInviteToken] = useState("");
+  const [deliveryEmail, setDeliveryEmail] = useState("");
+  const [delivery, setDelivery] = useState<InvitationEmailDelivery | null>(
+    null,
+  );
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     const ownerWindow = rootRef.current?.ownerDocument.defaultView;
@@ -67,8 +82,9 @@ const BoardyBoardShare = () => {
     event.preventDefault();
     setCreating(true);
     setError("");
+    setDelivery(null);
     try {
-      const result = await workspaceApi<{ token: string }>(
+      const result = await workspaceApi<InvitationResponse>(
         "invitations",
         "POST",
         {
@@ -82,14 +98,44 @@ const BoardyBoardShare = () => {
       );
       const ownerWindow = event.currentTarget.ownerDocument.defaultView;
       setLink(`${ownerWindow?.location.origin || ""}/invite/${result.token}`);
+      setInvitationId(result.invitation.id);
+      setInviteToken(result.token);
+      setDeliveryEmail(email.trim());
+      setDelivery(result.emailDelivery);
     } catch (caught) {
       setError(
-        caught instanceof Error
+        caught instanceof Error && caught.message === "INVALID_EMAIL"
+          ? "Enter a valid email address."
+          : caught instanceof Error
           ? caught.message
           : "Invitation could not be created.",
       );
     } finally {
       setCreating(false);
+    }
+  };
+
+  const retryEmail = async () => {
+    if (!invitationId || !inviteToken) {
+      return;
+    }
+    setRetrying(true);
+    setError("");
+    try {
+      const result = await retryInvitationEmail(
+        context.workspaceId,
+        invitationId,
+        inviteToken,
+      );
+      setDelivery(result.emailDelivery);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "The invitation email could not be retried.",
+      );
+    } finally {
+      setRetrying(false);
     }
   };
 
@@ -151,12 +197,40 @@ const BoardyBoardShare = () => {
           type="submit"
           disabled={creating}
         >
-          {creating ? "Creating invitation…" : "Create invitation"}
+          {creating ? "Sending invitation…" : "Send invitation"}
         </button>
       </form>
       {error && (
         <p className="ShareDialog__boardy__error" role="alert">
           {error}
+        </p>
+      )}
+      {delivery?.status === "sent" && (
+        <p className="ShareDialog__boardy__success" role="status">
+          Invitation sent to {deliveryEmail}.
+        </p>
+      )}
+      {delivery?.status === "failed" && (
+        <div className="ShareDialog__boardy__delivery" role="alert">
+          <p>
+            The invitation was created, but the email could not be sent. Copy
+            the link or try again.
+          </p>
+          {delivery.retryable && (
+            <button
+              type="button"
+              disabled={retrying}
+              onClick={() => void retryEmail()}
+            >
+              {retrying ? "Retrying…" : "Retry email"}
+            </button>
+          )}
+        </div>
+      )}
+      {delivery?.status === "suppressed" && (
+        <p className="ShareDialog__boardy__error" role="alert">
+          The invitation was created, but email delivery is unavailable for this
+          address. Copy the link instead.
         </p>
       )}
       {link && (

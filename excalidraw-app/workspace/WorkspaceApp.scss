@@ -925,6 +925,34 @@
 .boardy-form-error {
   color: #b42318;
 }
+.boardy-dialog > .boardy-form-success {
+  color: #067647;
+}
+.boardy-invite-delivery {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0 0;
+  color: #b42318;
+}
+.boardy-invite-delivery p {
+  margin: 0;
+}
+.boardy-invite-delivery button {
+  flex: none;
+  padding: 6px 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.boardy-invite-delivery button:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
 .boardy-member-list {
   overflow: visible;
   border: 1px solid var(--boardy-line);

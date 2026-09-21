@@ -15,6 +15,33 @@ export const workspaceApi = <T>(
   body?: Record<string, unknown>,
 ) => cloudApi<T>("workspace", path, method, body);
 
+export type InvitationEmailDelivery = {
+  status: "not_requested" | "sent" | "failed" | "suppressed";
+  retryable: boolean;
+};
+
+export type InvitationResponse = {
+  invitation: {
+    id: string;
+    expires_at: string;
+    max_uses: number;
+    email_status: string | null;
+  };
+  token: string;
+  emailDelivery: InvitationEmailDelivery;
+};
+
+export const retryInvitationEmail = (
+  workspaceId: string,
+  invitationId: string,
+  token: string,
+) =>
+  workspaceApi<{ emailDelivery: InvitationEmailDelivery }>(
+    `invitations/${invitationId}/email`,
+    "POST",
+    { workspaceId, token },
+  );
+
 export const loadWorkspace = (workspaceId?: string) =>
   workspaceApi<WorkspaceDashboard>("dashboard", "GET", {
     ...(workspaceId ? { workspaceId } : {}),

@@ -31,6 +31,222 @@ const sha256 = async (value: string) => {
     .join("");
 };
 
+type InvitationEmailStatus = "not_requested" | "sent" | "failed" | "suppressed";
+
+type InvitationEmailDelivery = {
+  status: InvitationEmailStatus;
+  retryable: boolean;
+};
+
+type InvitationEmailRecord = {
+  id: string;
+  workspace_id: string;
+  collection_id: string | null;
+  scene_id: string | null;
+  created_by: string;
+  token_hash: string;
+  recipient_email: string | null;
+  resource_role: "editor" | "commenter" | "viewer" | null;
+  expires_at: string;
+  email_attempt_count: number;
+};
+
+const normalizeInvitationEmail = (value: unknown) => {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+  if (typeof value !== "string") {
+    throw new Error("invalid_email");
+  }
+  const email = value.trim().toLowerCase();
+  if (
+    !email ||
+    email.length > 320 ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  ) {
+    throw new Error("invalid_email");
+  }
+  return email;
+};
+
+const escapeHtml = (value: unknown) =>
+  String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+const persistInvitationDelivery = async (
+  admin: AdminClient,
+  invitationId: string,
+  patch: Record<string, unknown>,
+) => {
+  const { error } = await admin
+    .from("boardy_invitations")
+    .update({ ...patch, email_last_error: patch.email_last_error ?? null })
+    .eq("id", invitationId);
+  if (error) {
+    console.error("invitation delivery status update failed", {
+      invitationId,
+      message: error.message,
+    });
+  }
+};
+
+const sendInvitationEmail = async ({
+  admin,
+  invitation,
+  token,
+}: {
+  admin: AdminClient;
+  invitation: InvitationEmailRecord;
+  token: string;
+}): Promise<InvitationEmailDelivery> => {
+  if (!invitation.recipient_email) {
+    return { status: "not_requested", retryable: false };
+  }
+
+  const attemptCount = Math.min(invitation.email_attempt_count + 1, 12);
+  await persistInvitationDelivery(admin, invitation.id, {
+    email_status: "pending",
+    email_attempt_count: attemptCount,
+  });
+
+  const { data: suppressed, error: suppressionError } = await admin
+    .from("boardy_email_suppressions")
+    .select("email")
+    .eq("email", invitation.recipient_email)
+    .maybeSingle();
+  if (suppressionError) {
+    await persistInvitationDelivery(admin, invitation.id, {
+      email_status: "failed",
+      email_attempt_count: attemptCount,
+      email_last_error: "suppression_check_failed",
+    });
+    return { status: "failed", retryable: true };
+  }
+  if (suppressed) {
+    await persistInvitationDelivery(admin, invitation.id, {
+      email_status: "suppressed",
+      email_attempt_count: attemptCount,
+    });
+    return { status: "suppressed", retryable: false };
+  }
+
+  const [{ data: inviter }, targetResult] = await Promise.all([
+    admin
+      .from("boardy_profiles")
+      .select("display_name")
+      .eq("user_id", invitation.created_by)
+      .maybeSingle(),
+    invitation.scene_id
+      ? admin
+          .from("scenes")
+          .select("title")
+          .eq("id", invitation.scene_id)
+          .maybeSingle()
+      : invitation.collection_id
+      ? admin
+          .from("boardy_collections")
+          .select("name")
+          .eq("id", invitation.collection_id)
+          .maybeSingle()
+      : admin
+          .from("boardy_workspaces")
+          .select("name")
+          .eq("id", invitation.workspace_id)
+          .maybeSingle(),
+  ]);
+  const target = targetResult.data as { title?: string; name?: string } | null;
+  const inviterName = inviter?.display_name || "A teammate";
+  const targetName = target?.title || target?.name || "a Boardy workspace";
+  const targetKind = invitation.scene_id
+    ? "whiteboard"
+    : invitation.collection_id
+    ? "collection"
+    : "workspace";
+  const permission = invitation.resource_role || "member";
+  const appUrl = (
+    Deno.env.get("BOARDY_APP_URL") || "https://boardy.sbs"
+  ).replace(/\/$/, "");
+  const invitationUrl = `${appUrl}/invite/${token}`;
+  const expiresOn = new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+    timeZone: "UTC",
+  }).format(new Date(invitation.expires_at));
+  const resendKey = Deno.env.get("RESEND_API_KEY");
+  if (!resendKey) {
+    await persistInvitationDelivery(admin, invitation.id, {
+      email_status: "failed",
+      email_attempt_count: attemptCount,
+      email_last_error: "email_not_configured",
+    });
+    return { status: "failed", retryable: true };
+  }
+
+  try {
+    const result = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${resendKey}`,
+        "content-type": "application/json",
+        "idempotency-key": `boardy-invite-${invitation.id}`,
+      },
+      signal: AbortSignal.timeout(8000),
+      body: JSON.stringify({
+        from:
+          Deno.env.get("BOARDY_INVITATION_FROM") ||
+          "Boardy <notifications@atelix.app>",
+        to: [invitation.recipient_email],
+        subject: `${inviterName} invited you to ${targetName}`,
+        html: `<div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:auto;color:#1d2533"><h2 style="font-size:20px">You’re invited to ${escapeHtml(
+          targetName,
+        )}</h2><p style="line-height:1.6;color:#4a5568">${escapeHtml(
+          inviterName,
+        )} invited you to this Boardy ${targetKind} as a ${escapeHtml(
+          permission,
+        )}.</p><p><a href="${escapeHtml(
+          invitationUrl,
+        )}" style="display:inline-block;padding:10px 16px;border-radius:8px;background:#2f6ce5;color:white;text-decoration:none">Open ${targetKind}</a></p><p style="line-height:1.6;color:#4a5568">Sign in or create a Boardy account with this email address. You do not need a separate subscription. This invitation expires ${escapeHtml(
+          expiresOn,
+        )}.</p></div>`,
+      }),
+    });
+    const responseBody = (await result.json().catch(() => ({}))) as Record<
+      string,
+      unknown
+    >;
+    if (result.ok) {
+      await persistInvitationDelivery(admin, invitation.id, {
+        email_status: "sent",
+        email_attempt_count: attemptCount,
+        email_sent_at: new Date().toISOString(),
+        email_provider_message_id: String(responseBody.id || "") || null,
+      });
+      return { status: "sent", retryable: false };
+    }
+    await persistInvitationDelivery(admin, invitation.id, {
+      email_status: "failed",
+      email_attempt_count: attemptCount,
+      email_last_error: String(
+        responseBody.message || `HTTP ${result.status}`,
+      ).slice(0, 500),
+    });
+    return { status: "failed", retryable: true };
+  } catch (error) {
+    await persistInvitationDelivery(admin, invitation.id, {
+      email_status: "failed",
+      email_attempt_count: attemptCount,
+      email_last_error: (error instanceof Error
+        ? error.message
+        : "timeout"
+      ).slice(0, 500),
+    });
+    return { status: "failed", retryable: true };
+  }
+};
+
 const publicProfile = (row: Record<string, unknown>) => ({
   userId: row.user_id,
   displayName: row.display_name,
@@ -192,6 +408,53 @@ const sceneRole = async (
     can_comment: boolean;
     can_manage: boolean;
   };
+};
+
+const requireInvitationManagement = async ({
+  admin,
+  client,
+  userId,
+  workspaceId,
+  sceneId,
+  collectionId,
+}: {
+  admin: AdminClient;
+  client: Awaited<ReturnType<typeof authenticate>>["client"];
+  userId: string;
+  workspaceId: string;
+  sceneId?: string | null;
+  collectionId?: string | null;
+}) => {
+  if (sceneId) {
+    const capabilities = await sceneRole(client, requireUuid(sceneId));
+    if (!capabilities.can_manage) {
+      throw new Error("forbidden");
+    }
+    return;
+  }
+  if (collectionId) {
+    const membershipRole = await requireWorkspaceRole(
+      admin,
+      workspaceId,
+      userId,
+      ["admin", "staff"],
+    );
+    const { data: collection, error } = await admin
+      .from("boardy_collections")
+      .select("owner_id")
+      .eq("id", requireUuid(collectionId))
+      .eq("workspace_id", workspaceId)
+      .single();
+    if (
+      error ||
+      !collection ||
+      (membershipRole !== "admin" && collection.owner_id !== userId)
+    ) {
+      throw error || new Error("forbidden");
+    }
+    return;
+  }
+  await requireWorkspaceRole(admin, workspaceId, userId, ["admin"]);
 };
 
 const validatedMentionIds = async (
@@ -823,34 +1086,71 @@ Deno.serve(async (request) => {
       return response(request, 200, { ok: true });
     }
 
-    if (parts[0] === "invitations" && parts.length === 1 && method === "POST") {
-      if (body.sceneId) {
-        const capabilities = await sceneRole(client, requireUuid(body.sceneId));
-        if (!capabilities.can_manage) {
-          throw new Error("forbidden");
-        }
-      } else if (body.collectionId) {
-        const membershipRole = await requireWorkspaceRole(
-          admin,
-          workspaceId,
-          user.id,
-          ["admin", "staff"],
-        );
-        const { data: collection } = await admin
-          .from("boardy_collections")
-          .select("owner_id")
-          .eq("id", requireUuid(body.collectionId))
-          .eq("workspace_id", workspaceId)
-          .single();
-        if (
-          !collection ||
-          (membershipRole !== "admin" && collection.owner_id !== user.id)
-        ) {
-          throw new Error("forbidden");
-        }
-      } else {
-        await requireWorkspaceRole(admin, workspaceId, user.id, ["admin"]);
+    if (
+      parts[0] === "invitations" &&
+      parts.length === 3 &&
+      parts[2] === "email" &&
+      method === "POST"
+    ) {
+      const invitationId = requireUuid(parts[1]);
+      const { data: invitation, error } = await admin
+        .from("boardy_invitations")
+        .select(
+          "id,workspace_id,collection_id,scene_id,created_by,token_hash,recipient_email,resource_role,expires_at,email_attempt_count",
+        )
+        .eq("id", invitationId)
+        .eq("workspace_id", workspaceId)
+        .is("revoked_at", null)
+        .single();
+      if (
+        error ||
+        !invitation ||
+        new Date(invitation.expires_at) <= new Date()
+      ) {
+        throw error || new Error("not_found");
       }
+      await requireInvitationManagement({
+        admin,
+        client,
+        userId: user.id,
+        workspaceId,
+        sceneId: invitation.scene_id,
+        collectionId: invitation.collection_id,
+      });
+      const token = String(body.token || "");
+      if (!token || (await sha256(token)) !== invitation.token_hash) {
+        throw new Error("forbidden");
+      }
+      if (!invitation.recipient_email) {
+        throw new Error("invalid_email");
+      }
+      if (invitation.email_attempt_count >= 12) {
+        return response(request, 200, {
+          emailDelivery: { status: "failed", retryable: false },
+        });
+      }
+      const emailDelivery = await sendInvitationEmail({
+        admin,
+        invitation: invitation as InvitationEmailRecord,
+        token,
+      });
+      return response(request, 200, { emailDelivery });
+    }
+
+    if (parts[0] === "invitations" && parts.length === 1 && method === "POST") {
+      const sceneId = body.sceneId ? requireUuid(body.sceneId) : null;
+      const collectionId = body.collectionId
+        ? requireUuid(body.collectionId)
+        : null;
+      await requireInvitationManagement({
+        admin,
+        client,
+        userId: user.id,
+        workspaceId,
+        sceneId,
+        collectionId,
+      });
+      const recipientEmail = normalizeInvitationEmail(body.recipientEmail);
       const token = `${crypto.randomUUID()}${crypto.randomUUID()}`.replaceAll(
         "-",
         "",
@@ -865,25 +1165,42 @@ Deno.serve(async (request) => {
         .from("boardy_invitations")
         .insert({
           workspace_id: workspaceId,
-          collection_id: body.collectionId || null,
-          scene_id: body.sceneId || null,
+          collection_id: collectionId,
+          scene_id: sceneId,
           created_by: user.id,
           token_hash: tokenHash,
-          recipient_email:
-            typeof body.recipientEmail === "string"
-              ? body.recipientEmail.trim().toLowerCase()
-              : null,
+          recipient_email: recipientEmail,
           workspace_role: body.workspaceRole || "external",
           resource_role: body.resourceRole || null,
           max_uses: maxUses,
           expires_at: expiresAt,
+          email_status: recipientEmail ? "pending" : null,
         })
-        .select("id,expires_at,max_uses")
+        .select(
+          "id,workspace_id,collection_id,scene_id,created_by,token_hash,recipient_email,resource_role,expires_at,email_attempt_count,max_uses",
+        )
         .single();
       if (error) {
         throw error;
       }
-      return response(request, 201, { invitation: data, token });
+      const emailDelivery = await sendInvitationEmail({
+        admin,
+        invitation: data as InvitationEmailRecord,
+        token,
+      });
+      return response(request, 201, {
+        invitation: {
+          id: data.id,
+          expires_at: data.expires_at,
+          max_uses: data.max_uses,
+          email_status:
+            emailDelivery.status === "not_requested"
+              ? null
+              : emailDelivery.status,
+        },
+        token,
+        emailDelivery,
+      });
     }
 
     if (parts[0] === "comments" && parts.length === 2 && method === "GET") {

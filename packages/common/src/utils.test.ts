@@ -24,6 +24,12 @@ describe("@excalidraw/common/utils", () => {
       const iframeDocument = iframe.contentDocument!;
       const iframeWindow = iframe.contentWindow!;
       const textarea = iframeDocument.createElement("textarea");
+      const emailInput = iframeDocument.createElement("input");
+      emailInput.type = "email";
+      const urlInput = iframeDocument.createElement("input");
+      urlInput.type = "url";
+      const checkbox = iframeDocument.createElement("input");
+      checkbox.type = "checkbox";
       const button = iframeDocument.createElement("button");
       const toolIcon = iframeDocument.createElement("div");
       toolIcon.className = "ToolIcon__icon";
@@ -34,6 +40,10 @@ describe("@excalidraw/common/utils", () => {
       );
       expect(isInputLike(textarea)).toBe(true);
       expect(isWritableElement(textarea)).toBe(true);
+      expect(isWritableElement(emailInput)).toBe(true);
+      expect(isWritableElement(urlInput)).toBe(true);
+      expect(isWritableElement(checkbox)).toBe(true);
+      expect(isWritableElement(button)).toBe(false);
       expect(isInteractive(button)).toBe(true);
       expect(isToolIcon(toolIcon)).toBe(true);
 

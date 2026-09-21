@@ -30,6 +30,9 @@ export function cloudError(error: unknown) {
   if (raw.includes("limit")) {
     return "LIMIT_EXCEEDED";
   }
+  if (raw.includes("invalid_email")) {
+    return "INVALID_EMAIL";
+  }
   return "CLOUD_STORAGE_ERROR";
 }
 

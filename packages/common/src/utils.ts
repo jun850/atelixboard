@@ -110,11 +110,7 @@ export const isWritableElement = (
       target.dataset.type === "wysiwyg") ||
       target instanceof targetWindow.HTMLBRElement || // newline in wysiwyg
       target instanceof targetWindow.HTMLTextAreaElement ||
-      (target instanceof targetWindow.HTMLInputElement &&
-        (target.type === "text" ||
-          target.type === "number" ||
-          target.type === "password" ||
-          target.type === "search")) ||
+      target instanceof targetWindow.HTMLInputElement ||
       (target instanceof targetWindow.HTMLElement &&
         target.closest(".cm-editor") !== null))
   );

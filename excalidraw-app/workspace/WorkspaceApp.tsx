@@ -5,7 +5,12 @@ import { getFormFactor } from "@excalidraw/common";
 import { cloudApi, localApi } from "../agentic-board/client";
 import { supabase } from "../supabase/client";
 
-import { createCollection, loadWorkspace, workspaceApi } from "./api";
+import {
+  createCollection,
+  loadWorkspace,
+  retryInvitationEmail,
+  workspaceApi,
+} from "./api";
 import { InfoTooltip } from "./InfoTooltip";
 import { WorkspaceCommentsContext } from "./WorkspaceCommentsContext";
 
@@ -24,6 +29,7 @@ import type {
   WorkspaceCollection,
   WorkspaceDashboard,
 } from "./types";
+import type { InvitationEmailDelivery, InvitationResponse } from "./api";
 
 const routeTo = (ownerWindow: Window | null, path: string) => {
   if (!ownerWindow) {
@@ -1665,8 +1671,42 @@ const ResourceShareDialog = ({
   onClose: () => void;
 }) => {
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("viewer");
+  const [role, setRole] = useState<"editor" | "commenter" | "viewer">("viewer");
   const [link, setLink] = useState("");
+  const [invitationId, setInvitationId] = useState("");
+  const [inviteToken, setInviteToken] = useState("");
+  const [deliveryEmail, setDeliveryEmail] = useState("");
+  const [delivery, setDelivery] = useState<InvitationEmailDelivery | null>(
+    null,
+  );
+  const [submitting, setSubmitting] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [error, setError] = useState("");
+
+  const retryEmail = async () => {
+    if (!invitationId || !inviteToken) {
+      return;
+    }
+    setRetrying(true);
+    setError("");
+    try {
+      const result = await retryInvitationEmail(
+        data.workspace.id,
+        invitationId,
+        inviteToken,
+      );
+      setDelivery(result.emailDelivery);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "The invitation email could not be retried.",
+      );
+    } finally {
+      setRetrying(false);
+    }
+  };
+
   return (
     <div className="boardy-dialog-backdrop" role="presentation">
       <section
@@ -1680,21 +1720,40 @@ const ResourceShareDialog = ({
           onSubmit={async (event) => {
             event.preventDefault();
             const ownerWindow = event.currentTarget.ownerDocument.defaultView;
-            const result = await workspaceApi<{ token: string }>(
-              "invitations",
-              "POST",
-              {
-                workspaceId: data.workspace.id,
-                collectionId,
-                recipientEmail: email || undefined,
-                workspaceRole: "external",
-                resourceRole: role,
-                maxUses: email ? 1 : 30,
-              },
-            );
-            setLink(
-              `${ownerWindow?.location.origin || ""}/invite/${result.token}`,
-            );
+            setSubmitting(true);
+            setError("");
+            setDelivery(null);
+            try {
+              const result = await workspaceApi<InvitationResponse>(
+                "invitations",
+                "POST",
+                {
+                  workspaceId: data.workspace.id,
+                  collectionId,
+                  recipientEmail: email || undefined,
+                  workspaceRole: "external",
+                  resourceRole: role,
+                  maxUses: email ? 1 : 30,
+                },
+              );
+              setLink(
+                `${ownerWindow?.location.origin || ""}/invite/${result.token}`,
+              );
+              setInvitationId(result.invitation.id);
+              setInviteToken(result.token);
+              setDeliveryEmail(email.trim());
+              setDelivery(result.emailDelivery);
+            } catch (caught) {
+              setError(
+                caught instanceof Error && caught.message === "INVALID_EMAIL"
+                  ? "Enter a valid email address."
+                  : caught instanceof Error
+                  ? caught.message
+                  : "Invitation could not be created.",
+              );
+            } finally {
+              setSubmitting(false);
+            }
           }}
         >
           <div className="boardy-field">
@@ -1741,20 +1800,65 @@ const ResourceShareDialog = ({
               id="collection-share-permission"
               aria-describedby="collection-share-permission-help"
               value={role}
-              onChange={(event) => setRole(event.target.value)}
+              onChange={(event) =>
+                setRole(event.target.value as "editor" | "commenter" | "viewer")
+              }
             >
               <option value="editor">Editor</option>
               <option value="commenter">Commenter</option>
               <option value="viewer">Viewer</option>
             </select>
           </div>
-          <button className="boardy-button is-primary" type="submit">
-            Create collection link
+          <button
+            className="boardy-button is-primary"
+            type="submit"
+            disabled={submitting}
+          >
+            {submitting
+              ? email
+                ? "Sending invitation…"
+                : "Creating link…"
+              : email
+              ? "Send invitation"
+              : "Create collection link"}
           </button>
         </form>
+        {error && (
+          <p className="boardy-form-error" role="alert">
+            {error}
+          </p>
+        )}
+        {delivery?.status === "sent" && (
+          <p className="boardy-form-success" role="status">
+            Invitation sent to {deliveryEmail}.
+          </p>
+        )}
+        {delivery?.status === "failed" && (
+          <div className="boardy-invite-delivery" role="alert">
+            <p>
+              The invitation was created, but the email could not be sent. Copy
+              the link or try again.
+            </p>
+            {delivery.retryable && (
+              <button
+                type="button"
+                disabled={retrying}
+                onClick={() => void retryEmail()}
+              >
+                {retrying ? "Retrying…" : "Retry email"}
+              </button>
+            )}
+          </div>
+        )}
+        {delivery?.status === "suppressed" && (
+          <p className="boardy-form-error" role="alert">
+            The invitation was created, but email delivery is unavailable for
+            this address. Copy the link instead.
+          </p>
+        )}
         {link && (
           <div className="boardy-invite-result">
-            <input readOnly value={link} />
+            <input aria-label="Invitation link" readOnly value={link} />
             <button
               type="button"
               onClick={(event) =>
