@@ -80,6 +80,7 @@ const BoardyBoardShare = () => {
 
   const createInvite = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const ownerWindow = event.currentTarget.ownerDocument.defaultView;
     setCreating(true);
     setError("");
     setDelivery(null);
@@ -96,7 +97,6 @@ const BoardyBoardShare = () => {
           maxUses: 1,
         },
       );
-      const ownerWindow = event.currentTarget.ownerDocument.defaultView;
       setLink(`${ownerWindow?.location.origin || ""}/invite/${result.token}`);
       setInvitationId(result.invitation.id);
       setInviteToken(result.token);
