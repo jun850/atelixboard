@@ -47,6 +47,17 @@ export const loadWorkspace = (workspaceId?: string) =>
     ...(workspaceId ? { workspaceId } : {}),
   });
 
+export const getOrCreateSceneCollaborationKey = (
+  workspaceId: string,
+  sceneId: string,
+  candidateRoomKey: string,
+) =>
+  workspaceApi<{ roomKey: string }>("collaboration-key", "POST", {
+    workspaceId,
+    sceneId,
+    candidateRoomKey,
+  });
+
 export const createCollection = (
   workspaceId: string,
   name: string,

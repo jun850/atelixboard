@@ -827,6 +827,46 @@ Deno.serve(async (request) => {
       : defaultWorkspaceId;
 
     if (
+      parts[0] === "collaboration-key" &&
+      parts.length === 1 &&
+      method === "POST"
+    ) {
+      const sceneId = requireUuid(body.sceneId);
+      const candidateRoomKey = String(body.candidateRoomKey || "");
+      if (!/^[A-Za-z0-9_-]{22}$/.test(candidateRoomKey)) {
+        throw new Error("invalid_collaboration_key");
+      }
+      const capabilities = await sceneRole(client, sceneId);
+      if (!capabilities.can_manage) {
+        throw new Error("forbidden");
+      }
+      const { data: scene, error: sceneError } = await admin
+        .from("scenes")
+        .select("id")
+        .eq("id", sceneId)
+        .eq("workspace_id", workspaceId)
+        .eq("status", "active")
+        .single();
+      if (sceneError || !scene) {
+        throw sceneError || new Error("not_found");
+      }
+      const { data, error } = await admin.rpc(
+        "boardy_get_or_create_scene_collaboration_key",
+        {
+          target_scene_id: sceneId,
+          candidate_room_key: candidateRoomKey,
+        },
+      );
+      const collaboration = Array.isArray(data) ? data[0] : data;
+      if (error || !collaboration?.room_key) {
+        throw error || new Error("collaboration_key_unavailable");
+      }
+      return response(request, 200, {
+        roomKey: collaboration.room_key,
+      });
+    }
+
+    if (
       (parts[0] === "bootstrap" || parts[0] === "dashboard") &&
       method === "GET"
     ) {

@@ -75,7 +75,11 @@ import {
 } from "../data/FileManager";
 import { FileStatusStore } from "../data/fileStatusStore";
 import { LocalData } from "../data/LocalData";
-import { loadWorkspace, workspaceApi } from "../workspace/api";
+import {
+  getOrCreateSceneCollaborationKey,
+  loadWorkspace,
+  workspaceApi,
+} from "../workspace/api";
 import {
   isSavedToFirebase,
   loadFilesFromFirebase,
@@ -530,12 +534,18 @@ class Collab extends PureComponent<CollabProps, CollabState> {
       )?.[1];
       roomId = boardSceneId || generatedRoom.roomId;
       roomKey = generatedRoom.roomKey;
-      const directRoomLink = getCollaborationLink({ roomId, roomKey });
-      window.history.pushState({}, APP_NAME, directRoomLink);
-      shareRoomLink = directRoomLink;
 
       if (isSupabaseConfigured && boardSceneId) {
         const dashboard = await loadWorkspace();
+        const collaboration = await getOrCreateSceneCollaborationKey(
+          dashboard.workspace.id,
+          boardSceneId,
+          generatedRoom.roomKey,
+        );
+        roomKey = collaboration.roomKey;
+        const directRoomLink = getCollaborationLink({ roomId, roomKey });
+        window.history.pushState({}, APP_NAME, directRoomLink);
+        shareRoomLink = directRoomLink;
         const invitation = await workspaceApi<{ token: string }>(
           "invitations",
           "POST",
@@ -554,6 +564,10 @@ class Collab extends PureComponent<CollabProps, CollabState> {
         );
         invitationLink.hash = new URL(directRoomLink).hash;
         shareRoomLink = invitationLink.href;
+      } else {
+        const directRoomLink = getCollaborationLink({ roomId, roomKey });
+        window.history.pushState({}, APP_NAME, directRoomLink);
+        shareRoomLink = directRoomLink;
       }
     }
 
