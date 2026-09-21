@@ -149,7 +149,7 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
         <nav className="atelix-site-nav" aria-label="Primary navigation">
           <a href="#product">Product</a>
           <a href="#solutions">Solutions</a>
-          <a href="#resources">Resources</a>
+          <a href="#demo">Demo</a>
           <a href="#pricing">Pricing</a>
         </nav>
         <div className="atelix-site-actions">
@@ -243,6 +243,35 @@ const LandingPage = ({ signedIn }: { signedIn: boolean }) => {
               Learn more <LandingIcon name="arrow" />
             </a>
           </article>
+        </div>
+      </section>
+
+      <section className="atelix-demo" id="demo" aria-labelledby="demo-title">
+        <div className="atelix-demo__inner">
+          <div className="atelix-demo__intro">
+            <h2 id="demo-title">See ideas take shape.</h2>
+            <div>
+              <p id="demo-description">
+                Watch a rough brainstorm become a clear, structured canvas in
+                under a minute.
+              </p>
+              <span>Boardy product demo · 49 seconds</span>
+            </div>
+          </div>
+          <div className="atelix-demo__stage">
+            <video
+              aria-describedby="demo-description"
+              aria-label="Boardy whiteboard product demonstration"
+              controls
+              playsInline
+              poster="/boardy-demo-poster.jpg"
+              preload="metadata"
+            >
+              <source src="/boardy-demo.mp4" type="video/mp4" />
+              Your browser does not support embedded video. You can
+              <a href="/boardy-demo.mp4"> download the Boardy demo</a> instead.
+            </video>
+          </div>
         </div>
       </section>
 
