@@ -42,10 +42,25 @@ export const retryInvitationEmail = (
     { workspaceId, token },
   );
 
-export const loadWorkspace = (workspaceId?: string) =>
-  workspaceApi<WorkspaceDashboard>("dashboard", "GET", {
-    ...(workspaceId ? { workspaceId } : {}),
-  });
+export const normalizeWorkspaceDashboard = (
+  dashboard: WorkspaceDashboard,
+): WorkspaceDashboard => ({
+  ...dashboard,
+  trashBoards: Array.isArray(dashboard.trashBoards)
+    ? dashboard.trashBoards
+    : [],
+  freeCreation: {
+    boardAvailable: dashboard.freeCreation?.boardAvailable === true,
+    collectionAvailable: dashboard.freeCreation?.collectionAvailable === true,
+  },
+});
+
+export const loadWorkspace = async (workspaceId?: string) =>
+  normalizeWorkspaceDashboard(
+    await workspaceApi<WorkspaceDashboard>("dashboard", "GET", {
+      ...(workspaceId ? { workspaceId } : {}),
+    }),
+  );
 
 export const getOrCreateSceneCollaborationKey = (
   workspaceId: string,
