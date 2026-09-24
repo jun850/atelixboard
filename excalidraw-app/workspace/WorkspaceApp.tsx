@@ -13,9 +13,11 @@ import {
 } from "./api";
 import { InfoTooltip } from "./InfoTooltip";
 import { WorkspaceCommentsContext } from "./WorkspaceCommentsContext";
+import { ProAccessProvider, useProAccess } from "./ProAccess";
 
 import "./WorkspaceApp.scss";
 
+import type { PaidAction } from "./ProAccess";
 import type { Session } from "@supabase/supabase-js";
 import type {
   ComponentType,
@@ -31,12 +33,18 @@ import type {
 } from "./types";
 import type { InvitationEmailDelivery, InvitationResponse } from "./api";
 
+const dispatchPopState = (ownerWindow: Window) => {
+  const event = ownerWindow.document.createEvent("Event");
+  event.initEvent("popstate", false, false);
+  ownerWindow.dispatchEvent(event);
+};
+
 const routeTo = (ownerWindow: Window | null, path: string) => {
   if (!ownerWindow) {
     return;
   }
   ownerWindow.history.pushState({}, "", path);
-  ownerWindow.dispatchEvent(new PopStateEvent("popstate"));
+  dispatchPopState(ownerWindow);
 };
 
 const Icon = ({
@@ -405,16 +413,22 @@ const WorkspaceSidebar = ({
   data,
   activeCollection,
   pathname,
+  sharedView,
   onSignOut,
   localDemo,
+  isPro,
+  onCreateCollection,
   query,
   setQuery,
 }: {
   data: WorkspaceDashboard;
   activeCollection: string | null;
   pathname: string;
+  sharedView: boolean;
   onSignOut: () => Promise<void>;
   localDemo: boolean;
+  isPro: boolean;
+  onCreateCollection: (ownerWindow: Window | null) => void;
   query: string;
   setQuery: (value: string) => void;
 }) => (
@@ -425,7 +439,7 @@ const WorkspaceSidebar = ({
       </span>
       <span>
         <strong>{data.workspace.name}</strong>
-        <small>Boardy Pro</small>
+        <small>{isPro ? "Boardy Pro" : "Boardy Free"}</small>
       </span>
       <span className="boardy-switcher-chevron" aria-hidden="true" />
     </div>
@@ -446,7 +460,7 @@ const WorkspaceSidebar = ({
     </label>
     <nav aria-label="Workspace navigation">
       <SidebarButton
-        active={!activeCollection && pathname === "/app"}
+        active={!activeCollection && pathname === "/app" && !sharedView}
         icon="boards"
         onClick={(event) =>
           routeTo(event.currentTarget.ownerDocument.defaultView, "/app")
@@ -481,6 +495,7 @@ const WorkspaceSidebar = ({
         </>
       )}
       <SidebarButton
+        active={sharedView}
         icon="shared"
         onClick={(event) =>
           routeTo(
@@ -492,6 +507,7 @@ const WorkspaceSidebar = ({
         Shared with me
       </SidebarButton>
       <SidebarButton
+        active={pathname === "/app/trash"}
         icon="trash"
         onClick={(event) =>
           routeTo(event.currentTarget.ownerDocument.defaultView, "/app/trash")
@@ -506,10 +522,7 @@ const WorkspaceSidebar = ({
         type="button"
         aria-label="Create collection"
         onClick={(event) =>
-          routeTo(
-            event.currentTarget.ownerDocument.defaultView,
-            "/app?new=collection",
-          )
+          onCreateCollection(event.currentTarget.ownerDocument.defaultView)
         }
       >
         <Icon name="plus" />
@@ -533,6 +546,25 @@ const WorkspaceSidebar = ({
       ))}
     </nav>
     <div className="boardy-sidebar-account">
+      {!isPro && (
+        <button
+          className="boardy-upgrade-button"
+          type="button"
+          onClick={(event) => {
+            const ownerWindow = event.currentTarget.ownerDocument.defaultView;
+            if (ownerWindow) {
+              routeTo(
+                ownerWindow,
+                `/app/subscription?next=${encodeURIComponent(
+                  ownerWindow.location.pathname,
+                )}`,
+              );
+            }
+          }}
+        >
+          Upgrade to Pro
+        </button>
+      )}
       {data.profile.email?.toLowerCase() === "junarcana263@gmail.com" && (
         <button
           className="boardy-sign-out"
@@ -591,6 +623,7 @@ const WhiteboardCard = ({
 }) => {
   const [title, setTitle] = useState(board.title);
   const [renaming, setRenaming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [renameError, setRenameError] = useState("");
   const [action, setAction] = useState<"rename" | "move" | null>(null);
   const [collectionId, setCollectionId] = useState(board.collection_id);
@@ -666,8 +699,38 @@ const WhiteboardCard = ({
             <Icon name="move" />
             Move to collection
           </button>
+          <button
+            type="button"
+            disabled={deleting}
+            onClick={async (event) => {
+              const ownerWindow = event.currentTarget.ownerDocument.defaultView;
+              if (!ownerWindow) {
+                return;
+              }
+              setDeleting(true);
+              try {
+                await cloudApi("scenes", `scenes/${board.id}`, "PATCH", {
+                  action: "delete",
+                  requestId: ownerWindow.crypto.randomUUID(),
+                });
+                await refresh();
+              } catch (caught) {
+                setRenameError(
+                  caught instanceof Error
+                    ? caught.message
+                    : "Whiteboard could not be moved to Trash.",
+                );
+              } finally {
+                setDeleting(false);
+              }
+            }}
+          >
+            <Icon name="trash" />
+            {deleting ? "Moving…" : "Move to Trash"}
+          </button>
         </div>
       </details>
+      {renameError && !action && <p role="alert">{renameError}</p>}
       {action && (
         <div className="boardy-dialog-backdrop" role="presentation">
           <section
@@ -761,24 +824,90 @@ const WhiteboardCard = ({
   );
 };
 
+const TrashBoardCard = ({
+  board,
+  refresh,
+}: {
+  board: WhiteboardSummary;
+  refresh: () => Promise<void>;
+}) => {
+  const [restoring, setRestoring] = useState(false);
+  const [error, setError] = useState("");
+  const daysLeft = Math.max(
+    0,
+    Math.ceil(
+      (new Date(board.deleted_at || "").getTime() +
+        30 * 24 * 60 * 60 * 1000 -
+        Date.now()) /
+        (24 * 60 * 60 * 1000),
+    ),
+  );
+  return (
+    <article className="boardy-trash-card">
+      <span className="boardy-trash-card__icon" aria-hidden="true">
+        <Icon name="boards" />
+      </span>
+      <div>
+        <strong>{board.title}</strong>
+        <small>
+          Deleted {relativeTime(board.deleted_at || board.updated_at)} ·{" "}
+          {daysLeft} days left
+        </small>
+        {error && <p role="alert">{error}</p>}
+      </div>
+      <button
+        type="button"
+        className="boardy-button is-secondary"
+        disabled={restoring}
+        onClick={async (event) => {
+          const ownerWindow = event.currentTarget.ownerDocument.defaultView;
+          setRestoring(true);
+          setError("");
+          try {
+            await cloudApi("scenes", `scenes/${board.id}`, "PATCH", {
+              action: "restore",
+              requestId: ownerWindow?.crypto.randomUUID(),
+            });
+            await refresh();
+          } catch (caught) {
+            setError(
+              caught instanceof Error
+                ? caught.message
+                : "Whiteboard could not be restored.",
+            );
+          } finally {
+            setRestoring(false);
+          }
+        }}
+      >
+        {restoring ? "Restoring…" : "Restore"}
+      </button>
+    </article>
+  );
+};
+
 const DashboardContent = ({
   data,
   activeCollection,
   refresh,
   query,
   openNewCollection,
+  view,
 }: {
   data: WorkspaceDashboard;
   activeCollection: string | null;
   refresh: () => Promise<void>;
   query: string;
   openNewCollection: boolean;
+  view: "all" | "shared" | "trash";
 }) => {
+  const { isPro, requirePro } = useProAccess();
   const [sort, setSort] = useState<"updated" | "name-asc" | "name-desc">(
     "updated",
   );
   const [creating, setCreating] = useState(false);
   const [newCollection, setNewCollection] = useState(false);
+  const dashboardRef = useRef<HTMLElement>(null);
   const [sharingCollection, setSharingCollection] = useState(false);
   const [previews, setPreviews] = useState<
     Record<string, ThumbnailDocument | null>
@@ -790,6 +919,7 @@ const DashboardContent = ({
     .filter(
       (board) =>
         board.status === "active" &&
+        (view !== "shared" || board.owner_id !== data.profile.userId) &&
         (!activeCollection || board.collection_id === activeCollection) &&
         board.title.toLowerCase().includes(query.toLowerCase()),
     )
@@ -806,6 +936,9 @@ const DashboardContent = ({
       );
     });
   const defaultCollection = collection || data.collections[0];
+  const trashBoards = data.trashBoards.filter((board) =>
+    board.title.toLowerCase().includes(query.toLowerCase()),
+  );
   useEffect(() => {
     let active = true;
     void workspaceApi<{
@@ -827,12 +960,34 @@ const DashboardContent = ({
   }, [data.workspace.id, data.whiteboards]);
   useEffect(() => {
     if (openNewCollection) {
-      setNewCollection(true);
+      const ownerWindow =
+        dashboardRef.current?.ownerDocument.defaultView || null;
+      if (isPro || data.freeCreation.collectionAvailable) {
+        setNewCollection(true);
+        if (ownerWindow) {
+          ownerWindow.history.replaceState({}, "", "/app");
+          dispatchPopState(ownerWindow);
+        }
+      } else {
+        requirePro("collection", ownerWindow);
+      }
     }
-  }, [openNewCollection]);
+  }, [
+    openNewCollection,
+    isPro,
+    data.freeCreation.collectionAvailable,
+    requirePro,
+  ]);
 
   const createBoard = async (ownerWindow: Window | null) => {
     if (!defaultCollection) {
+      return;
+    }
+    if (
+      !isPro &&
+      !data.freeCreation.boardAvailable &&
+      !requirePro("board", ownerWindow)
+    ) {
       return;
     }
     setCreating(true);
@@ -852,19 +1007,35 @@ const DashboardContent = ({
         },
       );
       routeTo(ownerWindow, `/app/boards/${created.sceneId}`);
+    } catch (caught) {
+      if (caught instanceof Error && caught.message === "PRO_REQUIRED") {
+        requirePro("board", ownerWindow);
+      } else {
+        throw caught;
+      }
     } finally {
       setCreating(false);
     }
   };
 
   return (
-    <main className="boardy-dashboard-main" id="main-content">
+    <main
+      ref={dashboardRef}
+      className="boardy-dashboard-main"
+      id="main-content"
+    >
       <header className="boardy-dashboard-header">
         <div className="boardy-dashboard-heading">
-          <h1>{collection?.name || "Whiteboards"}</h1>
+          <h1>
+            {view === "trash"
+              ? "Trash"
+              : view === "shared"
+              ? "Shared with me"
+              : collection?.name || "Whiteboards"}
+          </h1>
         </div>
         <div className="boardy-dashboard-actions">
-          {collection && (
+          {view === "all" && collection && (
             <button
               type="button"
               className="boardy-button is-secondary"
@@ -873,45 +1044,80 @@ const DashboardContent = ({
               <Icon name="share" /> Share collection
             </button>
           )}
-          <button
-            type="button"
-            className="boardy-button is-secondary"
-            onClick={() => setNewCollection(true)}
-          >
-            <Icon name="collection" /> New collection
-          </button>
-          <button
-            type="button"
-            className="boardy-button is-primary"
-            disabled={creating || !defaultCollection}
-            onClick={(event) =>
-              void createBoard(event.currentTarget.ownerDocument.defaultView)
-            }
-          >
-            <Icon name="plus" /> {creating ? "Creating…" : "Create whiteboard"}
-          </button>
+          {view === "all" && (
+            <button
+              type="button"
+              className="boardy-button is-secondary"
+              onClick={(event) => {
+                if (isPro || data.freeCreation.collectionAvailable) {
+                  setNewCollection(true);
+                } else {
+                  requirePro(
+                    "collection",
+                    event.currentTarget.ownerDocument.defaultView,
+                  );
+                }
+              }}
+            >
+              <Icon name="collection" /> New collection
+            </button>
+          )}
+          {view === "all" && (
+            <button
+              type="button"
+              className="boardy-button is-primary"
+              disabled={creating || !defaultCollection}
+              onClick={(event) =>
+                void createBoard(event.currentTarget.ownerDocument.defaultView)
+              }
+            >
+              <Icon name="plus" />{" "}
+              {creating ? "Creating…" : "Create whiteboard"}
+            </button>
+          )}
         </div>
       </header>
-      <div className="boardy-dashboard-toolbar">
-        <label className="boardy-sort-control">
-          <Icon name="sort" />
-          <span className="sr-only">Sort whiteboards</span>
-          <select
-            aria-label="Sort whiteboards"
-            value={sort}
-            onChange={(event) =>
-              setSort(
-                event.target.value as "updated" | "name-asc" | "name-desc",
-              )
-            }
+      {view !== "trash" && (
+        <div className="boardy-dashboard-toolbar">
+          <label className="boardy-sort-control">
+            <Icon name="sort" />
+            <span className="sr-only">Sort whiteboards</span>
+            <select
+              aria-label="Sort whiteboards"
+              value={sort}
+              onChange={(event) =>
+                setSort(
+                  event.target.value as "updated" | "name-asc" | "name-desc",
+                )
+              }
+            >
+              <option value="updated">Recently updated</option>
+              <option value="name-asc">Name A–Z</option>
+              <option value="name-desc">Name Z–A</option>
+            </select>
+          </label>
+        </div>
+      )}
+      {view === "trash" ? (
+        trashBoards.length ? (
+          <section
+            className="boardy-trash-list"
+            aria-label="Deleted whiteboards"
           >
-            <option value="updated">Recently updated</option>
-            <option value="name-asc">Name A–Z</option>
-            <option value="name-desc">Name Z–A</option>
-          </select>
-        </label>
-      </div>
-      {boards.length ? (
+            {trashBoards.map((board) => (
+              <TrashBoardCard board={board} key={board.id} refresh={refresh} />
+            ))}
+          </section>
+        ) : (
+          <section className="boardy-empty-state">
+            <div>
+              <Icon name="trash" />
+            </div>
+            <h2>Trash is empty</h2>
+            <p>Deleted whiteboards appear here for 30 days.</p>
+          </section>
+        )
+      ) : boards.length ? (
         <section className="boardy-board-grid" aria-label="Whiteboards">
           {boards.map((board) => (
             <WhiteboardCard
@@ -930,14 +1136,20 @@ const DashboardContent = ({
             <Icon name="boards" />
           </div>
           <h2>
-            {query ? "No matching whiteboards" : "Create your first whiteboard"}
+            {query
+              ? "No matching whiteboards"
+              : view === "shared"
+              ? "No whiteboards shared with you yet"
+              : "Create your first whiteboard"}
           </h2>
           <p>
             {query
               ? "Try a different search."
+              : view === "shared"
+              ? "Whiteboards shared with you will appear here."
               : "Start with a blank canvas and invite collaborators when you are ready."}
           </p>
-          {!query && (
+          {!query && view === "all" && (
             <button
               className="boardy-button is-primary"
               type="button"
@@ -978,6 +1190,7 @@ const CollectionDialog = ({
   onClose: () => void;
   onCreated: () => Promise<void>;
 }) => {
+  const { isPro, requirePro } = useProAccess();
   const [name, setName] = useState("");
   const [visibility, setVisibility] =
     useState<WorkspaceCollection["visibility"]>("private");
@@ -989,8 +1202,7 @@ const CollectionDialog = ({
     label: string;
   }> = [
     { value: "private", label: "Private" },
-    { value: "workspace", label: "Workspace staff" },
-    { value: "selected", label: "Selected people" },
+    { value: "workspace", label: "Shared" },
   ];
   const selectedAccess =
     accessOptions.find((option) => option.value === visibility) ??
@@ -1014,11 +1226,31 @@ const CollectionDialog = ({
           onSubmit={async (event) => {
             event.preventDefault();
             setError("");
+            if (
+              !isPro &&
+              !data.freeCreation.collectionAvailable &&
+              !requirePro(
+                "collection",
+                event.currentTarget.ownerDocument.defaultView,
+              )
+            ) {
+              return;
+            }
             try {
               await createCollection(data.workspace.id, name, visibility);
               await onCreated();
               onClose();
             } catch (caught) {
+              if (
+                caught instanceof Error &&
+                caught.message === "PRO_REQUIRED"
+              ) {
+                requirePro(
+                  "collection",
+                  event.currentTarget.ownerDocument.defaultView,
+                );
+                return;
+              }
               setError(
                 caught instanceof Error
                   ? caught.message
@@ -1050,10 +1282,8 @@ const CollectionDialog = ({
               >
                 <strong>Private</strong>
                 <span>Only the owner and people given access can open it.</span>
-                <strong>Workspace staff</strong>
+                <strong>Shared</strong>
                 <span>Admins and staff can open and edit the collection.</span>
-                <strong>Selected people</strong>
-                <span>Only people added to this collection can open it.</span>
                 <span className="boardy-info-tooltip__note">
                   Important: workspace admins retain access to every collection,
                   including private collections.
@@ -1141,8 +1371,12 @@ const MembersView = ({
   data: WorkspaceDashboard;
   refresh: () => Promise<void>;
 }) => {
+  const { requirePro } = useProAccess();
   const [inviteLink, setInviteLink] = useState("");
   const invite = async (ownerWindow: Window | null) => {
+    if (!requirePro("invite", ownerWindow)) {
+      return;
+    }
     const result = await workspaceApi<{ token: string }>(
       "invitations",
       "POST",
@@ -1374,6 +1608,7 @@ const WorkspaceSettingsView = ({
   data: WorkspaceDashboard;
   refresh: () => Promise<void>;
 }) => {
+  const { isPro } = useProAccess();
   const [name, setName] = useState(data.workspace.name);
   const [status, setStatus] = useState("");
   const isAdmin = data.membership.role === "admin";
@@ -1458,12 +1693,16 @@ const WorkspaceSettingsView = ({
           <header>
             <h2>Plan and billing</h2>
             <span className="boardy-status-badge">
-              {data.workspace.subscription_status}
+              {isPro ? "Active" : "Free"}
             </span>
           </header>
           <div className="boardy-plan-summary">
-            <strong>Boardy Pro</strong>
-            <span>Cloud whiteboards and team collaboration</span>
+            <strong>{isPro ? "Boardy Pro" : "Boardy Free"}</strong>
+            <span>
+              {isPro
+                ? "Unlimited boards and Pro tools"
+                : "One whiteboard and one collection included"}
+            </span>
           </div>
           <dl>
             <div>
@@ -1491,7 +1730,7 @@ const WorkspaceSettingsView = ({
                 )
               }
             >
-              Manage plan and billing
+              {isPro ? "Manage plan and billing" : "Upgrade to Pro"}
             </button>
           )}
         </section>
@@ -1544,6 +1783,7 @@ const BoardEditor = ({
   BoardApp: ComponentType;
   sceneId: string;
 }) => {
+  const { isPro, requirePro } = useProAccess();
   const board = data.whiteboards.find((item) => item.id === sceneId);
   const editorCanvasRef = useRef<HTMLElement>(null);
   const [editorReady, setEditorReady] = useState(false);
@@ -1624,7 +1864,22 @@ const BoardEditor = ({
         <div className="boardy-editor-title">
           <strong>{board?.title || "Whiteboard"}</strong>
         </div>
-        <span aria-hidden="true" />
+        <div className="boardy-editor-actions">
+          {!isPro && (
+            <button
+              className="boardy-upgrade-button boardy-editor-mobile-upgrade"
+              type="button"
+              onClick={(event) =>
+                requirePro(
+                  "board",
+                  event.currentTarget.ownerDocument.defaultView,
+                )
+              }
+            >
+              Upgrade to Pro
+            </button>
+          )}
+        </div>
       </header>
       <div className="boardy-editor-body">
         <WorkspaceCommentsContext.Provider
@@ -1670,6 +1925,7 @@ const ResourceShareDialog = ({
   resourceName: string;
   onClose: () => void;
 }) => {
+  const { requirePro } = useProAccess();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"editor" | "commenter" | "viewer">("viewer");
   const [link, setLink] = useState("");
@@ -1720,6 +1976,9 @@ const ResourceShareDialog = ({
           onSubmit={async (event) => {
             event.preventDefault();
             const ownerWindow = event.currentTarget.ownerDocument.defaultView;
+            if (!requirePro("invite", ownerWindow)) {
+              return;
+            }
             setSubmitting(true);
             setError("");
             setDelivery(null);
@@ -1890,16 +2149,33 @@ export const WorkspaceApp = ({
   onSignOut,
   localDemo,
   locationHref,
+  isPro,
 }: {
   BoardApp: ComponentType;
   session: Session;
   onSignOut: () => Promise<void>;
   localDemo: boolean;
   locationHref: string;
+  isPro: boolean;
 }) => {
   const [data, setData] = useState<WorkspaceDashboard | null>(null);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
+  const proAccess = {
+    isPro,
+    requirePro: (action: PaidAction, ownerWindow: Window | null) => {
+      if (isPro) {
+        return true;
+      }
+      const current = new URL(locationHref);
+      const next = `${current.pathname}${current.search}${current.hash}`;
+      routeTo(
+        ownerWindow,
+        `/app/subscription?next=${encodeURIComponent(next)}&action=${action}`,
+      );
+      return false;
+    },
+  };
   const refresh = async () => {
     try {
       setData(await loadWorkspace());
@@ -1914,7 +2190,7 @@ export const WorkspaceApp = ({
   };
   useEffect(() => {
     void refresh();
-  }, []);
+  }, [locationHref]);
   const pathname = new URL(locationHref).pathname;
   const sceneId =
     pathname.match(/^\/app\/boards\/([0-9a-f-]{36})$/i)?.[1] || null;
@@ -1928,7 +2204,11 @@ export const WorkspaceApp = ({
     );
   }
   if (sceneId) {
-    return <BoardEditor data={data} BoardApp={BoardApp} sceneId={sceneId} />;
+    return (
+      <ProAccessProvider value={proAccess}>
+        <BoardEditor data={data} BoardApp={BoardApp} sceneId={sceneId} />
+      </ProAccessProvider>
+    );
   }
   const content =
     pathname === "/app/members" ? (
@@ -1944,23 +2224,43 @@ export const WorkspaceApp = ({
         refresh={refresh}
         query={query}
         openNewCollection={locationHref.includes("new=collection")}
+        view={
+          pathname === "/app/trash"
+            ? "trash"
+            : new URL(locationHref).searchParams.get("view") === "shared"
+            ? "shared"
+            : "all"
+        }
       />
     );
   return (
-    <div className="boardy-workspace-shell">
-      <a className="boardy-skip-link" href="#main-content">
-        Skip to content
-      </a>
-      <WorkspaceSidebar
-        data={data}
-        activeCollection={collectionId}
-        pathname={pathname}
-        onSignOut={onSignOut}
-        localDemo={localDemo}
-        query={query}
-        setQuery={setQuery}
-      />
-      <div className="boardy-workspace-stage">{content}</div>
-    </div>
+    <ProAccessProvider value={proAccess}>
+      <div className="boardy-workspace-shell">
+        <a className="boardy-skip-link" href="#main-content">
+          Skip to content
+        </a>
+        <WorkspaceSidebar
+          data={data}
+          activeCollection={collectionId}
+          pathname={pathname}
+          sharedView={
+            new URL(locationHref).searchParams.get("view") === "shared"
+          }
+          onSignOut={onSignOut}
+          localDemo={localDemo}
+          isPro={isPro}
+          onCreateCollection={(ownerWindow) => {
+            if (isPro || data.freeCreation.collectionAvailable) {
+              routeTo(ownerWindow, "/app?new=collection");
+            } else {
+              proAccess.requirePro("collection", ownerWindow);
+            }
+          }}
+          query={query}
+          setQuery={setQuery}
+        />
+        <div className="boardy-workspace-stage">{content}</div>
+      </div>
+    </ProAccessProvider>
   );
 };

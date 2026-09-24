@@ -21,6 +21,12 @@ const messages: Record<string, string> = {
   LIMIT_EXCEEDED:
     "This request is too large. Reduce the prompt or selected context.",
   CANCELLED: "Generation stopped or reached its generation deadline.",
+  PRO_REQUIRED: "Upgrade to Boardy Pro to use the Assistant.",
+  FORBIDDEN:
+    "You do not have access to this action. Refresh the board or ask its owner to check your access.",
+  REVISION_CONFLICT: "This changed in another tab. Refresh and try again.",
+  BILLING_UNAVAILABLE:
+    "Subscription status is temporarily unavailable. Try again shortly.",
 };
 export async function localApi<T>(
   ownerWindow: Window,
@@ -91,9 +97,17 @@ export async function cloudApi<T>(
     },
   });
   if (error) {
+    const responseError = await (error as { context?: Response }).context
+      ?.json?.()
+      .catch(() => null);
+    const code =
+      (responseError as { error?: string } | null)?.error ||
+      (data as { error?: string } | null)?.error;
     throw new Error(
-      (data as { error?: string } | null)?.error ||
-        "Cloud data could not be updated. Try again.",
+      code === "PRO_REQUIRED"
+        ? code
+        : (code && messages[code]) ||
+          "Cloud data could not be updated. Try again.",
     );
   }
   return data as T;

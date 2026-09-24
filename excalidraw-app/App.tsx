@@ -124,6 +124,7 @@ import { AgenticBoard } from "./agentic-board/AgenticBoard";
 import { BoardCommentPins } from "./workspace/BoardCommentPins";
 import { BoardCommentTool } from "./workspace/BoardCommentTool";
 import { DocumentEmbed } from "./documents/DocumentEmbed";
+import { useProAccess } from "./workspace/ProAccess";
 import { getDocument, uploadDocument } from "./documents/api";
 import { DOCUMENT_LINK_PREFIX, getBoardyDocumentData } from "./documents/types";
 
@@ -382,6 +383,7 @@ const initializeScene = async (opts: {
 };
 
 const ExcalidrawWrapper = () => {
+  const { isPro, requirePro } = useProAccess();
   const excalidrawAPI = useExcalidrawAPI();
 
   const [errorMessage, setErrorMessage] = useState("");
@@ -973,6 +975,18 @@ const ExcalidrawWrapper = () => {
       })}
     >
       <Excalidraw
+        onDocumentInsertRequested={() =>
+          requirePro(
+            "document",
+            appRootRef.current?.ownerDocument.defaultView || null,
+          )
+        }
+        onLibraryAssetUploadRequested={() =>
+          requirePro(
+            "library",
+            appRootRef.current?.ownerDocument.defaultView || null,
+          )
+        }
         onDocumentFilesSelected={insertDocuments}
         validateEmbeddable={(link) =>
           link.startsWith(DOCUMENT_LINK_PREFIX) ? true : undefined
@@ -1013,6 +1027,20 @@ const ExcalidrawWrapper = () => {
           return (
             <div className="excalidraw-ui-top-right">
               {collabError.message && <CollabError collabError={collabError} />}
+              {!isPro && (
+                <button
+                  className="boardy-upgrade-button boardy-editor-toolbar-upgrade"
+                  type="button"
+                  onClick={(event) =>
+                    requirePro(
+                      "invite",
+                      event.currentTarget.ownerDocument.defaultView,
+                    )
+                  }
+                >
+                  Upgrade to Pro
+                </button>
+              )}
               <LiveCollaborationTrigger
                 isCollaborating={isCollaborating}
                 onSelect={() =>

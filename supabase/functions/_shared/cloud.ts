@@ -18,6 +18,12 @@ export function cloudError(error: unknown) {
   if (raw.includes("revision_not_found")) {
     return "REVISION_NOT_FOUND";
   }
+  if (raw.includes("pro_required")) {
+    return "PRO_REQUIRED";
+  }
+  if (raw.includes("billing_unavailable")) {
+    return "BILLING_UNAVAILABLE";
+  }
   if (raw.includes("forbidden")) {
     return "FORBIDDEN";
   }
@@ -43,6 +49,10 @@ export function cloudErrorResponse(request: Request, error: unknown) {
       ? 401
       : code === "FORBIDDEN"
       ? 403
+      : code === "PRO_REQUIRED"
+      ? 402
+      : code === "BILLING_UNAVAILABLE"
+      ? 503
       : code === "NOT_FOUND" || code === "REVISION_NOT_FOUND"
       ? 404
       : code === "REVISION_CONFLICT"

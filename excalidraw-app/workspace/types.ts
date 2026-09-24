@@ -53,6 +53,11 @@ export type WorkspaceDashboard = {
   members: WorkspaceMember[];
   collections: WorkspaceCollection[];
   whiteboards: WhiteboardSummary[];
+  trashBoards: WhiteboardSummary[];
+  freeCreation: {
+    boardAvailable: boolean;
+    collectionAvailable: boolean;
+  };
   profile: BoardyProfile;
 };
 

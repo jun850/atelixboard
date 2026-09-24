@@ -26,6 +26,7 @@ import {
   retryInvitationEmail,
   workspaceApi,
 } from "../workspace/api";
+import { useProAccess } from "../workspace/ProAccess";
 
 import "./ShareDialog.scss";
 import { QRCode } from "./QRCode";
@@ -41,6 +42,7 @@ type OnExportToBackend = () => void;
 type ShareDialogType = "share" | "collaborationOnly";
 
 const BoardyBoardShare = () => {
+  const { requirePro } = useProAccess();
   const rootRef = useRef<HTMLDivElement>(null);
   const [context, setContext] = useState<{
     workspaceId: string;
@@ -81,6 +83,9 @@ const BoardyBoardShare = () => {
   const createInvite = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const ownerWindow = event.currentTarget.ownerDocument.defaultView;
+    if (!requirePro("invite", ownerWindow)) {
+      return;
+    }
     setCreating(true);
     setError("");
     setDelivery(null);
@@ -403,6 +408,7 @@ const ActiveRoomDialog = ({
 
 const ShareDialogPicker = (props: ShareDialogProps) => {
   const { t } = useI18n();
+  const { requirePro } = useProAccess();
 
   const { collabAPI } = props;
 
@@ -422,9 +428,17 @@ const ShareDialogPicker = (props: ShareDialogProps) => {
           size="large"
           label={t("roomDialog.button_startSession")}
           icon={playerPlayIcon}
-          onClick={() => {
+          onClick={(event) => {
+            if (
+              !requirePro(
+                "invite",
+                event.currentTarget.ownerDocument.defaultView,
+              )
+            ) {
+              return;
+            }
             trackEvent("share", "room creation", `ui (${getFrame()})`);
-            collabAPI.startCollaboration(null);
+            return collabAPI.startCollaboration(null);
           }}
         />
       </div>

@@ -11,7 +11,7 @@ import { useAtom } from "../editor-jotai";
 import { useLibraryCache } from "../hooks/useLibraryItemSvg";
 import { t } from "../i18n";
 
-import { useApp, useExcalidrawSetAppState } from "./App";
+import { useApp, useAppProps, useExcalidrawSetAppState } from "./App";
 import ConfirmDialog from "./ConfirmDialog";
 import { Dialog } from "./Dialog";
 import { isLibraryMenuOpenAtom } from "./LibraryMenu";
@@ -54,6 +54,7 @@ export const LibraryDropdownMenuButton: React.FC<{
   appState,
   className,
 }) => {
+  const { onLibraryAssetUploadRequested } = useAppProps();
   const [libraryItemsData] = useAtom(libraryItemsAtom);
   const [isLibraryMenuOpen, setIsLibraryMenuOpen] = useAtom(
     isLibraryMenuOpenAtom,
@@ -156,6 +157,9 @@ export const LibraryDropdownMenuButton: React.FC<{
   };
 
   const onLibraryImport = async () => {
+    if (onLibraryAssetUploadRequested?.() === false) {
+      return;
+    }
     try {
       await library.updateLibrary({
         libraryItems: fileOpen({

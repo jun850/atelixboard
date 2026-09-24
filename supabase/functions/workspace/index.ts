@@ -5,6 +5,7 @@ import {
   decodeScene,
   requireUuid,
 } from "../_shared/cloud.ts";
+import { requireProAccess } from "../_shared/pro.ts";
 
 type AdminClient = Awaited<ReturnType<typeof authenticate>>["admin"];
 
@@ -354,6 +355,7 @@ const ensureAccount = async (
         owner_id: user.id,
         name: "My whiteboards",
         visibility: "private",
+        is_system_default: true,
       },
       { onConflict: "workspace_id,normalized_name" },
     )
@@ -696,39 +698,67 @@ const dashboard = async (
     "staff",
     "external",
   ]);
-  const [workspaceResult, membersResult, collectionsResult, scenesResult] =
-    await Promise.all([
-      admin
-        .from("boardy_workspaces")
-        .select("*")
-        .eq("id", workspaceId)
-        .single(),
-      admin
-        .from("boardy_workspace_members")
-        .select("workspace_id,user_id,role,status,joined_at")
-        .eq("workspace_id", workspaceId)
-        .eq("status", "active")
-        .order("joined_at"),
-      client
-        .from("boardy_collections")
-        .select("*")
-        .eq("workspace_id", workspaceId)
-        .eq("status", "active")
-        .order("updated_at", { ascending: false }),
-      client
-        .from("scenes")
-        .select(
-          "id,owner_id,title,status,current_revision_number,thumbnail_asset_id,workspace_id,collection_id,created_at,updated_at,deleted_at",
-        )
-        .eq("workspace_id", workspaceId)
-        .order("updated_at", { ascending: false })
-        .limit(250),
-    ]);
+  const [
+    workspaceResult,
+    membersResult,
+    collectionsResult,
+    scenesResult,
+    trashResult,
+    ownBoardResult,
+    ownCollectionResult,
+  ] = await Promise.all([
+    admin.from("boardy_workspaces").select("*").eq("id", workspaceId).single(),
+    admin
+      .from("boardy_workspace_members")
+      .select("workspace_id,user_id,role,status,joined_at")
+      .eq("workspace_id", workspaceId)
+      .eq("status", "active")
+      .order("joined_at"),
+    client
+      .from("boardy_collections")
+      .select("*")
+      .eq("workspace_id", workspaceId)
+      .eq("status", "active")
+      .order("updated_at", { ascending: false }),
+    client
+      .from("scenes")
+      .select(
+        "id,owner_id,title,status,current_revision_number,thumbnail_asset_id,workspace_id,collection_id,created_at,updated_at,deleted_at",
+      )
+      .eq("workspace_id", workspaceId)
+      .eq("status", "active")
+      .order("updated_at", { ascending: false })
+      .limit(250),
+    client
+      .from("scenes")
+      .select(
+        "id,owner_id,title,status,current_revision_number,thumbnail_asset_id,workspace_id,collection_id,created_at,updated_at,deleted_at",
+      )
+      .eq("workspace_id", workspaceId)
+      .eq("owner_id", userId)
+      .eq("status", "deleted")
+      .gte(
+        "deleted_at",
+        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      )
+      .order("deleted_at", { ascending: false })
+      .limit(250),
+    admin.from("scenes").select("id").eq("owner_id", userId).limit(1),
+    admin
+      .from("boardy_collections")
+      .select("id")
+      .eq("owner_id", userId)
+      .eq("is_system_default", false)
+      .limit(1),
+  ]);
   const firstError = [
     workspaceResult,
     membersResult,
     collectionsResult,
     scenesResult,
+    trashResult,
+    ownBoardResult,
+    ownCollectionResult,
   ].find((result) => result.error)?.error;
   if (firstError) {
     throw firstError;
@@ -758,6 +788,11 @@ const dashboard = async (
     })),
     collections: collectionsResult.data || [],
     whiteboards: scenesResult.data || [],
+    trashBoards: trashResult.data || [],
+    freeCreation: {
+      boardAvailable: !ownBoardResult.data?.length,
+      collectionAvailable: !ownCollectionResult.data?.length,
+    },
     profile: profilesById[userId],
   };
 };
@@ -811,6 +846,7 @@ Deno.serve(async (request) => {
       const data = membershipResult.data;
       return response(request, 200, {
         hasWorkspaceAccess: Boolean(data?.length || allowlistResult.data),
+        allowlisted: Boolean(allowlistResult.data),
         workspaceId: data?.[0]?.workspace_id || null,
         role: data?.[0]?.role || null,
         accessSource: data?.length
@@ -831,6 +867,7 @@ Deno.serve(async (request) => {
       parts.length === 1 &&
       method === "POST"
     ) {
+      await requireProAccess(admin, user.id);
       const sceneId = requireUuid(body.sceneId);
       const candidateRoomKey = String(body.candidateRoomKey || "");
       if (!/^[A-Za-z0-9_-]{22}$/.test(candidateRoomKey)) {
@@ -974,20 +1011,23 @@ Deno.serve(async (request) => {
       if (!name || name.length > 120) {
         throw new Error("limit");
       }
-      const { data, error } = await admin
+      const { data: priorCollections, error: priorError } = await admin
         .from("boardy_collections")
-        .insert({
-          workspace_id: workspaceId,
-          owner_id: user.id,
-          name,
-          visibility: ["private", "workspace", "selected"].includes(
-            body.visibility,
-          )
-            ? body.visibility
-            : "private",
-        })
-        .select("*")
-        .single();
+        .select("id")
+        .eq("owner_id", user.id)
+        .eq("is_system_default", false)
+        .limit(1);
+      if (priorError) {
+        throw priorError;
+      }
+      if (priorCollections?.length) {
+        await requireProAccess(admin, user.id);
+      }
+      const { data, error } = await client.rpc("boardy_create_collection", {
+        p_workspace_id: workspaceId,
+        p_name: name,
+        p_visibility: body.visibility === "workspace" ? "workspace" : "private",
+      });
       if (error) {
         throw error;
       }
@@ -1178,6 +1218,7 @@ Deno.serve(async (request) => {
     }
 
     if (parts[0] === "invitations" && parts.length === 1 && method === "POST") {
+      await requireProAccess(admin, user.id);
       const sceneId = body.sceneId ? requireUuid(body.sceneId) : null;
       const collectionId = body.collectionId
         ? requireUuid(body.collectionId)
@@ -1413,6 +1454,7 @@ Deno.serve(async (request) => {
     }
 
     if (parts[0] === "comments" && parts.length === 2 && method === "POST") {
+      await requireProAccess(admin, user.id);
       const sceneId = requireUuid(parts[1]);
       const capabilities = await sceneRole(client, sceneId);
       if (!capabilities.can_comment) {
@@ -1496,6 +1538,15 @@ Deno.serve(async (request) => {
         bodyText,
         hasAttachment: Boolean(attachment),
       });
+      await admin.from("boardy_comment_reads").upsert(
+        {
+          thread_id: thread.id,
+          user_id: user.id,
+          read_through: new Date().toISOString(),
+          manual_unread: false,
+        },
+        { onConflict: "thread_id,user_id" },
+      );
       return response(request, 201, { thread, message });
     }
 
@@ -1603,6 +1654,7 @@ Deno.serve(async (request) => {
       parts[2] &&
       method === "POST"
     ) {
+      await requireProAccess(admin, user.id);
       const threadId = requireUuid(parts[2]);
       const { data: thread, error: threadError } = await admin
         .from("boardy_comment_threads")
@@ -1683,6 +1735,15 @@ Deno.serve(async (request) => {
         bodyText: messageText,
         hasAttachment: Boolean(attachment),
       });
+      await admin.from("boardy_comment_reads").upsert(
+        {
+          thread_id: threadId,
+          user_id: user.id,
+          read_through: new Date().toISOString(),
+          manual_unread: false,
+        },
+        { onConflict: "thread_id,user_id" },
+      );
       return response(request, 201, { message });
     }
 
@@ -1728,13 +1789,18 @@ Deno.serve(async (request) => {
       } else {
         throw new Error("forbidden");
       }
-      const { error: updateError } = await admin
+      const { data: updated, error: updateError } = await admin
         .from("boardy_comment_threads")
         .update(patch)
         .eq("id", threadId)
-        .eq("version", body.version || thread.version);
+        .eq("version", body.version || thread.version)
+        .select("id")
+        .maybeSingle();
       if (updateError) {
         throw updateError;
+      }
+      if (!updated) {
+        throw new Error("revision_conflict");
       }
       return response(request, 200, { ok: true, version: thread.version + 1 });
     }

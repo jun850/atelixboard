@@ -8,6 +8,7 @@ import {
   providerHeaders,
   response,
 } from "../_shared/agentic.ts";
+import { requireProAccess } from "../_shared/pro.ts";
 
 const cleanJson = (value: string) =>
   JSON.parse(
@@ -41,6 +42,7 @@ Deno.serve(async (request) => {
     if (envelope.path !== "generate" || envelope.method !== "POST") {
       throw new Error("INVALID_OUTPUT");
     }
+    await requireProAccess(admin, userId);
     const input = envelope.body;
     requestId = input?.requestId;
     const template = templates.find((item) => item.id === input?.templateId);
@@ -290,7 +292,7 @@ Deno.serve(async (request) => {
         .eq("status", "running");
     }
     const code = errorCode(error);
-    return response(request, code === "UNAUTHENTICATED" ? 401 : 400, {
+    return response(request, code === "UNAUTHENTICATED" ? 401 : code === "PRO_REQUIRED" ? 402 : 400, {
       error: code,
     });
   }

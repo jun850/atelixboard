@@ -26,13 +26,17 @@ export const AppMainMenu: React.FC<{
   return (
     <MainMenu>
       <MainMenu.Group title="Create">
-        <MainMenu.Item icon={TemplatesIcon} onSelect={props.onTemplatesOpen}>
+        <MainMenu.Item
+          icon={TemplatesIcon}
+          onSelect={props.onTemplatesOpen}
+          badge={<MainMenu.Item.Badge>PRO</MainMenu.Item.Badge>}
+        >
           Templates
         </MainMenu.Item>
         <MainMenu.Item
           icon={MagicIcon}
           onSelect={props.onAssistantOpen}
-          badge={<MainMenu.Item.Badge>NEW</MainMenu.Item.Badge>}
+          badge={<MainMenu.Item.Badge>PRO</MainMenu.Item.Badge>}
         >
           Assistant
         </MainMenu.Item>

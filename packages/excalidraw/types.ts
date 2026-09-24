@@ -995,6 +995,8 @@ export interface ExcalidrawProps {
     files: readonly File[],
     position: { x: number; y: number },
   ) => void | Promise<void>;
+  onDocumentInsertRequested?: () => boolean;
+  onLibraryAssetUploadRequested?: () => boolean;
   aiEnabled?: boolean;
   showDeprecatedFonts?: boolean;
   renderScrollbars?: boolean;

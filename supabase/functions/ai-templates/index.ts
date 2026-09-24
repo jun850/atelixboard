@@ -6,6 +6,7 @@ import {
   requireRequestId,
   requireUuid,
 } from "../_shared/cloud.ts";
+import { requireProAccess } from "../_shared/pro.ts";
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
@@ -47,6 +48,7 @@ Deno.serve(async (request) => {
     }
 
     if (method === "POST" && parts.length === 1) {
+      await requireProAccess(admin, user.id);
       requireRequestId(body.requestId);
       const encoded = await encodeScene(body.document);
       const templateId = crypto.randomUUID();

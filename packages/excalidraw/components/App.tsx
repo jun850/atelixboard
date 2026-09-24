@@ -2747,6 +2747,7 @@ class App extends React.Component<AppProps, AppState> {
         name: this.getName(),
         viewBackgroundColor: this.state.viewBackgroundColor,
         exportingFrame: opts.exportingFrame,
+        ownerDocument: this.ownerDocument,
       },
     )
       .catch(muteFSAbortError)
@@ -12950,6 +12951,9 @@ class App extends React.Component<AppProps, AppState> {
 
   public onDocumentToolbarButtonClick = () => {
     if (!this.props.onDocumentFilesSelected) {
+      return;
+    }
+    if (this.props.onDocumentInsertRequested?.() === false) {
       return;
     }
     const input = this.ownerDocument.createElement("input");

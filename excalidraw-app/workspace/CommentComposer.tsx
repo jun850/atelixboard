@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { uploadCommentImage } from "./api";
+import { useProAccess } from "./ProAccess";
 
 import type { KeyboardEvent } from "react";
 import type { CommentMention, WorkspaceMember } from "./types";
@@ -30,6 +31,7 @@ export const CommentComposer = ({
   ) => Promise<void>;
   autoFocus?: boolean;
 }) => {
+  const { isPro, requirePro } = useProAccess();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState("");
@@ -100,7 +102,18 @@ export const CommentComposer = ({
   };
 
   const submit = async () => {
-    if (submitting || (!message.trim() && !file)) {
+    if (submitting) {
+      return;
+    }
+    if (
+      !requirePro(
+        "comment",
+        textareaRef.current?.ownerDocument.defaultView || null,
+      )
+    ) {
+      return;
+    }
+    if (!message.trim() && !file) {
       return;
     }
     setSubmitting(true);
@@ -279,16 +292,19 @@ export const CommentComposer = ({
             }}
           />
         </div>
-        <button
-          type="button"
-          className="boardy-comment-send"
-          aria-label="Send comment"
-          title="Send comment"
-          disabled={submitting || (!message.trim() && !file)}
-          onClick={() => void submit()}
-        >
-          <SendIcon />
-        </button>
+        <div className="boardy-comment-composer__submit">
+          {!isPro && <span className="boardy-pro-tag">Pro</span>}
+          <button
+            type="button"
+            className="boardy-comment-send"
+            aria-label="Send comment"
+            title="Send comment"
+            disabled={submitting || (isPro && !message.trim() && !file)}
+            onClick={() => void submit()}
+          >
+            <SendIcon />
+          </button>
+        </div>
       </div>
       {emojiOpen && (
         <div className="boardy-emoji-picker" aria-label="Choose an emoji">

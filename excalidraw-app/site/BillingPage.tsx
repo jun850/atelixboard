@@ -22,6 +22,7 @@ type BillingPageProps = {
   user: User;
   onUnlocked?: () => void;
   onSignOut?: () => Promise<void>;
+  onBack?: () => void;
 };
 
 const getErrorMessage = (error: unknown) =>
@@ -78,31 +79,29 @@ const PRO_BENEFIT_GROUPS = [
     title: "Create without limits",
     icon: "create",
     benefits: [
-      "Full editor and infinite board",
-      "Unlimited scenes and folders",
-      "PNG, SVG and file export",
-      "Libraries and templates",
+      "Unlimited whiteboards and collections",
+      "Templates and saved templates",
+      "Insert documents",
     ],
   },
   {
     title: "Collaborate clearly",
     icon: "collaborate",
     benefits: [
-      "Unlimited collaborators",
-      "Team workspaces and comments",
-      "Presentations and sharing",
-      "Edit and view permissions",
+      "Email and member invitations",
+      "Comment and reply",
+      "Manage shared workspaces",
     ],
   },
   {
     title: "Use your own stack",
     icon: "stack",
-    benefits: ["Extended AI tools", "Bring your own LLM subscription"],
+    benefits: ["Assistant generation", "Bring your own model connection"],
   },
   {
     title: "Share with control",
     icon: "share",
-    benefits: ["Secure cloud storage", "Access management"],
+    benefits: ["Private or shared collections", "Board access management"],
   },
 ];
 
@@ -201,6 +200,7 @@ export const BillingPage = ({
   user,
   onUnlocked,
   onSignOut,
+  onBack,
 }: BillingPageProps) => {
   const [offerings, setOfferings] = useState<Offerings | null>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
@@ -291,12 +291,19 @@ export const BillingPage = ({
             <img src="/atelix-horizontal.png" alt="Atelix" />
           </span>
         </a>
-        {onSignOut && (
+        {(onSignOut || onBack) && (
           <div className="boardy-paywall__nav-actions">
             <span className="boardy-paywall__nav-account">{user.email}</span>
-            <button type="button" onClick={() => void onSignOut()}>
-              Sign out
-            </button>
+            {onBack && (
+              <button type="button" onClick={onBack}>
+                Back to workspace
+              </button>
+            )}
+            {onSignOut && (
+              <button type="button" onClick={() => void onSignOut()}>
+                Sign out
+              </button>
+            )}
           </div>
         )}
       </header>

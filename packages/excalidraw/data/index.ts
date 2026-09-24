@@ -107,6 +107,7 @@ export const exportCanvas = async (
     name = appState.name || DEFAULT_FILENAME,
     fileHandle = null,
     exportingFrame = null,
+    ownerDocument,
   }: {
     exportBackground: boolean;
     exportPadding?: number;
@@ -115,6 +116,7 @@ export const exportCanvas = async (
     name?: string;
     fileHandle?: FileSystemFileHandle | null;
     exportingFrame: NonDeleted<ExcalidrawFrameLikeElement> | null;
+    ownerDocument?: Document;
   },
 ) => {
   if (elements.length === 0) {
@@ -136,6 +138,30 @@ export const exportCanvas = async (
     );
 
     if (type === "svg") {
+      if (ownerDocument) {
+        const svg = await svgPromise;
+        const blob = new Blob([SVG_DOCUMENT_PREAMBLE + svg.outerHTML], {
+          type: MIME_TYPES.svg,
+        });
+        const ownerWindow = ownerDocument.defaultView;
+        if (!ownerWindow) {
+          throw new Error("Export window is unavailable.");
+        }
+        const url = ownerWindow.URL.createObjectURL(blob);
+        const anchor = ownerDocument.createElement("a");
+        anchor.href = url;
+        anchor.download = `${name}${
+          appState.exportEmbedScene ? ".boardy" : ""
+        }.svg`;
+        ownerDocument.body.append(anchor);
+        anchor.click();
+        anchor.remove();
+        ownerWindow.setTimeout(
+          () => ownerWindow.URL.revokeObjectURL(url),
+          30_000,
+        );
+        return null;
+      }
       return fileSave(
         svgPromise.then((svg) => {
           // adding SVG preamble so that older software parse the SVG file
@@ -147,7 +173,7 @@ export const exportCanvas = async (
         {
           description: "Export to SVG",
           name,
-          extension: appState.exportEmbedScene ? "excalidraw.svg" : "svg",
+          extension: "svg",
           mimeTypes: [IMAGE_MIME_TYPES.svg],
           fileHandle,
         },
@@ -184,10 +210,30 @@ export const exportCanvas = async (
       );
     }
 
+    if (ownerDocument) {
+      const ownerWindow = ownerDocument.defaultView;
+      if (!ownerWindow) {
+        throw new Error("Export window is unavailable.");
+      }
+      const url = ownerWindow.URL.createObjectURL(await blob);
+      const anchor = ownerDocument.createElement("a");
+      anchor.href = url;
+      anchor.download = `${name}${
+        appState.exportEmbedScene ? ".boardy" : ""
+      }.png`;
+      ownerDocument.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      ownerWindow.setTimeout(
+        () => ownerWindow.URL.revokeObjectURL(url),
+        30_000,
+      );
+      return null;
+    }
     return fileSave(blob, {
       description: "Export to PNG",
       name,
-      extension: appState.exportEmbedScene ? "excalidraw.png" : "png",
+      extension: "png",
       mimeTypes: [IMAGE_MIME_TYPES.png],
       fileHandle,
     });

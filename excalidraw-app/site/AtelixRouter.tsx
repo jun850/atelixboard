@@ -72,7 +72,9 @@ const navigate = (path: string) => {
 
 const getNextPath = () => {
   const next = new URLSearchParams(window.location.search).get("next");
-  return next?.startsWith("/app") ? next : "/app";
+  return next?.startsWith("/app") || next?.startsWith("/invite/")
+    ? next
+    : "/app";
 };
 
 const authPath = (path: string) => {
@@ -470,9 +472,12 @@ const AuthPage = ({ mode }: { mode: AuthMode }) => {
           email,
           password,
           options: {
+            // The confirmation URL carries authentication state in the hash.
+            // Keep the invitation room hash in `next` until the callback has
+            // established a session, then navigate to the shared board.
             emailRedirectTo: `${
               window.location.origin
-            }/app?next=${encodeURIComponent(getNextPath())}`,
+            }/auth/callback?next=${encodeURIComponent(getNextPath())}`,
           },
         });
         if (error) {
@@ -666,6 +671,11 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
   const currentUrl = new URL(location);
   const path = currentUrl.pathname;
   const pendingNext = currentUrl.searchParams.get("next");
+  const returnTo =
+    pendingNext?.startsWith("/app") &&
+    !pendingNext.startsWith("/app/subscription")
+      ? pendingNext
+      : "/app";
   const localDemo =
     import.meta.env.DEV && currentUrl.searchParams.get("localDemo") === "1";
 
@@ -725,11 +735,11 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
         return;
       }
       try {
-        const access = await cloudApi<{ hasWorkspaceAccess: boolean }>(
+        const access = await cloudApi<{ allowlisted: boolean }>(
           "workspace",
           "access",
         );
-        if (access.hasWorkspaceAccess) {
+        if (access.allowlisted) {
           if (current) {
             setHasProAccess(true);
           }
@@ -768,21 +778,16 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
       const next = new URLSearchParams(window.location.search).get("next");
       if (next?.startsWith("/app")) {
         navigate(next);
-      } else if (hasProAccess === false && path !== "/app/visibility") {
-        navigate(`/app/subscription${localDemo ? "?localDemo=1" : ""}`);
       }
-    } else if (
-      path === "/app/subscription" &&
-      session &&
-      hasProAccess === true
-    ) {
-      navigate(`/app${localDemo ? "?localDemo=1" : ""}`);
     }
   }, [hasProAccess, localDemo, location, path, session]);
 
   if (
     session === undefined ||
-    (path.startsWith("/app") && session && pendingNext?.startsWith("/app"))
+    (path.startsWith("/app") &&
+      path !== "/app/subscription" &&
+      session &&
+      pendingNext?.startsWith("/app"))
   ) {
     return (
       <main className="atelix-page atelix-loading-page" aria-live="polite">
@@ -810,6 +815,7 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
       return null;
     }
     if (hasProAccess === true) {
+      navigate(returnTo);
       return (
         <main className="atelix-page atelix-loading-page" aria-live="polite">
           Preparing your workspace…
@@ -821,8 +827,9 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
         user={session.user}
         onUnlocked={() => {
           setHasProAccess(true);
-          navigate(`/app${localDemo ? "?localDemo=1" : ""}`);
+          navigate(returnTo);
         }}
+        onBack={() => navigate(returnTo)}
         onSignOut={signOut}
       />
     );
@@ -832,7 +839,7 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
     if (!session) {
       return null;
     }
-    if (hasProAccess !== true) {
+    if (hasProAccess === null) {
       return (
         <main className="atelix-page atelix-loading-page" aria-live="polite">
           Preparing your workspace…
@@ -846,6 +853,7 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
         onSignOut={signOut}
         localDemo={localDemo}
         locationHref={location}
+        isPro={hasProAccess === true}
       />
     );
   }
@@ -854,11 +862,31 @@ export const AtelixRouter = ({ BoardApp }: { BoardApp: BoardAppComponent }) => {
     const token = path.slice("/invite/".length);
     if (!session) {
       navigate(
-        `/signup?next=${encodeURIComponent(`${path}${currentUrl.hash}`)}`,
+        `/login?next=${encodeURIComponent(`${path}${currentUrl.hash}`)}`,
       );
       return null;
     }
     return <InviteAcceptance token={token} />;
+  }
+
+  if (path === "/auth/callback") {
+    if (session === undefined) {
+      return (
+        <main className="atelix-page atelix-loading-page" aria-live="polite">
+          Confirming your account…
+        </main>
+      );
+    }
+    if (session) {
+      navigate(getNextPath());
+      return (
+        <main className="atelix-page atelix-loading-page" aria-live="polite">
+          Opening your shared board…
+        </main>
+      );
+    }
+    navigate(`/login?next=${encodeURIComponent(getNextPath())}`);
+    return null;
   }
 
   if (path === "/login") {

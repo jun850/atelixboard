@@ -8,6 +8,9 @@
   }
 
   .ImageExportModal {
+    .ImageExportModal__settings__buttons__button.ExcButton--status-loading {
+      background-color: var(--color-primary);
+    }
     display: flex;
     flex-direction: row;
     justify-content: space-between;

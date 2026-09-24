@@ -36,6 +36,7 @@ import type {
 import { supabase } from "../supabase/client";
 import { BoardCommentsPanel } from "../workspace/BoardCommentsPanel";
 import { WorkspaceCommentsContext } from "../workspace/WorkspaceCommentsContext";
+import { useProAccess } from "../workspace/ProAccess";
 
 import { CATEGORIES, defaultContent, templates } from "./catalog";
 import {
@@ -107,6 +108,7 @@ const formatPlan = (plan: string) =>
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
+  const { isPro, requirePro } = useProAccess();
   const workspaceComments = useContext(WorkspaceCommentsContext);
   const root = useRef<HTMLDivElement>(null);
   const [mountedNode, setMountedNode] = useState<HTMLDivElement | null>(null);
@@ -467,6 +469,9 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
   };
   const apply = (copy = false) =>
     runAction(() => {
+      if (!requirePro("template", ownerWindow)) {
+        return;
+      }
       if (!draft) {
         return;
       }
@@ -602,6 +607,9 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
   };
   const generate = () =>
     runAction(async () => {
+      if (!requirePro("assistant", ownerWindow)) {
+        return;
+      }
       if (busyRef.current || !connection || !model) {
         return;
       }
@@ -723,6 +731,9 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
   };
   const saveSelected = () =>
     runAction(() => {
+      if (!requirePro("template", ownerWindow)) {
+        return;
+      }
       const snapshot = sanitizeSnapshot(selection);
       const availableFiles = api.getFiles();
       const files = Object.fromEntries(
@@ -777,7 +788,10 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
         <div className="agentic-board pen-sidebar-body" ref={bindRoot}>
           <header className="pen-sidebar-heading">
             <div className="pen-sidebar-heading__copy">
-              <h2>Templates</h2>
+              <h2>
+                Templates{" "}
+                {!isPro && <span className="boardy-pro-tag">Pro</span>}
+              </h2>
               <p>Start quickly, then make it yours.</p>
             </div>
             <button
@@ -1056,6 +1070,7 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
                 {assistantView === "settings"
                   ? "Assistant settings"
                   : "Assistant"}
+                {!isPro && <span className="boardy-pro-tag">Pro</span>}
               </h2>
               <p>
                 {assistantView === "settings"
@@ -1320,8 +1335,10 @@ export function AgenticBoard({ api }: { api: ExcalidrawImperativeAPI }) {
                     {import.meta.env.DEV
                       ? "Local development keeps API keys only in this server's memory."
                       : "API keys are encrypted server-side."}{" "}
-                    Usage is billed by your provider. Subscription sign-in
-                    requires the Boardy desktop companion; credentials never
+                    API usage is billed by your provider. The OpenAI API field
+                    needs an API key; a ChatGPT sign-in cannot be entered there.
+                    Codex and Claude Code subscription sign-in requires the
+                    Boardy desktop companion. Subscription credentials never
                     enter this browser.
                   </p>
                   <div className="agentic-companion-grid">

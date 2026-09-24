@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { searchIcon } from "@excalidraw/excalidraw/components/icons";
 
 import {
   loadComments,
@@ -262,7 +263,7 @@ export const BoardCommentsPanel = ({
   const rootRef = useRef<HTMLElement>(null);
   const [data, setData] = useState<CommentsResponse | null>(null);
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<"open" | "all" | "resolved">("open");
+  const [sort, setSort] = useState<"newest" | "oldest" | "unread">("newest");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [error, setError] = useState("");
@@ -310,21 +311,24 @@ export const BoardCommentsPanel = ({
 
   const threads = useMemo(
     () =>
-      (data?.threads || []).filter((thread) => {
-        if (filter === "open" && thread.resolved_at) {
-          return false;
-        }
-        if (filter === "resolved" && !thread.resolved_at) {
-          return false;
-        }
-        return (
-          !query ||
-          thread.messages.some((message) =>
-            message.body.toLowerCase().includes(query.toLowerCase()),
-          )
-        );
-      }),
-    [data, filter, query],
+      (data?.threads || [])
+        .filter(
+          (thread) =>
+            !query ||
+            thread.messages.some((message) =>
+              message.body.toLowerCase().includes(query.toLowerCase()),
+            ),
+        )
+        .sort((left, right) => {
+          if (sort === "unread" && left.unread !== right.unread) {
+            return left.unread ? -1 : 1;
+          }
+          const difference =
+            new Date(right.last_activity_at).getTime() -
+            new Date(left.last_activity_at).getTime();
+          return sort === "oldest" ? -difference : difference;
+        }),
+    [data, sort, query],
   );
   const selectedThread = data?.threads.find(
     (thread) => thread.id === selectedId,
@@ -366,7 +370,9 @@ export const BoardCommentsPanel = ({
       </header>
       <div className="boardy-comments-tools">
         <label className="boardy-comments-search">
-          <span aria-hidden="true">⌕</span>
+          <span className="boardy-comments-search__icon" aria-hidden="true">
+            {searchIcon}
+          </span>
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -374,15 +380,27 @@ export const BoardCommentsPanel = ({
             aria-label="Search comments"
           />
         </label>
-        <select
-          value={filter}
-          onChange={(event) => setFilter(event.target.value as typeof filter)}
-          aria-label="Filter comments"
-        >
-          <option value="open">Open</option>
-          <option value="all">All</option>
-          <option value="resolved">Resolved</option>
-        </select>
+        <label className="boardy-comments-sort" title="Sort comments">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M4 7h16M4 12h11M4 17h7"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+          <span className="sr-only">Sort comments</span>
+          <select
+            value={sort}
+            onChange={(event) => setSort(event.target.value as typeof sort)}
+            aria-label="Sort comments"
+          >
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="unread">Unread first</option>
+          </select>
+        </label>
         <button
           type="button"
           aria-label="Comment settings"
@@ -420,12 +438,21 @@ export const BoardCommentsPanel = ({
                     name="comment-notifications"
                     checked={data.notificationPreference === mode}
                     onChange={async () => {
-                      await setCommentPreference(sceneId, mode);
-                      setData((current) =>
-                        current
-                          ? { ...current, notificationPreference: mode }
-                          : current,
-                      );
+                      try {
+                        await setCommentPreference(sceneId, mode);
+                        setData((current) =>
+                          current
+                            ? { ...current, notificationPreference: mode }
+                            : current,
+                        );
+                        setError("");
+                      } catch (caught) {
+                        setError(
+                          caught instanceof Error
+                            ? caught.message
+                            : "Notification setting could not be saved.",
+                        );
+                      }
                     }}
                   />
                   {label}
@@ -435,10 +462,18 @@ export const BoardCommentsPanel = ({
             <button
               type="button"
               onClick={async () => {
-                await markAllCommentsRead(sceneId);
-                setSettingsOpen(false);
-                emitChanged(rootRef.current);
-                await refresh();
+                try {
+                  await markAllCommentsRead(sceneId);
+                  setSettingsOpen(false);
+                  emitChanged(rootRef.current);
+                  await refresh();
+                } catch (caught) {
+                  setError(
+                    caught instanceof Error
+                      ? caught.message
+                      : "Comments could not be marked as read.",
+                  );
+                }
               }}
             >
               Mark all as read
@@ -455,61 +490,147 @@ export const BoardCommentsPanel = ({
         {threads.map((thread) => {
           const first = thread.messages[0];
           return (
-            <button
-              type="button"
+            <article
               className={`boardy-comment-card${
                 thread.unread ? " is-unread" : ""
               }`}
               key={thread.id}
-              onClick={async () => {
-                setSelectedId(thread.id);
-                const ownerWindow = rootRef.current?.ownerDocument.defaultView;
-                if (ownerWindow) {
-                  const url = new ownerWindow.URL(ownerWindow.location.href);
-                  url.searchParams.set("comment", thread.id);
-                  ownerWindow.history.replaceState(
-                    ownerWindow.history.state,
-                    "",
-                    url,
-                  );
-                }
-                await setThreadUnread(thread.id, false);
-                await refresh();
-              }}
             >
-              <span className="boardy-comment-card__top">
-                <span className="boardy-comment-avatar">
-                  {first?.author.avatarUrl ? (
-                    <img src={first.author.avatarUrl} alt="" />
-                  ) : (
-                    first?.author.displayName.slice(0, 1).toUpperCase()
-                  )}
+              <button
+                type="button"
+                className="boardy-comment-card__open"
+                aria-label={`Open ${thread.resolved_at ? "resolved " : ""}${
+                  thread.unread ? "unread " : ""
+                }comment ${thread.thread_number}`}
+                onClick={async () => {
+                  setSelectedId(thread.id);
+                  const ownerWindow =
+                    rootRef.current?.ownerDocument.defaultView;
+                  if (ownerWindow) {
+                    const url = new ownerWindow.URL(ownerWindow.location.href);
+                    url.searchParams.set("comment", thread.id);
+                    ownerWindow.history.replaceState(
+                      ownerWindow.history.state,
+                      "",
+                      url,
+                    );
+                  }
+                  await setThreadUnread(thread.id, false);
+                  await refresh();
+                }}
+              >
+                <span className="boardy-comment-card__top">
+                  <span className="boardy-comment-avatar">
+                    {first?.author.avatarUrl ? (
+                      <img src={first.author.avatarUrl} alt="" />
+                    ) : (
+                      first?.author.displayName.slice(0, 1).toUpperCase()
+                    )}
+                  </span>
+                  <strong>
+                    #{thread.thread_number} ·{" "}
+                    {thread.anchor_kind === "general"
+                      ? "General"
+                      : "Whiteboard"}
+                  </strong>
+                  {thread.unread && <i aria-label="Unread" />}
                 </span>
-                <strong>
-                  #{thread.thread_number} ·{" "}
-                  {thread.anchor_kind === "general" ? "General" : "Whiteboard"}
-                </strong>
-                {thread.unread && <i aria-label="Unread" />}
-              </span>
-              <span>
-                {first?.author.displayName} ·{" "}
-                {new Date(thread.last_activity_at).toLocaleString()}
-              </span>
-              <span className="boardy-comment-card__body">
-                {first?.body || "Image"}
-              </span>
-              {(thread.messages.length > 1 || first?.attachment) && (
-                <span className="boardy-comment-card__meta">
-                  {thread.messages.length > 1
-                    ? `${thread.messages.length - 1} ${
-                        thread.messages.length === 2 ? "reply" : "replies"
-                      }`
-                    : ""}
-                  {thread.messages.length > 1 && first?.attachment ? " · " : ""}
-                  {first?.attachment ? "1 image" : ""}
+                <span>
+                  {first?.author.displayName} ·{" "}
+                  {new Date(thread.last_activity_at).toLocaleString()}
                 </span>
-              )}
-            </button>
+                <span className="boardy-comment-card__body">
+                  {first?.body || "Image"}
+                </span>
+                {thread.resolved_at && (
+                  <span className="boardy-comment-card__state">Resolved</span>
+                )}
+                {(thread.messages.length > 1 || first?.attachment) && (
+                  <span className="boardy-comment-card__meta">
+                    {thread.messages.length > 1
+                      ? `${thread.messages.length - 1} ${
+                          thread.messages.length === 2 ? "reply" : "replies"
+                        }`
+                      : ""}
+                    {thread.messages.length > 1 && first?.attachment
+                      ? " · "
+                      : ""}
+                    {first?.attachment ? "1 image" : ""}
+                  </span>
+                )}
+              </button>
+              <div className="boardy-comment-card__actions">
+                <button
+                  type="button"
+                  aria-label={
+                    thread.resolved_at ? "Reopen thread" : "Resolve thread"
+                  }
+                  title={thread.resolved_at ? "Reopen" : "Resolve"}
+                  onClick={async () => {
+                    try {
+                      await updateThread(
+                        thread.id,
+                        thread.resolved_at ? "reopen" : "resolve",
+                        thread.version,
+                      );
+                      emitChanged(rootRef.current);
+                      await refresh();
+                    } catch (caught) {
+                      setError(
+                        caught instanceof Error
+                          ? caught.message
+                          : "Thread could not be updated.",
+                      );
+                    }
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="m5 12 4 4L19 6"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Delete thread"
+                  title="Delete thread"
+                  onClick={async (event) => {
+                    const ownerWindow =
+                      event.currentTarget.ownerDocument.defaultView;
+                    if (!ownerWindow?.confirm("Delete this comment thread?")) {
+                      return;
+                    }
+                    try {
+                      await updateThread(thread.id, "delete", thread.version);
+                      emitChanged(rootRef.current);
+                      await refresh();
+                    } catch (caught) {
+                      setError(
+                        caught instanceof Error
+                          ? caught.message
+                          : "Thread could not be deleted.",
+                      );
+                    }
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="M4 7h16M9 3h6l1 4H8zM7 7l1 14h8l1-14M10 11v6M14 11v6"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </article>
           );
         })}
         {data && !threads.length && (

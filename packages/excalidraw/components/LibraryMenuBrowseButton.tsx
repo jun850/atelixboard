@@ -1,32 +1,41 @@
-import { VERSIONS } from "@excalidraw/common";
+import { fileOpen } from "../data/filesystem";
 
-import { t } from "../i18n";
+import { useApp, useAppProps, useExcalidrawSetAppState } from "./App";
 
-import type { ExcalidrawProps, UIAppState } from "../types";
+const LibraryMenuBrowseButton = () => {
+  const app = useApp();
+  const setAppState = useExcalidrawSetAppState();
+  const { onLibraryAssetUploadRequested } = useAppProps();
 
-const LibraryMenuBrowseButton = ({
-  theme,
-  id,
-  libraryReturnUrl,
-}: {
-  libraryReturnUrl: ExcalidrawProps["libraryReturnUrl"];
-  theme: UIAppState["theme"];
-  id: string;
-}) => {
-  const referrer =
-    libraryReturnUrl || window.location.origin + window.location.pathname;
+  const upload = async () => {
+    if (onLibraryAssetUploadRequested?.() === false) {
+      return;
+    }
+    try {
+      const file = await fileOpen({
+        description: "Boardy library files",
+        extensions: ["excalidrawlib", "json"],
+      });
+      await app.library.updateLibrary({
+        libraryItems: file,
+        merge: true,
+        openLibraryMenu: true,
+      });
+    } catch (error) {
+      if ((error as Error)?.name !== "AbortError") {
+        setAppState({ errorMessage: "Could not upload this library file." });
+      }
+    }
+  };
   return (
-    <a
+    <button
       className="library-menu-browse-button"
-      href={`${import.meta.env.VITE_APP_LIBRARY_URL}?target=${
-        window.name || "_blank"
-      }&referrer=${referrer}&useHash=true&token=${id}&theme=${theme}&version=${
-        VERSIONS.excalidrawLibrary
-      }`}
-      target="_excalidraw_libraries"
+      type="button"
+      onClick={upload}
+      title="Upload a Boardy library file (.excalidrawlib or .json)"
     >
-      {t("labels.libraries")}
-    </a>
+      Upload asset to library <span className="boardy-pro-tag">Pro</span>
+    </button>
   );
 };
 

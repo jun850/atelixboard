@@ -161,7 +161,9 @@ export function errorCode(error: unknown) {
     "INVALID_OUTPUT",
     "LIMIT_EXCEEDED",
     "CANCELLED",
+    "PRO_REQUIRED",
+    "pro_required",
   ].includes(message)
-    ? message
+    ? message === "pro_required" ? "PRO_REQUIRED" : message
     : "CONNECTION_UNAVAILABLE";
 }

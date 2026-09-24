@@ -6,9 +6,10 @@ import {
   requireRequestId,
   requireUuid,
 } from "../_shared/cloud.ts";
+import { requireProAccess } from "../_shared/pro.ts";
 
 const selectScene =
-  "id, owner_id, title, status, current_revision_id, current_revision_number, thumbnail_asset_id, created_at, updated_at, deleted_at";
+  "id, owner_id, title, status, workspace_id, collection_id, current_revision_id, current_revision_number, thumbnail_asset_id, created_at, updated_at, deleted_at";
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
@@ -46,6 +47,17 @@ Deno.serve(async (request) => {
 
     if (method === "POST" && parts.length === 1) {
       const requestId = requireRequestId(body.requestId);
+      const { data: priorScenes, error: priorScenesError } = await admin
+        .from("scenes")
+        .select("id")
+        .eq("owner_id", user.id)
+        .limit(1);
+      if (priorScenesError) {
+        throw priorScenesError;
+      }
+      if (priorScenes?.length) {
+        await requireProAccess(admin, user.id);
+      }
       const workspaceId = body.workspaceId
         ? requireUuid(body.workspaceId)
         : null;
@@ -211,10 +223,48 @@ Deno.serve(async (request) => {
       };
       let action = "scene.rename";
       if (body.action === "delete") {
+        if (scene.status === "deleted") {
+          throw new Error("invalid_action");
+        }
         patch.status = "deleted";
         patch.deleted_at = new Date().toISOString();
         action = "scene.delete";
       } else if (body.action === "restore") {
+        if (
+          scene.status !== "deleted" ||
+          !scene.deleted_at ||
+          Date.now() - new Date(scene.deleted_at).getTime() >
+            30 * 24 * 60 * 60 * 1000
+        ) {
+          throw new Error("restore_window_expired");
+        }
+        if (scene.collection_id) {
+          const { data: collection, error: collectionError } = await admin
+            .from("boardy_collections")
+            .select("status")
+            .eq("id", scene.collection_id)
+            .single();
+          if (collectionError) {
+            throw collectionError;
+          }
+          if (collection.status !== "active") {
+            const { data: fallback, error: fallbackError } = await admin
+              .from("boardy_collections")
+              .select("id")
+              .eq("workspace_id", scene.workspace_id)
+              .eq("owner_id", user.id)
+              .eq("status", "active")
+              .order("created_at")
+              .limit(1)
+              .maybeSingle();
+            if (fallbackError || !fallback) {
+              throw (
+                fallbackError || new Error("restore_collection_unavailable")
+              );
+            }
+            patch.collection_id = fallback.id;
+          }
+        }
         patch.status = "active";
         patch.deleted_at = null;
         action = "scene.restore";
