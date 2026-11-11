@@ -1,124 +1,126 @@
-<a href="https://excalidraw.com/" target="_blank" rel="noopener">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" alt="Excalidraw" srcset="https://excalidraw.nyc3.cdn.digitaloceanspaces.com/github/excalidraw_github_cover_2_dark.png" />
-    <img alt="Excalidraw" src="https://excalidraw.nyc3.cdn.digitaloceanspaces.com/github/excalidraw_github_cover_2.png" />
-  </picture>
-</a>
+# Boardy by Atelix
 
-<h4 align="center">
-  <a href="https://excalidraw.com">Excalidraw Editor</a> |
-  <a href="https://plus.excalidraw.com/blog">Blog</a> |
-  <a href="https://docs.excalidraw.com">Documentation</a> |
-  <a href="https://plus.excalidraw.com">Excalidraw+</a>
-</h4>
+**A collaborative visual workspace for turning ideas into shared next steps.**
 
-<div align="center">
-  <h2>
-    An open source virtual hand-drawn style whiteboard. </br>
-    Collaborative and end-to-end encrypted. </br>
-  <br />
-  </h2>
-</div>
+Boardy brings whiteboarding, live collaboration, contextual comments, and AI-assisted planning into one browser-based workspace. Sketch a diagram, map an idea, review it with your team, and keep the work organized under your Boardy account.
 
-<br />
-<p align="center">
-  <a href="https://github.com/excalidraw/excalidraw/blob/master/LICENSE">
-    <img alt="Excalidraw is released under the MIT license." src="https://img.shields.io/badge/license-MIT-blue.svg"  /></a>
-  <a href="https://www.npmjs.com/package/@excalidraw/excalidraw">
-    <img alt="npm downloads/month" src="https://img.shields.io/npm/dm/@excalidraw/excalidraw"  /></a>
-  <a href="https://docs.excalidraw.com/docs/introduction/contributing">
-    <img alt="PRs welcome!" src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat"  /></a>
-  <a href="https://discord.gg/UexuTaE">
-    <img alt="Chat on Discord" src="https://img.shields.io/discord/723672430744174682?color=738ad6&label=Chat%20on%20Discord&logo=discord&logoColor=ffffff&widget=false"/></a>
-  <a href="https://deepwiki.com/excalidraw/excalidraw">
-    <img alt="Ask DeepWiki" src="https://deepwiki.com/badge.svg" /></a>
-  <a href="https://twitter.com/excalidraw">
-    <img alt="Follow Excalidraw on Twitter" src="https://img.shields.io/twitter/follow/excalidraw.svg?label=follow+@excalidraw&style=social&logo=twitter"/></a>
-</p>
+**Live product: [www.boardy.sbs](https://www.boardy.sbs)**
 
-<div align="center">
-  <figure>
-    <a href="https://excalidraw.com" target="_blank" rel="noopener">
-      <img src="https://excalidraw.nyc3.cdn.digitaloceanspaces.com/github%2Fproduct_showcase.png" alt="Product showcase" />
-    </a>
-    <figcaption>
-      <p align="center">
-        Create beautiful hand-drawn like diagrams, wireframes, or whatever you like.
-      </p>
-    </figcaption>
-  </figure>
-</div>
+Boardy is a **subscription SaaS**, with **custom development** available for teams that need tailored workflows, integrations, or product features.
 
-## Features
+## What you can do
 
-The Excalidraw editor (npm package) supports:
+- **Draw and plan:** use an infinite canvas with hand-drawn shapes, arrows, text, images, and freehand drawing, powered by Excalidraw.
+- **Collaborate live:** work on the same board, see collaborators' cursors, and invite teammates to join.
+- **Review in context:** add comments, replies, and image attachments; resolve discussions alongside the work.
+- **Organize your workspace:** save whiteboards, group them into collections, manage private or shared access, and restore boards from trash.
+- **Start with templates:** use editable planning templates and save reusable canvas selections.
+- **Work with AI:** generate draft canvas content through the Assistant and bring your own model connection. Availability depends on the configured provider and runtime; see the [AI development notes](docs/agentic-board/LOCAL-TESTING.md).
+- **Share and export:** manage board access and export drawings as PNG, SVG, or editable `.excalidraw` files.
 
-- 💯&nbsp;Free & open-source.
-- 🎨&nbsp;Infinite, canvas-based whiteboard.
-- ✍️&nbsp;Hand-drawn like style.
-- 🌓&nbsp;Dark mode.
-- 🏗️&nbsp;Customizable.
-- 📷&nbsp;Image support.
-- 😀&nbsp;Shape libraries support.
-- 🌐&nbsp;Localization (i18n) support.
-- 🖼️&nbsp;Export to PNG, SVG & clipboard.
-- 💾&nbsp;Open format - export drawings as an `.excalidraw` json file.
-- ⚒️&nbsp;Wide range of tools - rectangle, circle, diamond, arrow, line, free-draw, eraser...
-- ➡️&nbsp;Arrow-binding & labeled arrows.
-- 🔙&nbsp;Undo / Redo.
-- 🔍&nbsp;Zoom and panning support.
+Feature access depends on your plan. Visit [Boardy](https://www.boardy.sbs) for current subscription options.
 
-## Excalidraw.com
+## Subscriptions and custom development
 
-The app hosted at [excalidraw.com](https://excalidraw.com) is a minimal showcase of what you can build with Excalidraw. Its [source code](https://github.com/excalidraw/excalidraw/tree/master/excalidraw-app) is part of this repository as well, and the app features:
+Use the hosted SaaS for a managed Boardy workspace with subscription access. The application includes Pro monthly and annual subscription flows, billing management, and entitlement checks through RevenueCat Web Billing.
 
-- 📡&nbsp;PWA support (works offline).
-- 🤼&nbsp;Real-time collaboration.
-- 🔒&nbsp;End-to-end encryption.
-- 💾&nbsp;Local-first support (autosaves to the browser).
-- 🔗&nbsp;Shareable links (export to a readonly link you can share with others).
+Need Boardy adapted to how your team works? We also offer custom development for specialized workflows, integrations, and additional features. Start a discussion through a [project issue](https://github.com/jun850/atelixboard/issues) with a brief description of your requirements; keep confidential business details out of public issues.
 
-We'll be adding these features as drop-in plugins for the npm package in the future.
+## Fully vibe coded
 
-## Quick start
+Boardy is **fully vibe coded**: the Boardy product layer is built through human-directed, AI-assisted development, from exploring ideas to implementing and refining features. Human judgment guides the product, reviews the output, and verifies the experience.
 
-**Note:** following instructions are for installing the Excalidraw [npm package](https://www.npmjs.com/package/@excalidraw/excalidraw) when integrating Excalidraw into your own app. To run the repository locally for development, please refer to our [Development Guide](https://docs.excalidraw.com/docs/introduction/development).
+The canvas builds on the work of the Excalidraw community. “Fully vibe coded” describes our development approach to Boardy; Excalidraw and the other open-source dependencies retain their own authorship and licenses.
 
-Use `npm` or `yarn` to install the package.
+## Tech stack
 
-```bash
-npm install react react-dom @excalidraw/excalidraw
-# or
-yarn add react react-dom @excalidraw/excalidraw
+| Layer | Technology |
+| --- | --- |
+| Whiteboard editor | Excalidraw, maintained in this monorepo |
+| Frontend | React 19, TypeScript, Vite, Sass/SCSS |
+| Client state | Jotai; IndexedDB through `idb-keyval` |
+| Accounts and backend | Supabase Auth, Postgres, Storage, and Edge Functions |
+| Live collaboration | Supabase Realtime with encrypted canvas synchronization |
+| Subscriptions | RevenueCat Web Billing |
+| Document editing | Tiptap |
+| Hosting and server routes | Vercel |
+| Quality checks | Vitest, Testing Library, ESLint, Prettier, and TypeScript |
+| Workspace tooling | Yarn Classic workspaces |
+
+## Run locally
+
+Prerequisites: Node.js 18 or newer and Yarn 1.22.22. Full workspace functionality also needs a development Supabase backend with the relevant migrations, storage, and Edge Functions configured.
+
+```sh
+git clone https://github.com/jun850/atelixboard.git
+cd atelixboard
+yarn install
 ```
 
-Check out our [documentation](https://docs.excalidraw.com/docs/@excalidraw/excalidraw/installation) for more details!
+Create an ignored `.env.development.local` file in the repository root with your development configuration:
 
-## Contributing
+```dotenv
+VITE_SUPABASE_URL=<development-supabase-url>
+VITE_SUPABASE_PUBLISHABLE_KEY=<development-publishable-or-anon-key>
+VITE_REVENUECAT_PUBLIC_API_KEY=<sandbox-web-billing-public-key>
+```
 
-- Missing something or found a bug? [Report here](https://github.com/excalidraw/excalidraw/issues).
-- Want to contribute? Check out our [contribution guide](https://docs.excalidraw.com/docs/introduction/contributing) or let us know on [Discord](https://discord.gg/UexuTaE).
-- Want to help with translations? See the [translation guide](https://docs.excalidraw.com/docs/introduction/contributing#translating).
+Use a RevenueCat sandbox Web Billing key (`rcb_sb_...`) for local billing work. Keep service-role keys and billing secrets server-side; never put them in `VITE_` variables or commit them.
 
-## Integrations
+```sh
+yarn start
+```
 
-- [VScode extension](https://marketplace.visualstudio.com/items?itemName=pomdtr.excalidraw-editor)
-- [npm package](https://www.npmjs.com/package/@excalidraw/excalidraw)
+Open the URL printed by Vite. Account, cloud storage, billing, and AI workflows require their supporting services; starting the frontend alone does not provision them.
 
-## Who's integrating Excalidraw
+For a local Supabase environment, see the [cloud operations guide](docs/cloud-scenes/OPERATIONS.md). Once local Supabase and its Edge Functions are running, use the local QA launcher:
 
-[Google Cloud](https://googlecloudcheatsheet.withgoogle.com/architecture) • [Meta](https://meta.com/) • [CodeSandbox](https://codesandbox.io/) • [Obsidian Excalidraw](https://github.com/zsviczian/obsidian-excalidraw-plugin) • [Replit](https://replit.com/) • [Slite](https://slite.com/) • [Notion](https://notion.so/) • [HackerRank](https://www.hackerrank.com/) • and many others
+```sh
+node scripts/start-local-qa.mjs
+```
 
-## Sponsors & support
+This launcher checks for a local backend and serves the app at `http://127.0.0.1:5174`. See the [subscription and collaboration QA guide](docs/BOARDY_PAYWALL_DEPLOYMENT_QA.md) for the full workflow.
 
-If you like the project, you can become a sponsor at [Open Collective](https://opencollective.com/excalidraw) or use [Excalidraw+](https://plus.excalidraw.com/).
+## Contribute
 
-## Thank you for supporting Excalidraw
+Contributions to Boardy are welcome: bug fixes, usability improvements, accessibility, documentation, tests, and focused new features.
 
-[<img src="https://opencollective.com/excalidraw/tiers/sponsors/0/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/0/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/1/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/1/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/2/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/2/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/3/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/3/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/4/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/4/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/5/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/5/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/6/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/6/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/7/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/7/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/8/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/8/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/9/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/9/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/10/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/10/website)
+1. [Open an issue](https://github.com/jun850/atelixboard/issues) to report a bug or discuss a substantial change. Include reproduction steps and expected behavior for bugs.
+2. Fork the repository and create a branch for your change.
+3. Read [AGENTS.md](AGENTS.md), [PRODUCT.md](PRODUCT.md), [DESIGN.md](DESIGN.md), and the relevant [engineering docs](docs/README.md).
+4. Make a focused change. Keep Boardy application workflows in `excalidraw-app/` and preserve the separation from the upstream editor in `packages/`.
+5. Run the checks relevant to your change and verify affected user flows locally. UI changes should include screenshots; collaboration changes should be checked with two users.
+6. Open a pull request against this repository explaining the problem, the change, and how you verified it. Link the related issue and note any setup or migration requirements.
 
-<a href="https://opencollective.com/excalidraw#category-CONTRIBUTE" target="_blank"><img src="https://opencollective.com/excalidraw/tiers/backers.svg?avatarHeight=32"/></a>
+Useful checks from the repository root:
 
-Last but not least, we're thankful to these companies for offering their services for free:
+```sh
+yarn test:typecheck
+yarn test:code
+yarn test:app --watch=false
+yarn build:app
+```
 
-[![Vercel](./.github/assets/vercel.svg)](https://vercel.com) [![Sentry](./.github/assets/sentry.svg)](https://sentry.io) [![Crowdin](./.github/assets/crowdin.svg)](https://crowdin.com)
+AI-assisted contributions are welcome. Review and understand generated changes, verify their behavior, and include meaningful validation in the pull request.
+
+For changes specifically to the Excalidraw editor, also consult the [upstream contribution guide](https://docs.excalidraw.com/docs/introduction/contributing).
+
+## Project layout
+
+```text
+excalidraw-app/     Boardy app, workspace, authentication, billing, and collaboration
+packages/          Excalidraw editor and shared canvas packages
+supabase/          Database migrations and Edge Functions
+api/               Vercel server routes
+scripts/           Development utilities, local runtimes, and QA tools
+docs/              Product plans, architecture, operations, and verification guides
+public/            Static assets and branding
+```
+
+Some documents describe proposed work. Read their status notes before treating a design as an implemented feature.
+
+## Credits and license
+
+Boardy is built on [Excalidraw](https://github.com/excalidraw/excalidraw). Thank you to its maintainers and contributors for the editor that makes this canvas possible.
+
+This repository includes the [MIT license](LICENSE) and the original Excalidraw copyright notice. Preserve applicable license and attribution notices when contributing or reusing code. Hosted subscriptions and custom development are commercial services offered around Boardy.
