@@ -12,3 +12,13 @@
 - The authenticated subscription route is `/app/subscription`; `/app` stays gated until `boardybyatelix_pro` is active.
 - Sandbox verification was completed with `junarcana263@gmail.com` using the monthly Web Billing flow and a Stripe test card. Verify entitlement through CustomerInfo after purchase; do not unlock from a resolved purchase promise alone.
 - Customer-facing loading states must not mention RevenueCat or another vendor. Use the centered Boardy loader, reduced-motion behavior, and dynamic localized product pricing.
+
+## Agent access and B2A
+
+Before changing discovery, public content, APIs/MCP, backend boundaries, or database models, read [agent access](docs/agent-access.md). Support authorized agent discovery, evaluation, and task completion through the smallest useful existing interface. Preserve product scope, ownership, roles, human review, and payment authority. Public crawl access grants no private-data or action permissions; user-agent strings and robots directives are not security controls.
+
+### Code review rules
+
+- Flag private data or privileged operations exposed for agent convenience; retain existing authorization and approved public projections.
+- Flag unbounded crawl/query/retry work and speculative parallel services; use bounded operations and existing contracts.
+- Flag documentation that presents proposed MCP/API behavior or crawler protection as implemented; require source and deployment evidence appropriate to the claim.
